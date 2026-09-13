@@ -399,9 +399,9 @@ void Logger_ExportToSD(const odb_stats_t *stats) {
     f_puts("# -- DEBUG --\n", &active_file);
     sprintf(header_buf, "# Missed Frames: %lu\n", stats->missed_frames);
     f_puts(header_buf, &active_file);
-    sprintf(header_buf, "# Pre-Pyros Test : %lu ms\n", stats->fsm_trans.pre_pyros_test);
+    sprintf(header_buf, "# Pre-Pyros Test : %lu ms\n", stats->fsm_trans.preflight_pyros_test);
 	f_puts(header_buf, &active_file);
-	sprintf(header_buf, "# Pre-Waiting Flight : %lu ms\n", stats->fsm_trans.pre_waiting_flight);
+	sprintf(header_buf, "# Pre-Waiting Flight : %lu ms\n", stats->fsm_trans.preflight_waiting_flight);
 	f_puts(header_buf, &active_file);
 	sprintf(header_buf, "# Armed : %lu ms\n", stats->fsm_trans.armed);
 	f_puts(header_buf, &active_file);

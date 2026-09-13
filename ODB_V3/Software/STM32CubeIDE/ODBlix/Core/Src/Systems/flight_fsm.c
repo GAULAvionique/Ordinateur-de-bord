@@ -129,11 +129,11 @@ void FSM_Update(void) {
 							flight_data.system_states |= FLAG_PYROS_ARMED_OK;
 							// Skip pyros/arm check
 							current_preflight_substate = STATE_WAITING_FLIGHT;
-							flight_stats.fsm_trans.pre_waiting_flight = HAL_GetTick();
+							flight_stats.fsm_trans.preflight_waiting_flight = HAL_GetTick();
 							ODB_SetMissionState(&flight_data, STATE_PREFLIGHT, STATE_WAITING_FLIGHT);
 						} else {
 							current_preflight_substate = STATE_PYROS_TEST;
-							flight_stats.fsm_trans.pre_pyros_test = HAL_GetTick();
+							flight_stats.fsm_trans.preflight_pyros_test = HAL_GetTick();
 							ODB_SetMissionState(&flight_data, STATE_PREFLIGHT, STATE_PYROS_TEST);
 						}
 					}
@@ -145,7 +145,7 @@ void FSM_Update(void) {
 					bool arm_ok = (flight_data.system_states & FLAG_PYROS_ARMED_OK) != 0;
     				if(pyros_ok && arm_ok) {
     					current_preflight_substate = STATE_WAITING_FLIGHT;
-    					flight_stats.fsm_trans.pre_waiting_flight = HAL_GetTick();
+    					flight_stats.fsm_trans.preflight_waiting_flight = HAL_GetTick();
     					ODB_SetMissionState(&flight_data, STATE_PREFLIGHT, STATE_WAITING_FLIGHT);
     				}
     				break;

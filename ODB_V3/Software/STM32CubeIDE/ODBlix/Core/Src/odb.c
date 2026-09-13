@@ -163,8 +163,8 @@ void ODB_Reset(odb_data_t *data, odb_stats_t *stats) {
     stats->flight_time_ms = 0;
     stats->flight_start_time_ms = 0;
     stats->missed_frames = 0;
-    stats->fsm_trans.pre_pyros_test = 0;
-	stats->fsm_trans.pre_waiting_flight = 0;
+    //stats->fsm_trans.preflight_static_oriented = 0;
+	stats->fsm_trans.preflight_waiting_flight = 0;
 	stats->fsm_trans.armed = 0;
 	stats->fsm_trans.inflight_boost = 0;
 	stats->fsm_trans.inflight_fast = 0;
@@ -373,6 +373,7 @@ void ODB_Update(odb_data_t *data, odb_stats_t *stats) {
     bool is_ctn_active = Pyro_IsContinuityActive(&system_measurements);
     if(is_ctn_active) {
     	for(int i = 0; i < PYRO_MAX; i++) {
+    		data->pyros_mv[i] = system_measurements.pyro_status[i];
 			pyros[i].is_connected = (system_measurements.pyro_status[i] >= PYRO_THRESHOLD_CONN);
 		}
     }

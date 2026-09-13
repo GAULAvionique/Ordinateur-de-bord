@@ -13,7 +13,7 @@
 
 /* === Protocol Versioning === */
 #define ODB_PROTOCOL_VERSION_MAJOR 1
-#define ODB_PROTOCOL_VERSION_MINOR 2
+#define ODB_PROTOCOL_VERSION_MINOR 3
 
 /* === ODB === */
 // Init system_states
@@ -93,8 +93,9 @@ typedef struct __attribute__((packed)) {
 } metric_t;
 
 typedef struct __attribute__((packed)) {
-    uint32_t pre_pyros_test;
-    uint32_t pre_waiting_flight;
+	//uint32_t preflight_static_oriented;
+    uint32_t preflight_pyros_test;
+    uint32_t preflight_waiting_flight;
     uint32_t armed;
     uint32_t inflight_boost;
     uint32_t inflight_fast;
@@ -155,6 +156,7 @@ typedef struct __attribute__((packed)) {
     uint16_t    event_states;       // Current events states (pyros fired, apogee detected, etc.) -> linked with odb_stats_t
     uint8_t     mission_state;      // Mission state (preflight, inflight, postflight) -> Linked with FSM
     uint16_t    battery_mv;         // Main battery voltage in millivolts (mV)
+    uint16_t	pyros_mv[4];		// Each pyros voltage in millivolts (mV)
     // IMU (Attitude & Rates)
     float       roll;               // Roll angle in degrees (converted to cdeg for MAVLink) -> Linked with BNO055
     float       pitch;              // Pitch angle in degrees (converted to cdeg for MAVLink) -> Linked with BNO055
@@ -195,8 +197,8 @@ typedef struct __attribute__((packed)) {
     float       kalman_z;           // filtered altitude from Kalman filter in m (converted to cm for MAVLink) referenced with the above ground level (AGL) -> altitude_msl_m - initial altitude value
     float       kalman_v;           // filtered velocity from Kalman filter in m/s (converted to cm/s for MAVLink)
 
-    // TOTAL 127 + 4 (header)
-    // Empty data to reach 132 bytes
+    // TOTAL 135 + 4 (header)
+    // Empty data to reach 140 bytes
     uint8_t padding[1];
 } odb_data_t;
 #define ODB_DATA_SIZE sizeof(odb_data_t)

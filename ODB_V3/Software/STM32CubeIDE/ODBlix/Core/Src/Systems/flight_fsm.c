@@ -30,7 +30,7 @@ extern TIM_HandleTypeDef htim5;
 extern pyro_t pyros[4];
 
 volatile global_state_t current_global_state = STATE_PREFLIGHT;
-volatile preflight_substate_t current_preflight_substate = STATE_STATIC_ORIENTED;
+volatile preflight_substate_t current_preflight_substate = SUB_STATIC_ORIENTED;
 volatile inflight_substate_t current_inflight_substate = SUB_BOOST;
 volatile bool is_ready_by_app = false;
 
@@ -119,7 +119,7 @@ void FSM_Update(void) {
     switch(current_global_state) {
         case STATE_PREFLIGHT:
         	switch(current_preflight_substate) {
-        		case STATE_STATIC_ORIENTED:
+        		case SUB_STATIC_ORIENTED:
         			// Security : stability check, orientation
 					bool is_static = (fabs(flight_data.kalman_v) < current_config.landing_detect_v_threshold);
 					bool is_oriented_up = flight_data.imu_acc_z > STATIC_ACC_Z_THRESHOLD;
@@ -128,29 +128,29 @@ void FSM_Update(void) {
 							// Positive false
 							flight_data.system_states |= FLAG_PYROS_ARMED_OK;
 							// Skip pyros/arm check
-							current_preflight_substate = STATE_WAITING_FLIGHT;
+							current_preflight_substate = SUB_WAITING_FLIGHT;
 							flight_stats.fsm_trans.preflight_waiting_flight = HAL_GetTick();
-							ODB_SetMissionState(&flight_data, STATE_PREFLIGHT, STATE_WAITING_FLIGHT);
+							ODB_SetMissionState(&flight_data, STATE_PREFLIGHT, SUB_WAITING_FLIGHT);
 						} else {
-							current_preflight_substate = STATE_PYROS_TEST;
+							current_preflight_substate = SUB_PYROS_TEST;
 							flight_stats.fsm_trans.preflight_pyros_test = HAL_GetTick();
-							ODB_SetMissionState(&flight_data, STATE_PREFLIGHT, STATE_PYROS_TEST);
+							ODB_SetMissionState(&flight_data, STATE_PREFLIGHT, SUB_PYROS_TEST);
 						}
 					}
 					break;
 
-    			case STATE_PYROS_TEST:
+    			case SUB_PYROS_TEST:
     				// Security : pyros
 					bool pyros_ok = (ODB_GetPyroStates(&flight_data) >= current_config.min_needed_pyro_nb);
 					bool arm_ok = (flight_data.system_states & FLAG_PYROS_ARMED_OK) != 0;
     				if(pyros_ok && arm_ok) {
-    					current_preflight_substate = STATE_WAITING_FLIGHT;
+    					current_preflight_substate = SUB_WAITING_FLIGHT;
     					flight_stats.fsm_trans.preflight_waiting_flight = HAL_GetTick();
-    					ODB_SetMissionState(&flight_data, STATE_PREFLIGHT, STATE_WAITING_FLIGHT);
+    					ODB_SetMissionState(&flight_data, STATE_PREFLIGHT, SUB_WAITING_FLIGHT);
     				}
     				break;
 
-    			case STATE_WAITING_FLIGHT:
+    			case SUB_WAITING_FLIGHT:
     				// Security : app unlock
 					if(is_ready_by_app) {
 						// Buzzer report (Blocking routine)

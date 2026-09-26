@@ -17,9 +17,9 @@ typedef enum {
 } global_state_t;
 
 typedef enum {
-	STATE_STATIC_ORIENTED,
-	STATE_PYROS_TEST,
-	STATE_WAITING_FLIGHT
+	SUB_STATIC_ORIENTED,
+	SUB_PYROS_TEST,
+	SUB_WAITING_FLIGHT
 } preflight_substate_t;
 
 typedef enum {

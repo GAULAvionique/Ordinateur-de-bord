@@ -339,6 +339,7 @@ class OdbTelemetry {
   final int eventStates;
   final int missionState;
   final int batteryMv;
+  final List<int> pyrosMv;
   
   final double roll, pitch, yaw;
   final double imuAccX, imuAccY, imuAccZ;
@@ -369,6 +370,7 @@ class OdbTelemetry {
         eventStates = reader.readUint16(),
         missionState = reader.readUint8(),
         batteryMv = reader.readUint16(),
+        pyrosMv = List.generate(4, (_) => reader.readUint16()),
         
         roll = reader.readFloat32(),
         pitch = reader.readFloat32(),
@@ -445,7 +447,7 @@ class DataServiceManager with ChangeNotifier {
   static const int expectedConfigMajor = 1;
   static const int expectedConfigMinor = 2;
   static const int expectedTelemetryMajor = 1;
-  static const int expectedTelemetryMinor = 2;
+  static const int expectedTelemetryMinor = 3;
 
   final BluetoothServiceManager btService;
   DataServiceManager(this.btService);
@@ -491,9 +493,10 @@ class DataServiceManager with ChangeNotifier {
   
   double get batteryVoltageMax => 24.0;
   int get vinMv => telemetry?.batteryMv ?? 0;
+  List<int> get pyrosMv => telemetry?.pyrosMv ?? List.filled(4, 0);
   double get batteryVoltage => vinMv / 1000.0;
   double get temperature => telemetry?.tempCelsius ?? 0.0;
-  
+
   double get roll => telemetry?.roll ?? 0.0;
   double get pitch => telemetry?.pitch ?? 0.0;
   double get yaw => telemetry?.yaw ?? 0.0;
@@ -613,6 +616,11 @@ class DataServiceManager with ChangeNotifier {
   String get batteryVoltageMaxDisplay => batteryVoltageMax > 0 ? '${batteryVoltageMax.toStringAsFixed(2)} V' : '—';
   String get batteryPercentDisplay => batteryVoltageMax > 0 ? '${batteryPercent.toStringAsFixed(1)}%' : '—';
   String get temperatureDisplay => temperature != 0.0 ? '${temperature.toStringAsFixed(2)} °C' : '—';
+
+  String pyroVoltageDisplay(int pyroIndex, {required bool connected}) {
+    if (!connected || pyroIndex < 0 || pyroIndex >= pyrosMv.length) return '—';
+    return '${(pyrosMv[pyroIndex] / 1000.0).toStringAsFixed(2)} V';
+  }
   
   double pressureToAltitude(double pressureHpa, [double seaLevelHpa = 1013.25]) {
     if (pressureHpa <= 0 || seaLevelHpa <= 0) return 0.0;
@@ -1017,6 +1025,16 @@ class DataServiceManager with ChangeNotifier {
     try {
       if (type == 0x01) { // MSG_TELEMETRY
         telemetry = OdbTelemetry.fromBytes(bytes);
+
+        if (bytes.length != telemetry!.payloadSize) {
+          ConsoleService().log(
+            'Erreur: taille télémétrie invalide (${bytes.length} octets, '
+            'déclarée ${telemetry!.payloadSize}).',
+          );
+          telemetry = null;
+          _safeNotifyListeners();
+          return;
+        }
 
         if (telemetry!.versionMajor != expectedTelemetryMajor || telemetry!.versionMinor != expectedTelemetryMinor) {
           hasVersionMismatch = true;

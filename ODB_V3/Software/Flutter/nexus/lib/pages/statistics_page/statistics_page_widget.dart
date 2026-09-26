@@ -65,6 +65,7 @@ class _StatisticsPageWidgetState extends State<StatisticsPageWidget> {
                     const StatusBluetoothCard(),
                     const _StatisticsHeader(),
                     _TopMetricsGrid(data: data, connected: connected),
+                    _PyrotechnicsMetricsCard(data: data, connected: connected),
                     _ImuMetricsCard(data: data, connected: connected),
                     _HighGMetricsCard(data: data, connected: connected),
                     _BottomMetricsGrid(data: data, connected: connected),
@@ -280,7 +281,7 @@ class _TopMetricsGrid extends StatelessWidget {
           ),
           child: Container(
             width: 100.0,
-            height: 100.0,
+            height: 220.0,
             decoration: BoxDecoration(
               color: FlutterFlowTheme.of(context).secondaryBackground,
               borderRadius: BorderRadius.circular(16.0),
@@ -623,10 +624,182 @@ class _TopMetricsGrid extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Icon(
-                        Icons.local_fire_department,
-                        color: FlutterFlowTheme.of(context).error,
+                        Icons.cell_tower,
+                        color: FlutterFlowTheme.of(context).primary,
                         size: 24.0,
                       ),
+                      Container(
+                        width: 12.0,
+                        height: 12.0,
+                        decoration: BoxDecoration(
+                          color: connected
+                              ? (data.idefixSensorState == SensorState.ok
+                                  ? FlutterFlowTheme.of(context).success
+                                  : FlutterFlowTheme.of(context).error)
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.max,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        (connected && data.idefixSensorState == SensorState.ok)
+                            ? data.idefixFrequencyDisplay
+                            : '—',
+                        style:
+                            FlutterFlowTheme.of(context).titleMedium.override(
+                                  font: GoogleFonts.interTight(
+                                    fontWeight: FontWeight.bold,
+                                    fontStyle: FlutterFlowTheme.of(context)
+                                        .titleMedium
+                                        .fontStyle,
+                                  ),
+                                  letterSpacing: 0.0,
+                                  fontWeight: FontWeight.bold,
+                                  fontStyle: FlutterFlowTheme.of(context)
+                                      .titleMedium
+                                      .fontStyle,
+                                ),
+                      ),
+                      Text(
+                        (connected && data.idefixSensorState == SensorState.ok)
+                            ? 'MHz'
+                            : 'Hors ligne',
+                        style: FlutterFlowTheme.of(context).bodySmall.override(
+                              font: GoogleFonts.inter(
+                                fontWeight: FontWeight.w600,
+                                fontStyle: FlutterFlowTheme.of(context)
+                                    .bodySmall
+                                    .fontStyle,
+                              ),
+                              color: FlutterFlowTheme.of(context).success,
+                              letterSpacing: 0.0,
+                              fontWeight: FontWeight.w600,
+                              fontStyle: FlutterFlowTheme.of(context)
+                                  .bodySmall
+                                  .fontStyle,
+                            ),
+                      ),
+                    ].divide(const SizedBox(height: 4.0)),
+                  ),
+                  Text(
+                    'IDEFIX',
+                    style: FlutterFlowTheme.of(context).labelSmall.override(
+                          font: GoogleFonts.inter(
+                            fontWeight: FontWeight.w600,
+                            fontStyle: FlutterFlowTheme.of(context)
+                                .labelSmall
+                                .fontStyle,
+                          ),
+                          color: FlutterFlowTheme.of(context).secondaryText,
+                          letterSpacing: 0.0,
+                          fontWeight: FontWeight.w600,
+                          fontStyle:
+                              FlutterFlowTheme.of(context).labelSmall.fontStyle,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PyrotechnicsMetricsCard extends StatelessWidget {
+  const _PyrotechnicsMetricsCard({required this.data, required this.connected});
+
+  final DataServiceManager data;
+  final bool connected;
+
+  Widget _buildPyroRow(BuildContext context, int pyroIndex) {
+    return Row(
+      children: [
+        Container(
+          width: 8.0,
+          height: 8.0,
+          decoration: BoxDecoration(
+            color: connected
+                ? (data.pyros[pyroIndex]
+                    ? FlutterFlowTheme.of(context).success
+                    : FlutterFlowTheme.of(context).error)
+                : FlutterFlowTheme.of(context).secondaryText,
+            shape: BoxShape.circle,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            data.pyroDisplayLabel(pyroIndex, connected: connected),
+            overflow: TextOverflow.ellipsis,
+            style: FlutterFlowTheme.of(context).bodySmall.override(
+                  font: GoogleFonts.inter(
+                    fontWeight: FontWeight.w500,
+                    fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
+                  ),
+                  letterSpacing: 0.0,
+                  fontWeight: FontWeight.w500,
+                  fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
+                ),
+          ),
+        ),
+        Text(
+          data.pyroVoltageDisplay(pyroIndex, connected: connected),
+          style: FlutterFlowTheme.of(context).labelSmall.override(
+                font: GoogleFonts.inter(
+                  fontWeight: FontWeight.w500,
+                  fontStyle: FlutterFlowTheme.of(context).labelSmall.fontStyle,
+                ),
+                color: FlutterFlowTheme.of(context).secondaryText,
+                letterSpacing: 0.0,
+                fontWeight: FontWeight.w500,
+                fontStyle: FlutterFlowTheme.of(context).labelSmall.fontStyle,
+              ),
+        ),
+      ].divide(const SizedBox(width: 8.0)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      elevation: 2.0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.0),
+      ),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: FlutterFlowTheme.of(context).secondaryBackground,
+          borderRadius: BorderRadius.circular(16.0),
+          border: Border.all(
+            color: FlutterFlowTheme.of(context).alternate,
+            width: 1.0,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Icon(
+                    Icons.local_fire_department,
+                    color: FlutterFlowTheme.of(context).error,
+                    size: 24.0,
+                  ),
+                  Row(
+                    children: [
                       Text(
                         connected
                             ? '${data.pyrosActiveCount}/${data.pyros.length}'
@@ -646,6 +819,7 @@ class _TopMetricsGrid extends StatelessWidget {
                                   .fontStyle,
                             ),
                       ),
+                      const SizedBox(width: 12.0),
                       Text(
                         connected
                             ? (data.eventPyrosArmed ? 'Armé' : 'Désarmé')
@@ -671,170 +845,40 @@ class _TopMetricsGrid extends StatelessWidget {
                       ),
                     ],
                   ),
-                  Column(
-                    mainAxisSize: MainAxisSize.max,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          Container(
-                            width: 8.0,
-                            height: 8.0,
-                            decoration: BoxDecoration(
-                              color: connected
-                                  ? (data.pyros[0]
-                                      ? FlutterFlowTheme.of(context).success
-                                      : FlutterFlowTheme.of(context).error)
-                                  : FlutterFlowTheme.of(context).secondaryText,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          Text(
-                            data.pyroDisplayLabel(0, connected: connected),
-                            style:
-                                FlutterFlowTheme.of(context).bodySmall.override(
-                                      font: GoogleFonts.inter(
-                                        fontWeight: FontWeight.w500,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .bodySmall
-                                            .fontStyle,
-                                      ),
-                                      letterSpacing: 0.0,
-                                      fontWeight: FontWeight.w500,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .bodySmall
-                                          .fontStyle,
-                                    ),
-                          ),
-                        ].divide(const SizedBox(width: 8.0)),
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          Container(
-                            width: 8.0,
-                            height: 8.0,
-                            decoration: BoxDecoration(
-                              color: connected
-                                  ? (data.pyros[1]
-                                      ? FlutterFlowTheme.of(context).success
-                                      : FlutterFlowTheme.of(context).error)
-                                  : FlutterFlowTheme.of(context).secondaryText,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          Text(
-                            data.pyroDisplayLabel(1, connected: connected),
-                            style:
-                                FlutterFlowTheme.of(context).bodySmall.override(
-                                      font: GoogleFonts.inter(
-                                        fontWeight: FontWeight.w500,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .bodySmall
-                                            .fontStyle,
-                                      ),
-                                      letterSpacing: 0.0,
-                                      fontWeight: FontWeight.w500,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .bodySmall
-                                          .fontStyle,
-                                    ),
-                          ),
-                        ].divide(const SizedBox(width: 8.0)),
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          Container(
-                            width: 8.0,
-                            height: 8.0,
-                            decoration: BoxDecoration(
-                              color: connected
-                                  ? (data.pyros[2]
-                                      ? FlutterFlowTheme.of(context).success
-                                      : FlutterFlowTheme.of(context).error)
-                                  : FlutterFlowTheme.of(context).secondaryText,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          Text(
-                            data.pyroDisplayLabel(2, connected: connected),
-                            style:
-                                FlutterFlowTheme.of(context).bodySmall.override(
-                                      font: GoogleFonts.inter(
-                                        fontWeight: FontWeight.w500,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .bodySmall
-                                            .fontStyle,
-                                      ),
-                                      letterSpacing: 0.0,
-                                      fontWeight: FontWeight.w500,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .bodySmall
-                                          .fontStyle,
-                                    ),
-                          ),
-                        ].divide(const SizedBox(width: 8.0)),
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          Container(
-                            width: 8.0,
-                            height: 8.0,
-                            decoration: BoxDecoration(
-                              color: connected
-                                  ? (data.pyros[3]
-                                      ? FlutterFlowTheme.of(context).success
-                                      : FlutterFlowTheme.of(context).error)
-                                  : FlutterFlowTheme.of(context).secondaryText,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          Text(
-                            data.pyroDisplayLabel(3, connected: connected),
-                            style:
-                                FlutterFlowTheme.of(context).bodySmall.override(
-                                      font: GoogleFonts.inter(
-                                        fontWeight: FontWeight.w500,
-                                        fontStyle: FlutterFlowTheme.of(context)
-                                            .bodySmall
-                                            .fontStyle,
-                                      ),
-                                      letterSpacing: 0.0,
-                                      fontWeight: FontWeight.w500,
-                                      fontStyle: FlutterFlowTheme.of(context)
-                                          .bodySmall
-                                          .fontStyle,
-                                    ),
-                          ),
-                        ].divide(const SizedBox(width: 8.0)),
-                      ),
-                    ].divide(const SizedBox(height: 8.0)),
-                  ),
-                  Text(
-                    'PYROTECHNIQUES',
-                    style: FlutterFlowTheme.of(context).labelSmall.override(
-                          font: GoogleFonts.inter(
-                            fontWeight: FontWeight.w600,
-                            fontStyle: FlutterFlowTheme.of(context)
-                                .labelSmall
-                                .fontStyle,
-                          ),
-                          color: FlutterFlowTheme.of(context).secondaryText,
-                          letterSpacing: 0.0,
-                          fontWeight: FontWeight.w600,
-                          fontStyle:
-                              FlutterFlowTheme.of(context).labelSmall.fontStyle,
-                        ),
-                  ),
                 ],
               ),
-            ),
+              const SizedBox(height: 16.0),
+              Column(
+                children: [
+                  _buildPyroRow(context, 0),
+                  const SizedBox(height: 12.0),
+                  _buildPyroRow(context, 1),
+                  const SizedBox(height: 12.0),
+                  _buildPyroRow(context, 2),
+                  const SizedBox(height: 12.0),
+                  _buildPyroRow(context, 3),
+                ],
+              ),
+              const SizedBox(height: 16.0),
+              Text(
+                'PYROTECHNIQUES',
+                style: FlutterFlowTheme.of(context).labelSmall.override(
+                      font: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        fontStyle:
+                            FlutterFlowTheme.of(context).labelSmall.fontStyle,
+                      ),
+                      color: FlutterFlowTheme.of(context).secondaryText,
+                      letterSpacing: 0.0,
+                      fontWeight: FontWeight.w600,
+                      fontStyle:
+                          FlutterFlowTheme.of(context).labelSmall.fontStyle,
+                    ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -1570,8 +1614,7 @@ class _HighGMetricsCard extends StatelessWidget {
                           Text(
                             (connected &&
                                     data.accHighGSensorState == SensorState.ok)
-                                ? data.highGAccXDisplay
-                                    .replaceFirst('X: ', '')
+                                ? data.highGAccXDisplay.replaceFirst('X: ', '')
                                 : '—',
                             style: FlutterFlowTheme.of(context)
                                 .bodyMedium
@@ -2048,7 +2091,7 @@ class _BottomMetricsGrid extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: connected
                               ? (data.gpsSensorState == SensorState.ok
-                                  ? data.gpsFix > 0 
+                                  ? data.gpsFix > 0
                                       ? FlutterFlowTheme.of(context).success
                                       : FlutterFlowTheme.of(context).warning
                                   : FlutterFlowTheme.of(context).warning)
@@ -2536,119 +2579,7 @@ class _BottomMetricsGrid extends StatelessWidget {
               ),
             ),
           ),
-        ),
-        Material(
-          color: Colors.transparent,
-          elevation: 2.0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.0),
-          ),
-          child: Container(
-            width: 100.0,
-            height: 100.0,
-            decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).secondaryBackground,
-              borderRadius: BorderRadius.circular(16.0),
-              border: Border.all(
-                color: FlutterFlowTheme.of(context).alternate,
-                width: 1.0,
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Icon(
-                        Icons.cell_tower,
-                        color: FlutterFlowTheme.of(context).primary,
-                        size: 24.0,
-                      ),
-                      Container(
-                        width: 12.0,
-                        height: 12.0,
-                        decoration: BoxDecoration(
-                          color: connected
-                              ? (data.idefixSensorState == SensorState.ok
-                                  ? FlutterFlowTheme.of(context).success
-                                  : FlutterFlowTheme.of(context).error)
-                              : FlutterFlowTheme.of(context).secondaryText,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.max,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        (connected && data.idefixSensorState == SensorState.ok)
-                            ? data.idefixFrequencyDisplay
-                            : '—',
-                        style:
-                            FlutterFlowTheme.of(context).titleMedium.override(
-                                  font: GoogleFonts.interTight(
-                                    fontWeight: FontWeight.bold,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .titleMedium
-                                        .fontStyle,
-                                  ),
-                                  letterSpacing: 0.0,
-                                  fontWeight: FontWeight.bold,
-                                  fontStyle: FlutterFlowTheme.of(context)
-                                      .titleMedium
-                                      .fontStyle,
-                                ),
-                      ),
-                      Text(
-                        (connected && data.idefixSensorState == SensorState.ok)
-                            ? 'MHz'
-                            : 'Hors ligne',
-                        style: FlutterFlowTheme.of(context).bodySmall.override(
-                              font: GoogleFonts.inter(
-                                fontWeight: FontWeight.w600,
-                                fontStyle: FlutterFlowTheme.of(context)
-                                    .bodySmall
-                                    .fontStyle,
-                              ),
-                              color: FlutterFlowTheme.of(context).success,
-                              letterSpacing: 0.0,
-                              fontWeight: FontWeight.w600,
-                              fontStyle: FlutterFlowTheme.of(context)
-                                  .bodySmall
-                                  .fontStyle,
-                            ),
-                      ),
-                    ].divide(const SizedBox(height: 4.0)),
-                  ),
-                  Text(
-                    'IDEFIX',
-                    style: FlutterFlowTheme.of(context).labelSmall.override(
-                          font: GoogleFonts.inter(
-                            fontWeight: FontWeight.w600,
-                            fontStyle: FlutterFlowTheme.of(context)
-                                .labelSmall
-                                .fontStyle,
-                          ),
-                          color: FlutterFlowTheme.of(context).secondaryText,
-                          letterSpacing: 0.0,
-                          fontWeight: FontWeight.w600,
-                          fontStyle:
-                              FlutterFlowTheme.of(context).labelSmall.fontStyle,
-                        ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        )
       ],
     );
   }

@@ -183,7 +183,7 @@ void AppComm_ProcessRx(hm11_t *hm11_dev) {
 							AppComm_SendAck(hm11_dev, CMD_REQ_EVENTS, 0);
 						}
 					} else if(cmd == CMD_SET_READY_FLIGHT) {
-						if(current_global_state == STATE_PREFLIGHT && current_preflight_substate == STATE_WAITING_FLIGHT) {
+						if(current_global_state == STATE_PREFLIGHT && current_preflight_substate == SUB_WAITING_FLIGHT) {
 							is_ready_by_app = true;
 							AppComm_SendAck(hm11_dev, CMD_SET_READY_FLIGHT, 1);
 						} else {

@@ -163,13 +163,14 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
     BuildContext context, {
     required String title,
     required String subtitle,
+    required String voltage,
     required bool enabled,
     required VoidCallback? onPressed,
     required String buttonLabel,
   }) {
     return Container(
       width: 100.0,
-      height: 100.0,
+      height: 116.0,
       decoration: BoxDecoration(
         color: FlutterFlowTheme.of(context).secondaryBackground,
         boxShadow: const [
@@ -220,6 +221,21 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                     fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
                   ),
             ),
+              Text(
+                voltage,
+                textAlign: TextAlign.center,
+                style: FlutterFlowTheme.of(context).bodySmall.override(
+                      font: GoogleFonts.inter(
+                        fontWeight: FlutterFlowTheme.of(context).bodySmall.fontWeight,
+                        fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
+                      ),
+                      color: FlutterFlowTheme.of(context).secondaryText,
+                      fontSize: 10.0,
+                      letterSpacing: 0.0,
+                      fontWeight: FlutterFlowTheme.of(context).bodySmall.fontWeight,
+                      fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
+                    ),
+              ),
             Padding(
               padding: const EdgeInsetsDirectional.fromSTEB(0.0, 4.0, 0.0, 0.0),
               child: FFButtonWidget(
@@ -564,6 +580,7 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                               context,
                               title: 'Pyro 1',
                               subtitle: data.pyroRoleLabel(0, connected: connected),
+                              voltage: data.pyroVoltageDisplay(0, connected: connected),
                               enabled: connected && data.eventPyrosArmed && data.pyros[0],
                               buttonLabel: connected ? ((data.eventPyrosArmed && data.pyros[0]) ? 'Déclencher' : 'Désarmé / Déconnecté') : 'Inconnu',
                               onPressed: (connected && data.eventPyrosArmed && data.pyros[0]) ? () async {
@@ -575,6 +592,7 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                               context,
                               title: 'Pyro 2',
                               subtitle: data.pyroRoleLabel(1, connected: connected),
+                              voltage: data.pyroVoltageDisplay(1, connected: connected),
                               enabled: connected && data.eventPyrosArmed && data.pyros[1],
                               buttonLabel: connected ? ((data.eventPyrosArmed && data.pyros[1]) ? 'Déclencher' : 'Désarmé / Déconnecté') : 'Inconnu',
                               onPressed: (connected && data.eventPyrosArmed && data.pyros[1]) ? () async {
@@ -586,6 +604,7 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                               context,
                               title: 'Pyro 3',
                               subtitle: data.pyroRoleLabel(2, connected: connected),
+                              voltage: data.pyroVoltageDisplay(2, connected: connected),
                               enabled: connected && data.eventPyrosArmed && data.pyros[2],
                               buttonLabel: connected ? ((data.eventPyrosArmed && data.pyros[2]) ? 'Déclencher' : 'Désarmé / Déconnecté') : 'Inconnu',
                               onPressed: (connected && data.eventPyrosArmed && data.pyros[2]) ? () async {
@@ -597,6 +616,7 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                               context,
                               title: 'Pyro 4',
                               subtitle: data.pyroRoleLabel(3, connected: connected),
+                              voltage: data.pyroVoltageDisplay(3, connected: connected),
                               enabled: connected && data.eventPyrosArmed && data.pyros[3],
                               buttonLabel: connected ? ((data.eventPyrosArmed && data.pyros[3]) ? 'Déclencher' : 'Désarmé / Déconnecté') : 'Inconnu',
                               onPressed: (connected && data.eventPyrosArmed && data.pyros[3]) ? () async {

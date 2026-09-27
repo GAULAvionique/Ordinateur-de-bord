@@ -123,6 +123,7 @@ void AppComm_ProcessRx(hm11_t *hm11_dev) {
                     app_cmd_id_t cmd = (app_cmd_id_t)payload[0];
                     if(cmd == CMD_PING) {
                         AppComm_SendAck(hm11_dev, CMD_PING, 1);
+                        HAL_Delay(1000); // Esthetic
                     } else if(cmd == CMD_ARM_DISARM) {
                         bool arm = payload[1] == 1;
                         bool is_pyros_armed = Pyro_Arming(&system_measurements, arm, true) == PYRO_OK;

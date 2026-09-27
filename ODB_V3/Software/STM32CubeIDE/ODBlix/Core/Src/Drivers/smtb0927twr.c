@@ -22,6 +22,39 @@ static const buzzer_parametres_t buzzParams[] = {
     { 1,  2700, 2690, 3000, 10   }  	// CRASH
 };
 
+// Melody
+#define TEMPO_NOTE 200
+note_t ram_ranch_solo[] = {
+	{NOTE_D4, T_8},
+	{NOTE_F4, T_8},
+	{NOTE_E4, T_8},
+	{NOTE_C4, T_8},
+	{NOTE_D4, T_8D},
+	{REST,    T_16},
+	{NOTE_F4, T_4},
+
+	{NOTE_F4, T_8},
+	{NOTE_E4, T_8},
+	{NOTE_C4, T_8},
+	{NOTE_G4, T_8D},
+	{REST,    T_16},
+	{NOTE_E4, T_4},
+
+	{NOTE_D4, T_8},
+	{NOTE_F4, T_8},
+	{NOTE_E4, T_8},
+	{NOTE_C4, T_8},
+	{NOTE_D4, T_8},
+	{NOTE_F4, T_8},
+	{NOTE_G4, T_4},
+
+	{NOTE_E4, T_8},
+	{NOTE_C4, T_8},
+	{NOTE_E4, T_8D},
+	{REST,    T_16},
+	{NOTE_D4, T_2}
+};
+
 
 static void Buzzer_SetFreq(TIM_HandleTypeDef *htim, uint32_t channel, uint16_t freq) {
     if(freq <= 0) {
@@ -222,5 +255,31 @@ void Buzzer_ProcessPeriodicBip(buzzer_t *dev) {
         } else {
             HAL_TIM_PWM_Stop(dev->htim, dev->channel);
         }
+    }
+}
+
+// Melody
+void Buzzer_PlayMelody(buzzer_t *dev, note_t *melody, uint16_t num_notes, uint8_t loop) {
+    for(uint8_t j = 1; j < loop; j++) {
+    	for(uint16_t i = 0; i < num_notes; i++) {
+			if(melody[i].frequency == REST) {
+				HAL_TIM_PWM_Stop(dev->htim, dev->channel);
+				HAL_Delay(melody[i].duration);
+			} else {
+				uint32_t timer_clock = SystemCoreClock / (dev->htim->Init.Prescaler + 1);
+				uint32_t arr_value = (timer_clock / melody[i].frequency) - 1;
+
+				__HAL_TIM_SET_AUTORELOAD(dev->htim, arr_value);
+				__HAL_TIM_SET_COMPARE(dev->htim, dev->channel, arr_value / 2);
+
+				HAL_TIM_PWM_Start(dev->htim, dev->channel);
+
+				HAL_Delay((melody[i].duration * 85) / 100);
+
+				HAL_TIM_PWM_Stop(dev->htim, dev->channel);
+				HAL_Delay((melody[i].duration * 15) / 100);
+			}
+		}
+    	HAL_Delay(100);
     }
 }

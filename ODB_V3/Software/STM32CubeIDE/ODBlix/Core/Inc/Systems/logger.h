@@ -16,6 +16,7 @@
 
 #define LOG_BUFFER_SIZE				512 				// 400 ms (max wait erase sector w25q) / TASK_LOGGER_FREQ_MS = 20 frames + security
 #define LOGGER_MIN_FLIGHT_SPACE  	(5 * 1024 * 1024) 	// 5Mo
+#define LOGGER_DECIMATION_SIZE		4000U				// samples
 
 
 typedef enum {
@@ -54,6 +55,9 @@ uint32_t Logger_GetCurrentFlightAddress(void);
 uint32_t Logger_GetCurrentFlightId(void);
 void Logger_StartReadingFlight(uint32_t header_addr, uint32_t *cursor);
 bool Logger_ReadNextData(uint32_t *cursor, odb_data_t *out_data);
+bool Logger_StartReadingFlightById(uint32_t flight_id, uint32_t *cursor);
+void Logger_StartReadingStats(uint32_t *cursor);
+bool Logger_ReadNextStats(uint32_t *cursor, odb_stats_t *out_stats);
 const odb_stats_t* Logger_GetLastFlightStats(void);
 void Logger_ExportToSD(const odb_stats_t *stats);
 //void Logger_DumpAllToSD(void);

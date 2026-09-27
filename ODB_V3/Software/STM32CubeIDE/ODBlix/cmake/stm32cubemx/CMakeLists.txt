@@ -40,6 +40,41 @@ set(MX_Application_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../startup_stm32f412zx.s
 )
 
+# ODB application sources
+set(ODB_Application_Src
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/odb.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Comm/app_comm.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Comm/beacon_comm.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Comm/telemetry_comm.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Drivers/adxl382.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Drivers/bno055.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Drivers/hm11.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Drivers/idefix.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Drivers/l76lm33.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Drivers/ltste682krkgwt.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Drivers/mem2067.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Drivers/ms5611.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Drivers/pyros.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Drivers/rfd900x.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Drivers/smtb0927twr.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Drivers/system_measurements.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Drivers/w25q512jveim.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Drivers/LowLevel/fatfs_sd.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Drivers/LowLevel/kalman_nav.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Drivers/LowLevel/nmea.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Systems/config.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Systems/flight_fsm.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Systems/logger.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Systems/power_management.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Systems/scheduler.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Systems/tasks.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Tools/profiler.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Utils/dwt.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Utils/reboot_manager.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Utils/ringbuffer.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/Utils/utils.c
+)
+
 # STM32 HAL/LL Drivers
 set(STM32_Drivers_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/system_stm32f4xx.c
@@ -98,7 +133,9 @@ set(MX_LINK_DIRS
 set(MX_LINK_LIBS 
     STM32_Drivers
     ${TOOLCHAIN_LINK_LIBRARIES}
-    USB_Device_Library	FatFs	
+    USB_Device_Library
+	FatFs
+	
 )
 # Interface library for includes and symbols
 add_library(stm32cubemx INTERFACE)
@@ -123,6 +160,7 @@ target_link_libraries(FatFs PUBLIC stm32cubemx)
 
 # Add STM32CubeMX generated application sources to the project
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${MX_Application_Src})
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${ODB_Application_Src})
 
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE ${MX_LINK_DIRS})

@@ -42,6 +42,8 @@ static uint8_t fire_attempt_count = 0;
 static bool sustainer_ignited = false;
 static bool backup_active = false;
 
+extern note_t ram_ranch_solo[];
+
 
 static void FSM_HandleDeployment(pyro_role_t primary_role, pyro_role_t backup_role, metric_t* deploy_stat, uint8_t max_attempts) {
 	if(flight_stats.mach_lock.activated) {
@@ -161,6 +163,8 @@ void FSM_Update(void) {
 							} else {
 								Buzzer_ReportStatus(&buzzer, current_config.buzzer_report_tone_hz, system_measurements.vin_batt, (bool[]){(flight_data.system_states & FLAG_PYRO1_CONN) != 0U, (flight_data.system_states & FLAG_PYRO2_CONN) != 0U, (flight_data.system_states & FLAG_PYRO3_CONN) != 0U, (flight_data.system_states & FLAG_PYRO4_CONN) != 0U}, 0U, 0, 0.0f, false);
 							}
+							HAL_Delay(2000);
+							Buzzer_PlayMelody(&buzzer, ram_ranch_solo, 21, 3);
 						}
 
 						Pyro_SetContinuity(false);

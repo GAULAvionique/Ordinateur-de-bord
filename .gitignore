@@ -71,3 +71,4 @@ ODB_V2/
 # === Branch ===
 Documentation/
 README.md
+*.env

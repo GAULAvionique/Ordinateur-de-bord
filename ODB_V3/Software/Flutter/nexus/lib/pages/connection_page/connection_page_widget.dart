@@ -77,11 +77,16 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
     );
   }
 
-  List<ScanResult> _filteredResults(BluetoothServiceManager bt, String filter) {
+  List<ScanResult> _filteredResults(
+    BluetoothServiceManager bt,
+    String filter, {
+    required bool hm11Only,
+  }) {
     final lower = filter.toLowerCase();
     final bestByDevice = <String, ScanResult>{};
 
     for (final result in bt.scanResults) {
+      if (bt.isHm11ScanResult(result) != hm11Only) continue;
       if (result.rssi < _minRssiThresholdDbm) continue;
 
       final id = result.device.remoteId.str;
@@ -217,6 +222,7 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
     BluetoothServiceManager bt,
     DataServiceManager dataService,
     List<ScanResult> filteredResults,
+    List<ScanResult> otherResults,
   ) {
     final hasConnectedDevice = bt.connectedDevice != null;
     final canUseScanButton = bt.isScanning || !hasConnectedDevice;
@@ -406,9 +412,19 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
               validator: _model.textControllerValidator.asValidator(context),
             ),
             Expanded(
-              child: ListView.builder(
-                itemCount: filteredResults.length,
-                itemBuilder: (context, index) => _buildDeviceTile(context, filteredResults[index], dataService, bt),
+              child: ListView(
+                children: [
+                  ...filteredResults.map((result) => _buildDeviceTile(context, result, dataService, bt)),
+                  if (otherResults.isNotEmpty)
+                    ExpansionTile(
+                      initiallyExpanded: false,
+                      leading: const Icon(Icons.devices_other),
+                      title: Text('Autres appareils détectés (${otherResults.length})'),
+                      children: otherResults
+                          .map((result) => _buildDeviceTile(context, result, dataService, bt))
+                          .toList(),
+                    ),
+                ],
               ),
             ),
             if (bt.connectedDevice != null)
@@ -484,12 +500,86 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
     );
   }
 
+  Widget _buildConnectionHistoryCard(BuildContext context, BluetoothServiceManager bt) {
+    String formatDate(DateTime date) {
+      String twoDigits(int value) => value.toString().padLeft(2, '0');
+      return '${twoDigits(date.day)}/${twoDigits(date.month)}/${date.year} ${twoDigits(date.hour)}:${twoDigits(date.minute)}';
+    }
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: FlutterFlowTheme.of(context).secondaryBackground,
+        boxShadow: const [
+          BoxShadow(
+            blurRadius: 4,
+            color: Color(0x33000000),
+            offset: Offset(0, 2),
+          )
+        ],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.transparent, width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.history, color: FlutterFlowTheme.of(context).primary, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  'Historique des appareils',
+                  style: FlutterFlowTheme.of(context).titleMedium.override(
+                        font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                      ),
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: bt.connectedDeviceHistory.isEmpty
+                      ? null
+                      : () => bt.clearConnectionHistory(),
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: 'Effacer l’historique',
+                  color: FlutterFlowTheme.of(context).error,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (bt.connectedDeviceHistory.isEmpty)
+              Text(
+                'Aucun appareil connecté récemment.',
+                style: FlutterFlowTheme.of(context).bodyMedium.override(
+                      font: GoogleFonts.inter(),
+                      color: FlutterFlowTheme.of(context).secondaryText,
+                    ),
+              )
+            else
+              ...bt.connectedDeviceHistory.map(
+                (record) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.bluetooth, color: FlutterFlowTheme.of(context).primary),
+                  title: Text(record.name),
+                  subtitle: Text(
+                    '${record.id}\nDernière connexion: ${formatDate(record.lastConnected)}',
+                  ),
+                  trailing: Text('${record.connectionCount}x'),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bt = context.watch<BluetoothServiceManager>();
     final dataService = context.watch<DataServiceManager>();
     final filter = _model.textController?.text ?? '';
-    final filteredResults = _filteredResults(bt, filter);
+    final filteredResults = _filteredResults(bt, filter, hm11Only: true);
+    final otherResults = _filteredResults(bt, filter, hm11Only: false);
 
     return GestureDetector(
       onTap: () {
@@ -509,7 +599,8 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildPageHeader(context),
-                  _buildScanCard(context, bt, dataService, filteredResults),
+                  _buildScanCard(context, bt, dataService, filteredResults, otherResults),
+                  _buildConnectionHistoryCard(context, bt),
                   _buildLogsCard(context, bt),
                 ]
                     .divide(const SizedBox(height: 24))

@@ -3,11 +3,27 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nexus/services/data_service.dart';
 import 'package:nexus/services/console_service.dart';
 
+class ConnectedDeviceRecord {
+  ConnectedDeviceRecord({
+    required this.id,
+    required this.name,
+    required this.lastConnected,
+    required this.connectionCount,
+  });
+
+  final String id;
+  final String name;
+  final DateTime lastConnected;
+  final int connectionCount;
+}
+
 class BluetoothServiceManager with ChangeNotifier {
   static const String _nordicUartWriteUuid = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+  static const String _hm11ServiceUuid = '0000ffe0-0000-1000-8000-00805f9b34fb';
   static const String _bluetoothBaseUuidSuffix = '-0000-1000-8000-00805f9b34fb';
   static const Set<String> _standardServiceUuids = {
     '1800',
@@ -22,12 +38,81 @@ class BluetoothServiceManager with ChangeNotifier {
 
   BluetoothServiceManager() {
     ConsoleService().addListener(_onConsoleChanged);
+    _loadConnectedDeviceHistory();
   }
+
+  bool isHm11ScanResult(ScanResult result) {
+    final name = result.device.platformName.toLowerCase();
+    final advertisedServices = result.advertisementData.serviceUuids
+        .map((uuid) => uuid.toString().toLowerCase())
+        .toSet();
+    return advertisedServices.contains(_hm11ServiceUuid) ||
+        advertisedServices.contains('ffe0') ||
+        name.contains('hmsoft') ||
+        name.contains('hm-11') ||
+        name.contains('hm11') ||
+        name.contains('odb');
+  }
+
+  Future<void> _loadConnectedDeviceHistory() async {
+    final preferences = await SharedPreferences.getInstance();
+    final records = preferences.getStringList('connected_odb_history') ?? [];
+    for (final record in records) {
+      final fields = record.split('|');
+      if (fields.length != 4) continue;
+      final date = DateTime.tryParse(fields[2]);
+      final count = int.tryParse(fields[3]);
+      if (date == null || count == null) continue;
+      connectedDeviceHistory.add(ConnectedDeviceRecord(
+        id: fields[0],
+        name: fields[1],
+        lastConnected: date,
+        connectionCount: count,
+      ));
+    }
+    notifyListeners();
+  }
+
+  Future<void> _rememberConnectedDevice(BluetoothDevice device) async {
+    final id = device.remoteId.str;
+    final name = device.platformName.isNotEmpty ? device.platformName : 'ODB Device';
+    final index = connectedDeviceHistory.indexWhere((record) => record.id == id);
+    final count = index >= 0 ? connectedDeviceHistory[index].connectionCount + 1 : 1;
+    final record = ConnectedDeviceRecord(
+      id: id,
+      name: name,
+      lastConnected: DateTime.now(),
+      connectionCount: count,
+    );
+    if (index >= 0) {
+      connectedDeviceHistory[index] = record;
+    } else {
+      connectedDeviceHistory.add(record);
+    }
+    connectedDeviceHistory.sort((a, b) => b.lastConnected.compareTo(a.lastConnected));
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setStringList(
+      'connected_odb_history',
+      connectedDeviceHistory
+          .map((item) => '${item.id}|${item.name}|${item.lastConnected.toIso8601String()}|${item.connectionCount}')
+          .toList(),
+    );
+    notifyListeners();
+  }
+
+  Future<void> clearConnectionHistory() async {
+    connectedDeviceHistory.clear();
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.remove('connected_odb_history');
+    notifyListeners();
+  }
+
   // ---------- STATE ----------
   List<ScanResult> scanResults = [];
   bool isScanning = false;
 
   BluetoothDevice? connectedDevice;
+  final List<ConnectedDeviceRecord> connectedDeviceHistory = [];
   StreamSubscription<BluetoothConnectionState>? connectionSubscription;
   final Map<Guid, StreamSubscription<List<int>>> notifySubscriptions = {};
   final Map<Guid, String> _notifyBuffers = {};
@@ -144,6 +229,7 @@ class BluetoothServiceManager with ChangeNotifier {
       );
 
       connectedDevice = device;
+      await _rememberConnectedDevice(device);
       notifyListeners();
 
       connectionSubscription = device.connectionState.listen((state) {

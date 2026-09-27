@@ -146,6 +146,11 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
     ].join('|');
   }
 
+  int _parseInt(String value, int fallback) =>
+      int.tryParse(value.trim()) ?? fallback;
+  double _parseDouble(String value, double fallback) =>
+      double.tryParse(value.trim().replaceAll(',', '.')) ?? fallback;
+
   void _syncOdbConfig(DataServiceManager data) {
     if (!data.hasOdbConfig) {
       if (_lastHydratedConfigSignature.isEmpty) {
@@ -189,7 +194,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
     }
 
     final configSignature = _buildOdbConfigSignature(data);
-    if (configSignature == _lastHydratedConfigSignature || _hasPendingTextEdits) {
+    if (configSignature == _lastHydratedConfigSignature ||
+        _hasPendingTextEdits) {
       return;
     }
 
@@ -1597,30 +1603,78 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           child: ElevatedButton.icon(
             onPressed: canSend
                 ? () async {
-                    await data.applyOdbSettings(
-                      odbName: _odbNameController.text,
-                      stageRole: _stageRoleValue.toString(),
+                    final currentConfig = data.config ??
+                        OdbConfig(
+                          odbName: data.odbName,
+                          stageRole: data.stageRole,
+                          debugMode: data.debugMode,
+                          flightTestMode: data.flightTestMode,
+                          axisProfile: data.axisProfile,
+                          fireAttemptDelayMs: data.fireAttemptDelayMs,
+                          pyrosArmingFailsafeMs: data.pyrosArmingFailsafeMs,
+                          minNeededPyroNb: data.minNeededPyroNb,
+                          pyroRoles: data.pyroRoles,
+                          accZLaunchThreshold: data.accZLaunchThreshold,
+                          boostPhaseVThreshold: data.boostPhaseVThreshold,
+                          apogeeDetectVThreshold: data.apogeeDetectVThreshold,
+                          landingDetectVThreshold: data.landingDetectVThreshold,
+                          landingDetectThresholdMs:
+                              data.landingDetectThresholdMs,
+                          apogeeFailsafeMs: data.apogeeFailsafeMs,
+                          mainDeployAltitudeThresholdM:
+                              data.mainDeployAltitudeThresholdM,
+                          drogueFireAttemptMaxNb: data.drogueFireAttemptMaxNb,
+                          mainFireAttemptMaxNb: data.mainFireAttemptMaxNb,
+                          enableBuzzer: data.enableBuzzer,
+                          buzzerReportToneHz: data.buzzerReportToneHz,
+                          idefixFrequencyHz: data.idefixFrequencyHz,
+                        );
+                    final newConfig = currentConfig.copyWith(
+                      odbName: _odbNameController.text.trim(),
+                      stageRole: _stageRoleValue,
                       debugMode: _debugMode,
                       flightTestMode: _flightTestMode,
-                      axisProfile: _axisProfileValue.toString(),
+                      axisProfile: _axisProfileValue,
                       enableBuzzer: _enableBuzzer,
-                      minNeededPyroNb: _minPyrosController.text,
-                      drogueFireAttemptMaxNb: _maxDrogueController.text,
-                      mainFireAttemptMaxNb: _maxMainController.text,
-                      accZLaunchThreshold: _accLaunchController.text,
-                      boostPhaseVThreshold: _boostVoltageController.text,
-                      apogeeDetectVThreshold: _apogeeVoltageController.text,
-                      mainDeployAltitudeThresholdM:
+                      minNeededPyroNb: _parseInt(
+                          _minPyrosController.text, data.minNeededPyroNb),
+                      drogueFireAttemptMaxNb: _parseInt(
+                          _maxDrogueController.text,
+                          data.drogueFireAttemptMaxNb),
+                      mainFireAttemptMaxNb: _parseInt(
+                          _maxMainController.text, data.mainFireAttemptMaxNb),
+                      accZLaunchThreshold: _parseDouble(
+                          _accLaunchController.text, data.accZLaunchThreshold),
+                      boostPhaseVThreshold: _parseDouble(
+                          _boostVoltageController.text,
+                          data.boostPhaseVThreshold),
+                      apogeeDetectVThreshold: _parseDouble(
+                          _apogeeVoltageController.text,
+                          data.apogeeDetectVThreshold),
+                      mainDeployAltitudeThresholdM: _parseDouble(
                           _deployAltitudeController.text,
-                      landingDetectVThreshold: _landingVoltageController.text,
-                      buzzerReportToneHz: _buzzerToneHz.round().toString(),
-                      landingDetectThresholdMs: _landingDelayController.text,
-                      fireAttemptDelayMs: _pyroDelayController.text,
-                      pyrosArmingFailsafeMs: _pyroFailsafeController.text,
-                      apogeeFailsafeMs: _apogeeFailsafeController.text,
-                      idefixFrequencyHz: _idefixFrequencyController.text,
+                          data.mainDeployAltitudeThresholdM),
+                      landingDetectVThreshold: _parseDouble(
+                          _landingVoltageController.text,
+                          data.landingDetectVThreshold),
+                      buzzerReportToneHz: _buzzerToneHz.round(),
+                      landingDetectThresholdMs: _parseInt(
+                          _landingDelayController.text,
+                          data.landingDetectThresholdMs),
+                      fireAttemptDelayMs: _parseInt(
+                          _pyroDelayController.text, data.fireAttemptDelayMs),
+                      pyrosArmingFailsafeMs: _parseInt(
+                          _pyroFailsafeController.text,
+                          data.pyrosArmingFailsafeMs),
+                      apogeeFailsafeMs: _parseInt(
+                          _apogeeFailsafeController.text,
+                          data.apogeeFailsafeMs),
+                      idefixFrequencyHz: _parseInt(
+                          _idefixFrequencyController.text,
+                          data.idefixFrequencyHz),
                       pyroRoles: _pyroRoleValues,
                     );
+                    await data.applyOdbSettings(newConfig);
                     if (!context.mounted) return;
                     safeSetState(() {
                       _hasPendingTextEdits = false;

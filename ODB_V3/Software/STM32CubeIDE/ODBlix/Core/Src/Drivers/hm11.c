@@ -171,6 +171,12 @@ bool HM11_SendData(hm11_t *dev, uint8_t *data, uint16_t length) {
     }
 
     if(HAL_UART_Transmit_DMA(dev->huart, data, length) == HAL_OK) {
+        start_tick = HAL_GetTick();
+        while(dev->huart->gState != HAL_UART_STATE_READY) {
+            if(HAL_GetTick() - start_tick > 1000) {
+                return false;
+            }
+        }
         return true;
     }
 

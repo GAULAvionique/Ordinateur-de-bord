@@ -339,6 +339,17 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                         ),
                         _buildActionRow(
                           context,
+                          title: 'Test Mélodie',
+                          description: 'Vérification de la fonctionnalité du buzzer',
+                          buttonText: 'Exécuter',
+                          buttonColor: connected ? FlutterFlowTheme.of(context).primary : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected ? () async {
+                            ConsoleService().log('Test Mélodie demandé');
+                            await data.commandPlayMelody();
+                          } : null,
+                        ),
+                        _buildActionRow(
+                          context,
                           title: 'Test Capteurs',
                           description: 'Vérification accéléromètre, gyroscope, baromètre',
                           buttonText: 'Exécuter',

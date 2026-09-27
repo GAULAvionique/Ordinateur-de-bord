@@ -14,6 +14,7 @@
 
 extern w25q_t w25q;
 extern critical_led_t critical_led;
+extern buzzer_t buzzer;
 extern system_measurements_t system_measurements;
 extern idefix_t idefix;
 extern pyro_t pyros[4];
@@ -23,6 +24,8 @@ extern global_state_t current_global_state;
 extern preflight_substate_t current_preflight_substate;
 extern inflight_substate_t current_inflight_substate;
 extern bool is_ready_by_app;
+
+extern note_t ram_ranch_solo[];
 
 
 static void AppComm_SendFrame(hm11_t *hm11_dev, app_msg_type_t type, const uint8_t *payload, uint8_t len) {
@@ -52,6 +55,61 @@ void AppComm_SendTelemetry(hm11_t *hm11_dev, const odb_data_t *data) {
 static void AppComm_SendAck(hm11_t *hm11_dev, app_cmd_id_t cmd, uint8_t status) {
     uint8_t payload[2] = { (uint8_t)cmd, status };
     AppComm_SendFrame(hm11_dev, MSG_ACK, payload, 2);
+}
+
+static void AppComm_SendEventsAck(hm11_t *hm11_dev, uint8_t status, uint8_t flight_count) {
+	uint8_t payload[3] = { CMD_REQ_EVENTS, status, flight_count };
+	AppComm_SendFrame(hm11_dev, MSG_ACK, payload, 3);
+}
+
+static void AppComm_SendStatsChunks(hm11_t *hm11_dev, const odb_stats_t *stats, uint8_t flight_index) {
+	enum { CHUNK_DATA_SIZE = 16, CHUNK_HEADER_SIZE = 4 };
+	const uint8_t *stats_bytes = (const uint8_t*)stats;
+	const uint8_t chunk_count = (uint8_t)((sizeof(odb_stats_t) + CHUNK_DATA_SIZE - 1) / CHUNK_DATA_SIZE);
+	uint8_t chunk_payload[CHUNK_HEADER_SIZE + CHUNK_DATA_SIZE];
+
+	for(uint8_t chunk_index = 0; chunk_index < chunk_count; chunk_index++) {
+		const uint16_t offset = (uint16_t)chunk_index * CHUNK_DATA_SIZE;
+		const uint8_t chunk_length = (uint8_t)(((sizeof(odb_stats_t) - offset) < CHUNK_DATA_SIZE) ?
+											   (sizeof(odb_stats_t) - offset) : CHUNK_DATA_SIZE);
+
+		chunk_payload[0] = flight_index;
+		chunk_payload[1] = chunk_index;
+		chunk_payload[2] = chunk_count;
+		chunk_payload[3] = chunk_length;
+		memcpy(&chunk_payload[CHUNK_HEADER_SIZE], &stats_bytes[offset], chunk_length);
+		AppComm_SendFrame(hm11_dev, MSG_STATS_CHUNK, chunk_payload, CHUNK_HEADER_SIZE + chunk_length);
+		HAL_Delay(5);
+	}
+}
+
+static void AppComm_SendDataChunks(hm11_t *hm11_dev, const odb_data_t *data, uint16_t sample_index) {
+	enum { CHUNK_DATA_SIZE = 16, CHUNK_HEADER_SIZE = 4 };
+	const uint8_t *data_bytes = (const uint8_t*)data;
+	const uint8_t chunk_count = (uint8_t)((sizeof(odb_data_t) + CHUNK_DATA_SIZE - 1) / CHUNK_DATA_SIZE);
+	uint8_t chunk_payload[CHUNK_HEADER_SIZE + CHUNK_DATA_SIZE];
+
+	for(uint8_t chunk_index = 0; chunk_index < chunk_count; chunk_index++) {
+		const uint16_t offset = (uint16_t)chunk_index * CHUNK_DATA_SIZE;
+		const uint8_t chunk_length = (uint8_t)(((sizeof(odb_data_t) - offset) < CHUNK_DATA_SIZE) ?
+																											(sizeof(odb_data_t) - offset) : CHUNK_DATA_SIZE);
+		chunk_payload[0] = (uint8_t)(sample_index & 0xFF);
+		chunk_payload[1] = (uint8_t)(sample_index >> 8);
+		chunk_payload[2] = chunk_index;
+		chunk_payload[3] = chunk_count;
+		memcpy(&chunk_payload[CHUNK_HEADER_SIZE], &data_bytes[offset], chunk_length);
+		AppComm_SendFrame(hm11_dev, MSG_DATA_CHUNK, chunk_payload, CHUNK_HEADER_SIZE + chunk_length);
+		HAL_Delay(5);
+	}
+}
+
+static uint32_t AppComm_CountFlightSamples(uint32_t cursor) {
+	uint32_t count = 0;
+	odb_data_t sample;
+	while(Logger_ReadNextData(&cursor, &sample)) {
+		count++;
+	}
+	return count;
 }
 
 void AppComm_ProcessRx(hm11_t *hm11_dev) {
@@ -177,11 +235,56 @@ void AppComm_ProcessRx(hm11_t *hm11_dev) {
                         const odb_config_t *actual_config = Config_Get();
                         AppComm_SendFrame(hm11_dev, MSG_GENERIC_DATA, (uint8_t*)actual_config, CONFIG_DATA_SIZE);
                     } else if(cmd == CMD_REQ_EVENTS) {
-						const odb_stats_t *last_flight_stats = Logger_GetLastFlightStats();
-						if(last_flight_stats != NULL) {
-							AppComm_SendFrame(hm11_dev, MSG_GENERIC_DATA, (uint8_t*)last_flight_stats, ODB_STATS_SIZE);
+						uint32_t stats_cursor;
+						odb_stats_t stats;
+						bool has_stats = false;
+						uint8_t flight_index = 0;
+						Logger_StartReadingStats(&stats_cursor);
+						while(Logger_ReadNextStats(&stats_cursor, &stats)) {
+							AppComm_SendStatsChunks(hm11_dev, &stats, flight_index++);
+							has_stats = true;
+						}
+						AppComm_SendEventsAck(hm11_dev, has_stats ? 1 : 0, flight_index);
+                    } else if(cmd == CMD_PLAY_MELODY) {
+                    	Buzzer_PlayMelody(&buzzer, ram_ranch_solo, 21, 3);
+					} else if(cmd == CMD_REQ_FLIGHT_DATA) {
+						if(expected_len < 5) {
+							AppComm_SendAck(hm11_dev, CMD_REQ_FLIGHT_DATA, 0);
 						} else {
-							AppComm_SendAck(hm11_dev, CMD_REQ_EVENTS, 0);
+							const uint32_t flight_id = (uint32_t)payload[1] | ((uint32_t)payload[2] << 8) | ((uint32_t)payload[3] << 16) | ((uint32_t)payload[4] << 24);
+							uint32_t data_cursor;
+							odb_data_t data_sample;
+							uint16_t sample_count = 0;
+							if(Logger_StartReadingFlightById(flight_id, &data_cursor)) {
+								const uint32_t total_samples = AppComm_CountFlightSamples(data_cursor);
+								const uint32_t step = (total_samples + LOGGER_DECIMATION_SIZE - 1) / LOGGER_DECIMATION_SIZE;
+								const uint32_t transfer_total = step == 0 ? 0 : (total_samples + step - 1U) / step;
+								uint8_t progress_payload[4] = {
+									CMD_REQ_FLIGHT_DATA, 2,
+									(uint8_t)(transfer_total & 0xFF),
+									(uint8_t)((transfer_total >> 8) & 0xFF),
+								};
+								AppComm_SendFrame(hm11_dev, MSG_ACK, progress_payload, sizeof(progress_payload));
+								uint32_t source_index = 0;
+								Logger_StartReadingFlightById(flight_id, &data_cursor);
+								while(Logger_ReadNextData(&data_cursor, &data_sample) && sample_count < 0xFFFF) {
+									if((source_index++ % (step == 0 ? 1 : step)) == 0) {
+										AppComm_SendDataChunks(hm11_dev, &data_sample, sample_count++);
+									}
+								}
+								uint8_t ack_payload[8] = {
+									CMD_REQ_FLIGHT_DATA, 1,
+									(uint8_t)(sample_count & 0xFF),
+									(uint8_t)(sample_count >> 8),
+									(uint8_t)(flight_id & 0xFF),
+									(uint8_t)((flight_id >> 8) & 0xFF),
+									(uint8_t)((flight_id >> 16) & 0xFF),
+									(uint8_t)((flight_id >> 24) & 0xFF),
+								};
+								AppComm_SendFrame(hm11_dev, MSG_ACK, ack_payload, sizeof(ack_payload));
+							} else {
+								AppComm_SendAck(hm11_dev, CMD_REQ_FLIGHT_DATA, 0);
+							}
 						}
 					} else if(cmd == CMD_SET_READY_FLIGHT) {
 						if(current_global_state == STATE_PREFLIGHT && current_preflight_substate == SUB_WAITING_FLIGHT) {

@@ -34,6 +34,7 @@ static uint32_t last_flight_id = 0;
 static uint32_t stats_reserved_address = 0;
 
 static uint32_t previous_flight_header_addr = 0xFFFFFFFF;
+static uint32_t flight_read_end_address = 0;
 
 static bool is_logging = false;
 
@@ -286,20 +287,79 @@ void Logger_StartReadingFlight(uint32_t header_addr, uint32_t *cursor) {
         return;
     }
     *cursor = header_addr + FLASH_SECTOR_SIZE_BYTE + W25Q512_PAGE_SIZE;
+    flight_read_end_address = LOGGER_MAX_ALLOWED_ADDRESS;
+    for(uint32_t addr = header_addr + FLASH_SECTOR_SIZE_BYTE; addr < LOGGER_MAX_ALLOWED_ADDRESS; addr += FLASH_SECTOR_SIZE_BYTE) {
+        logger_header_t next_header;
+        if(Logger_ReadHeader(addr, &next_header)) {
+            flight_read_end_address = addr;
+            break;
+        }
+    }
 }
 
 bool Logger_ReadNextData(uint32_t *cursor, odb_data_t *out_data) {
-    if(*cursor == 0xFFFFFFFF || *cursor >= LOGGER_MAX_ALLOWED_ADDRESS) {
+    if(!cursor || !out_data || *cursor == 0xFFFFFFFF || *cursor >= flight_read_end_address) {
         return false;
     }
 
-    logger_data_t temp_packet;
-    W25Q_Read(&w25q, (uint8_t*)&temp_packet, *cursor, sizeof(logger_data_t));
+    while(*cursor + sizeof(logger_data_t) <= flight_read_end_address) {
+        logger_data_t temp_packet = {0};
+        if(W25Q_Read(&w25q, (uint8_t*)&temp_packet, *cursor, sizeof(logger_data_t)) != 0) {
+            return false;
+        }
+        if(temp_packet.magic_number == LOGGER_DATA_MAGIC_NUMBER) {
+            *out_data = temp_packet.data;
+            *cursor += sizeof(logger_data_t);
+            return true;
+        }
+        *cursor += sizeof(uint32_t);
+    }
 
-    if(temp_packet.magic_number == LOGGER_DATA_MAGIC_NUMBER) {
-        *out_data = temp_packet.data;
-        *cursor += sizeof(logger_data_t);
-        return true;
+    return false;
+}
+
+bool Logger_StartReadingFlightById(uint32_t flight_id, uint32_t *cursor) {
+    if(!cursor) return false;
+
+    for(uint32_t addr = 0; addr < LOGGER_MAX_ALLOWED_ADDRESS; addr += FLASH_SECTOR_SIZE_BYTE) {
+        logger_header_t header;
+        if(Logger_ReadHeader(addr, &header) && header.flight_id == flight_id) {
+            Logger_StartReadingFlight(addr, cursor);
+            return true;
+        }
+    }
+
+    *cursor = 0xFFFFFFFF;
+    return false;
+}
+
+void Logger_StartReadingStats(uint32_t *cursor) {
+    if(cursor) {
+        *cursor = 0;
+    }
+}
+
+bool Logger_ReadNextStats(uint32_t *cursor, odb_stats_t *out_stats) {
+    if(!cursor || !out_stats) {
+        return false;
+    }
+
+    while(*cursor < LOGGER_MAX_ALLOWED_ADDRESS) {
+        const uint32_t header_addr = *cursor;
+        *cursor += FLASH_SECTOR_SIZE_BYTE;
+
+        logger_header_t header;
+        if(!Logger_ReadHeader(header_addr, &header)) {
+            continue;
+        }
+
+        logger_stats_t stats_packet;
+        const uint32_t stats_addr = header_addr + FLASH_SECTOR_SIZE_BYTE;
+        if(W25Q_Read(&w25q, (uint8_t*)&stats_packet, stats_addr, sizeof(logger_stats_t)) == 0 &&
+           stats_packet.magic_number == LOGGER_STATS_MAGIC_NUMBER) {
+            *out_stats = stats_packet.stats;
+            return true;
+        }
     }
 
     return false;

@@ -141,7 +141,9 @@ typedef struct __attribute__((packed)) {
 
     uint32_t missed_frames;			// internal event for POSTFLIGHT reporting (save in FLASH/SD)
 
-    // TOTAL 152
+    // TOTAL 196
+    // Empty data to reach ... bytes
+    //uint8_t padding[0];
 } odb_stats_t;
 #define ODB_STATS_SIZE sizeof(odb_stats_t)
 
@@ -202,6 +204,5 @@ typedef struct __attribute__((packed)) {
     uint8_t padding[1];
 } odb_data_t;
 #define ODB_DATA_SIZE sizeof(odb_data_t)
-//_Static_assert(sizeof(odb_data_t) == 128, "odb_data_t_size_error");
 
 #endif /* INC_PROTOCOLS_ODB_PROTOCOL_H_ */

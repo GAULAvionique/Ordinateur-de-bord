@@ -131,6 +131,9 @@ class Metric {
 }
 
 class OdbStats {
+  static const int fsmTransitionCount = 10;
+  static const int serializedSize = 196;
+
   final int flightId;
   final int date;
   final List<PyroEvent> pyroEvents;
@@ -149,6 +152,9 @@ class OdbStats {
   final int lastLat;
   final int lastLon;
   final int flightTimeMs;
+  final int flightStartTimeMs;
+  final List<int> fsmTransitions;
+  final int missedFrames;
 
   OdbStats({
     required this.flightId,
@@ -169,9 +175,15 @@ class OdbStats {
     required this.lastLat,
     required this.lastLon,
     required this.flightTimeMs,
+    required this.flightStartTimeMs,
+    required this.fsmTransitions,
+    required this.missedFrames,
   });
 
   factory OdbStats.fromBytes(Uint8List bytes) {
+    if (bytes.length != serializedSize) {
+      throw const FormatException('Invalid ODB statistics size');
+    }
     final reader = ByteCursor(bytes);
 
     final flightId = reader.readUint32();
@@ -207,11 +219,17 @@ class OdbStats {
       lastLat: reader.readInt32(),
       lastLon: reader.readInt32(),
       flightTimeMs: reader.readUint32(),
+      flightStartTimeMs: reader.readUint32(),
+      fsmTransitions: List.generate(
+        fsmTransitionCount,
+        (_) => reader.readUint32(),
+      ),
+      missedFrames: reader.readUint32(),
     );
   }
 
   Uint8List toBytes() {
-    final builder = ByteBuilder(148);
+    final builder = ByteBuilder(serializedSize);
     builder.writeUint32(flightId);
     builder.writeUint32(date);
     for (final pyro in pyroEvents) {
@@ -249,11 +267,23 @@ class OdbStats {
     builder.writeInt32(lastLat);
     builder.writeInt32(lastLon);
     builder.writeUint32(flightTimeMs);
+    builder.writeUint32(flightStartTimeMs);
+    if (fsmTransitions.length != fsmTransitionCount) {
+      throw StateError('Invalid FSM transitions size');
+    }
+    for (final transition in fsmTransitions) {
+      builder.writeUint32(transition);
+    }
+    builder.writeUint32(missedFrames);
     return builder.toBytes();
   }
 }
 
 class OdbConfig {
+  static const int serializedSize = 94;
+  static const int magicNumberSize = 4;
+  static const int flightPacketSize = magicNumberSize + serializedSize;
+
   final int magicNumber;
   final int versionMajor;
   final int versionMinor;
@@ -285,7 +315,7 @@ class OdbConfig {
     this.magicNumber = 0x434F4E46,
     this.versionMajor = 1,
     this.versionMinor = 2,
-    this.payloadSize = 94,
+    this.payloadSize = serializedSize,
     required this.odbName,
     required this.stageRole,
     required this.debugMode,
@@ -395,7 +425,7 @@ class OdbConfig {
   }
 
   Uint8List toBytes() {
-    final writer = ByteBuilder(94);
+    final writer = ByteBuilder(serializedSize);
     writer.writeUint32(magicNumber);
     writer.writeUint8(versionMajor);
     writer.writeUint8(versionMinor);
@@ -426,6 +456,8 @@ class OdbConfig {
 }
 
 class OdbTelemetry {
+  static const int serializedSize = 140;
+
   final int versionMajor;
   final int versionMinor;
   final int payloadSize;
@@ -518,6 +550,12 @@ class FlightDataSample {
 // ============================================================================
 
 class DataServiceManager with ChangeNotifier {
+  static const int chunkHeaderSize = 4;
+  static const int chunkMinimumSize = chunkHeaderSize + 1;
+  static const int ackMinimumSize = 2;
+  static const int flightIdSize = 4;
+  static const int flightDataAckSize = ackMinimumSize + 2 + flightIdSize;
+
   // Types de messages entrants.
   static const int msgTypeTelemetry = 0x01;
   static const int msgTypeConfig = 0x02;
@@ -553,6 +591,7 @@ class DataServiceManager with ChangeNotifier {
   static const int actionSetSubLanded = 0x14;
   static const int actionTestMachLock = 0x15;
   static const int actionRequestFlightData = 0x16;
+  static const int actionCancelFlightData = 0x17;
 
   static const int configMagicNumber = 0x434F4E46;
 
@@ -600,10 +639,14 @@ class DataServiceManager with ChangeNotifier {
   OdbStats? lastFlightStats;
   final List<OdbStats> flightStats = [];
   final List<OdbStats> savedFlightStats = [];
+  final Map<int, OdbConfig> flightConfigs = {};
   final Map<int, List<FlightDataSample>> savedFlightData = {};
   final Map<int, Map<int, List<int>>> _flightDataChunks = {};
   OdbStats? _pendingFlightSave;
   bool isLoadingFlightData = false;
+  bool _isDrainingCanceledFlightData = false;
+  int _flightDataCancelGeneration = 0;
+  bool get isStoppingFlightData => _isDrainingCanceledFlightData;
   int? flightDataFlightId;
   int flightDataSamplesReceived = 0;
   int? flightDataSamplesTotal;
@@ -941,6 +984,15 @@ class DataServiceManager with ChangeNotifier {
       } catch (_) {}
     }
     for (final stats in savedFlightStats) {
+      final configRecord =
+          preferences.getString('saved_flight_config_${stats.flightId}');
+      if (configRecord != null) {
+        try {
+          flightConfigs[stats.flightId] = OdbConfig.fromBytes(
+            Uint8List.fromList(base64Decode(configRecord)),
+          );
+        } catch (_) {}
+      }
       final samples =
           preferences.getStringList('saved_flight_data_${stats.flightId}') ??
               [];
@@ -977,12 +1029,19 @@ class DataServiceManager with ChangeNotifier {
       return;
     }
 
+    if (_isDrainingCanceledFlightData) {
+      ConsoleService().log(
+          'Le téléchargement précédent est encore en cours d’arrêt.');
+      return;
+    }
+
     if (isFlightSaved(stats)) {
       ConsoleService().log('Le vol #${stats.flightId} est déjà sauvegardé.');
       return;
     }
 
     _pendingFlightSave = stats;
+    _isDrainingCanceledFlightData = false;
     _flightDataChunks.clear();
     isLoadingFlightData = true;
     flightDataFlightId = stats.flightId;
@@ -1006,26 +1065,75 @@ class DataServiceManager with ChangeNotifier {
         'Demande de téléchargement des données du vol #${stats.flightId} envoyée.');
   }
 
+  Future<void> cancelFlightDataDownload() async {
+    if (!isLoadingFlightData) return;
+
+    final canceledFlightId = flightDataFlightId;
+    isLoadingFlightData = false;
+    flightDataSamplesReceived = 0;
+    flightDataSamplesTotal = null;
+    flightDataChunksReceived = 0;
+    _flightDataChunks.clear();
+    _isDrainingCanceledFlightData = true;
+    final cancelGeneration = ++_flightDataCancelGeneration;
+    if (canceledFlightId != null) {
+      savedFlightData.remove(canceledFlightId);
+    }
+    ConsoleService().log('Téléchargement du vol annulé.');
+    _safeNotifyListeners();
+
+    if (!hasConnection) {
+      _pendingFlightSave = null;
+      flightDataFlightId = null;
+      _isDrainingCanceledFlightData = false;
+      return;
+    }
+
+    await btService.sendBinary(cmdTypeAction, [actionCancelFlightData]);
+
+    Future<void>.delayed(const Duration(seconds: 5), () {
+      if (!_isDrainingCanceledFlightData ||
+          cancelGeneration != _flightDataCancelGeneration) {
+        return;
+      }
+      _pendingFlightSave = null;
+      flightDataFlightId = null;
+      _isDrainingCanceledFlightData = false;
+      ConsoleService().log(
+          'Délai d’arrêt dépassé; nouveau téléchargement autorisé.');
+      _safeNotifyListeners();
+    });
+  }
+
   Future<void> deleteSavedFlightStats(OdbStats stats) async {
     savedFlightStats.removeWhere(
       (saved) => saved.flightId == stats.flightId && saved.date == stats.date,
     );
     savedFlightData.remove(stats.flightId);
+    flightConfigs.remove(stats.flightId);
     await _persistSavedFlightStats();
     final preferences = await SharedPreferences.getInstance();
     await preferences.remove('saved_flight_data_${stats.flightId}');
+    await preferences.remove('saved_flight_config_${stats.flightId}');
     _safeNotifyListeners();
   }
 
   Future<void> clearSavedFlightStats() async {
     savedFlightStats.clear();
     savedFlightData.clear();
+    flightConfigs.clear();
     await _persistSavedFlightStats();
     final preferences = await SharedPreferences.getInstance();
     final keys = preferences
         .getKeys()
         .where((key) => key.startsWith('saved_flight_data_'));
     for (final key in keys) {
+      await preferences.remove(key);
+    }
+    final configKeys = preferences
+        .getKeys()
+        .where((key) => key.startsWith('saved_flight_config_'));
+    for (final key in configKeys) {
       await preferences.remove(key);
     }
     _safeNotifyListeners();
@@ -1046,6 +1154,16 @@ class DataServiceManager with ChangeNotifier {
       (savedFlightData[flightId] ?? [])
           .map((sample) => base64Encode(sample.bytes))
           .toList(),
+    );
+  }
+
+  Future<void> _persistSavedFlightConfig(int flightId) async {
+    final config = flightConfigs[flightId];
+    if (config == null) return;
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(
+      'saved_flight_config_$flightId',
+      base64Encode(config.toBytes()),
     );
   }
 
@@ -1341,14 +1459,32 @@ class DataServiceManager with ChangeNotifier {
     }
     final magicNumber = ByteData.sublistView(bytes).getUint32(0, Endian.little);
     if (magicNumber == configMagicNumber) {
-      final tempConfig = OdbConfig.fromBytes(bytes);
+      final isFlightConfig =
+          payloadLength == OdbConfig.flightPacketSize &&
+            _pendingFlightSave != null &&
+            isLoadingFlightData;
+      if (payloadLength != OdbConfig.serializedSize && !isFlightConfig) {
+      ConsoleService().log('Configuration de vol ignorée hors téléchargement.');
+      return;
+      }
+        final configBytes = isFlightConfig
+        ? bytes.sublist(
+          OdbConfig.magicNumberSize, OdbConfig.flightPacketSize)
+          : bytes;
+      final tempConfig = OdbConfig.fromBytes(configBytes);
       if (tempConfig.versionMajor == expectedConfigMajor &&
           tempConfig.versionMinor == expectedConfigMinor) {
-        config = tempConfig;
+        if (isFlightConfig) {
+          flightConfigs[_pendingFlightSave!.flightId] = tempConfig;
+          ConsoleService().log(
+              'Configuration historique du vol #${_pendingFlightSave!.flightId} reçue.');
+        } else {
+          config = tempConfig;
+          ConsoleService()
+              .log('Configuration ODB lue et synchronisée avec succès !');
+        }
         clearVersionMismatch();
         _safeNotifyListeners();
-        ConsoleService()
-            .log('Configuration ODB lue et synchronisée avec succès !');
       } else {
         hasVersionMismatch = true;
         versionMismatchMessage =
@@ -1359,7 +1495,7 @@ class DataServiceManager with ChangeNotifier {
       }
       return;
     }
-    if (payloadLength >= 148) {
+    if (payloadLength == OdbStats.serializedSize) {
       try {
         final stats = OdbStats.fromBytes(bytes);
         flightStats.add(stats);
@@ -1381,7 +1517,7 @@ class DataServiceManager with ChangeNotifier {
   }
 
   Future<void> _handleAck(Uint8List bytes) async {
-    if (bytes.length < 2) return;
+    if (bytes.length < ackMinimumSize) return;
     final cmdAcked = bytes[0];
     final status = bytes[1];
     if (cmdAcked == actionRequestFlightStats) {
@@ -1401,9 +1537,21 @@ class DataServiceManager with ChangeNotifier {
       }
     } else if (cmdAcked == actionRequestFlightData &&
         _pendingFlightSave != null) {
+      if (!isLoadingFlightData) {
+        if (status == 0 || status == 1) {
+          _pendingFlightSave = null;
+          flightDataFlightId = null;
+          _isDrainingCanceledFlightData = false;
+          _flightDataChunks.clear();
+          ConsoleService().log(
+              'Transmission du vol annulé terminée côté ODB.');
+          _safeNotifyListeners();
+        }
+        return;
+      }
       final stats = _pendingFlightSave!;
       if (status == 2) {
-        flightDataSamplesTotal = bytes.length >= 4
+        flightDataSamplesTotal = bytes.length >= ackMinimumSize + 2
             ? ByteData.sublistView(bytes).getUint16(2, Endian.little)
             : 0;
         ConsoleService().log(
@@ -1415,7 +1563,8 @@ class DataServiceManager with ChangeNotifier {
         final samples = savedFlightData[stats.flightId] ?? [];
         await saveFlightStats(stats);
         await _persistSavedFlightData(stats.flightId);
-        final receivedFlightId = bytes.length >= 8
+        await _persistSavedFlightConfig(stats.flightId);
+        final receivedFlightId = bytes.length >= flightDataAckSize
             ? ByteData.sublistView(bytes).getUint32(4, Endian.little)
             : stats.flightId;
         ConsoleService().log(
@@ -1426,6 +1575,8 @@ class DataServiceManager with ChangeNotifier {
       }
       isLoadingFlightData = false;
       _pendingFlightSave = null;
+      flightDataFlightId = null;
+      _isDrainingCanceledFlightData = false;
       _flightDataChunks.clear();
       _safeNotifyListeners();
     }
@@ -1434,14 +1585,22 @@ class DataServiceManager with ChangeNotifier {
   }
 
   void _parseFlightDataChunk(Uint8List bytes) {
-    if (_pendingFlightSave == null || bytes.length < 4) return;
+    if (!isLoadingFlightData ||
+        _pendingFlightSave == null ||
+        bytes.length < chunkHeaderSize) {
+      return;
+    }
     flightDataChunksReceived++;
     final sampleIndex = bytes[0] | (bytes[1] << 8);
     final chunkIndex = bytes[2];
     final chunkCount = bytes[3];
-    if (chunkCount == 0 || chunkIndex >= chunkCount || bytes.length < 5) return;
+    if (chunkCount == 0 ||
+        chunkIndex >= chunkCount ||
+        bytes.length < chunkMinimumSize) {
+      return;
+    }
     final chunks = _flightDataChunks.putIfAbsent(sampleIndex, () => {});
-    chunks[chunkIndex] = bytes.sublist(4);
+    chunks[chunkIndex] = bytes.sublist(chunkHeaderSize);
     if (chunks.length != chunkCount) return;
     final sampleBytes = <int>[];
     for (var index = 0; index < chunkCount; index++) {
@@ -1452,9 +1611,9 @@ class DataServiceManager with ChangeNotifier {
     _flightDataChunks.remove(sampleIndex);
     try {
       final raw = Uint8List.fromList(sampleBytes);
-      if (raw.length != 140) {
+      if (raw.length != OdbTelemetry.serializedSize) {
         ConsoleService().log(
-            'Échantillon $sampleIndex incomplet: ${raw.length}/140 octets.');
+            'Échantillon $sampleIndex incomplet: ${raw.length}/${OdbTelemetry.serializedSize} octets.');
         return;
       }
       final telemetry = OdbTelemetry.fromBytes(raw);
@@ -1470,7 +1629,7 @@ class DataServiceManager with ChangeNotifier {
   }
 
   void _parseFlightStatsChunk(Uint8List bytes) {
-    if (bytes.length < 4) {
+    if (bytes.length < chunkHeaderSize) {
       flightStatsError = 'Trame de statistiques incomplète.';
       _safeNotifyListeners();
       return;
@@ -1482,14 +1641,15 @@ class DataServiceManager with ChangeNotifier {
     final chunkLength = bytes[3];
     if (chunkCount == 0 ||
         chunkIndex >= chunkCount ||
-        chunkLength > bytes.length - 4) {
+        chunkLength > bytes.length - chunkHeaderSize) {
       flightStatsError = 'Trame de statistiques invalide.';
       _safeNotifyListeners();
       return;
     }
 
     final chunks = _flightStatsChunks.putIfAbsent(flightIndex, () => {});
-    chunks[chunkIndex] = bytes.sublist(4, 4 + chunkLength);
+    chunks[chunkIndex] = bytes.sublist(
+      chunkHeaderSize, chunkHeaderSize + chunkLength);
     if (chunks.length != chunkCount) return;
 
     final completeStats = <int>[];

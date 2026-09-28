@@ -65,13 +65,12 @@ static void AppComm_SendEventsAck(hm11_t *hm11_dev, uint8_t status, uint8_t flig
 static void AppComm_SendStatsChunks(hm11_t *hm11_dev, const odb_stats_t *stats, uint8_t flight_index) {
 	enum { CHUNK_DATA_SIZE = 16, CHUNK_HEADER_SIZE = 4 };
 	const uint8_t *stats_bytes = (const uint8_t*)stats;
-	const uint8_t chunk_count = (uint8_t)((sizeof(odb_stats_t) + CHUNK_DATA_SIZE - 1) / CHUNK_DATA_SIZE);
+	const uint8_t chunk_count = (uint8_t)((ODB_STATS_SIZE + CHUNK_DATA_SIZE - 1) / CHUNK_DATA_SIZE);
 	uint8_t chunk_payload[CHUNK_HEADER_SIZE + CHUNK_DATA_SIZE];
 
 	for(uint8_t chunk_index = 0; chunk_index < chunk_count; chunk_index++) {
 		const uint16_t offset = (uint16_t)chunk_index * CHUNK_DATA_SIZE;
-		const uint8_t chunk_length = (uint8_t)(((sizeof(odb_stats_t) - offset) < CHUNK_DATA_SIZE) ?
-											   (sizeof(odb_stats_t) - offset) : CHUNK_DATA_SIZE);
+		const uint8_t chunk_length = (uint8_t)(((ODB_STATS_SIZE - offset) < CHUNK_DATA_SIZE) ? (ODB_STATS_SIZE - offset) : CHUNK_DATA_SIZE);
 
 		chunk_payload[0] = flight_index;
 		chunk_payload[1] = chunk_index;
@@ -83,7 +82,42 @@ static void AppComm_SendStatsChunks(hm11_t *hm11_dev, const odb_stats_t *stats, 
 	}
 }
 
-static void AppComm_SendDataChunks(hm11_t *hm11_dev, const odb_data_t *data, uint16_t sample_index) {
+static bool AppComm_CheckFlightDataCancel(hm11_t *hm11_dev) {
+	static uint8_t frame[256];
+	static uint8_t frame_length = 0;
+	static uint8_t expected_length = 0;
+	uint8_t byte;
+
+	while(RingBuffer_Dequeue(&hm11_dev->rx_ring, &byte)) {
+		if(frame_length == 0 && byte != APP_SYNC_1) continue;
+		if(frame_length == 1 && byte != APP_SYNC_2) {
+			frame_length = 0;
+			continue;
+		}
+
+		frame[frame_length++] = byte;
+		if(frame_length == 4) {
+			expected_length = frame[3];
+			if(expected_length > sizeof(frame) - 5) {
+				frame_length = 0;
+			}
+		} else if(frame_length >= 5 && frame_length == expected_length + 5) {
+			uint8_t checksum = frame[2] ^ frame[3];
+			for(uint8_t index = 0; index < expected_length; index++) {
+				checksum ^= frame[4 + index];
+			}
+			const bool is_cancel = checksum == frame[frame_length - 1] &&
+					frame[2] == MSG_CMD && expected_length >= 1 &&
+					frame[4] == CMD_REQ_CANCEL_FLIGHT_DATA;
+			frame_length = 0;
+			if(is_cancel) return true;
+		}
+	}
+
+	return false;
+}
+
+static bool AppComm_SendDataChunks(hm11_t *hm11_dev, const odb_data_t *data, uint16_t sample_index) {
 	enum { CHUNK_DATA_SIZE = 16, CHUNK_HEADER_SIZE = 4 };
 	const uint8_t *data_bytes = (const uint8_t*)data;
 	const uint8_t chunk_count = (uint8_t)((sizeof(odb_data_t) + CHUNK_DATA_SIZE - 1) / CHUNK_DATA_SIZE);
@@ -100,13 +134,21 @@ static void AppComm_SendDataChunks(hm11_t *hm11_dev, const odb_data_t *data, uin
 		memcpy(&chunk_payload[CHUNK_HEADER_SIZE], &data_bytes[offset], chunk_length);
 		AppComm_SendFrame(hm11_dev, MSG_DATA_CHUNK, chunk_payload, CHUNK_HEADER_SIZE + chunk_length);
 		HAL_Delay(5);
+		if(AppComm_CheckFlightDataCancel(hm11_dev)) return true;
 	}
+
+	return false;
 }
 
-static uint32_t AppComm_CountFlightSamples(uint32_t cursor) {
+static uint32_t AppComm_CountFlightSamples(hm11_t *hm11_dev, uint32_t cursor, bool *canceled) {
 	uint32_t count = 0;
 	odb_data_t sample;
+	*canceled = false;
 	while(Logger_ReadNextData(&cursor, &sample)) {
+		if(AppComm_CheckFlightDataCancel(hm11_dev)) {
+			*canceled = true;
+			break;
+		}
 		count++;
 	}
 	return count;
@@ -256,7 +298,14 @@ void AppComm_ProcessRx(hm11_t *hm11_dev) {
 							odb_data_t data_sample;
 							uint16_t sample_count = 0;
 							if(Logger_StartReadingFlightById(flight_id, &data_cursor)) {
-								const uint32_t total_samples = AppComm_CountFlightSamples(data_cursor);
+								CriticalLED_SetColor(&critical_led, RED);
+								bool canceled = false;
+								const uint32_t total_samples = AppComm_CountFlightSamples(hm11_dev, data_cursor, &canceled);
+								if(canceled) {
+									CriticalLED_SetColor(&critical_led, NONE);
+									AppComm_SendAck(hm11_dev, CMD_REQ_FLIGHT_DATA, 0);
+									continue;
+								}
 								const uint32_t step = (total_samples + LOGGER_DECIMATION_SIZE - 1) / LOGGER_DECIMATION_SIZE;
 								const uint32_t transfer_total = step == 0 ? 0 : (total_samples + step - 1U) / step;
 								uint8_t progress_payload[4] = {
@@ -265,15 +314,41 @@ void AppComm_ProcessRx(hm11_t *hm11_dev) {
 									(uint8_t)((transfer_total >> 8) & 0xFF),
 								};
 								AppComm_SendFrame(hm11_dev, MSG_ACK, progress_payload, sizeof(progress_payload));
+								uint32_t header_addr;
+								odb_config_t flight_config;
+								if(Logger_GetFlightHeaderAddressById(flight_id, &header_addr) &&
+								   Logger_ReadFlightConfig(header_addr, &flight_config)) {
+									logger_config_t config_packet = {
+										.magic_number = CONFIG_MAGIC_NUMBER,
+										.config = flight_config,
+									};
+									AppComm_SendFrame(hm11_dev, MSG_GENERIC_DATA,
+													  (uint8_t*)&config_packet, sizeof(config_packet));
+									HAL_Delay(5);
+								}
+
 								uint32_t source_index = 0;
 								Logger_StartReadingFlightById(flight_id, &data_cursor);
+								CriticalLED_SetColor(&critical_led, NONE);
+								if(AppComm_CheckFlightDataCancel(hm11_dev)) {
+									CriticalLED_SetColor(&critical_led, NONE);
+									AppComm_SendAck(hm11_dev, CMD_REQ_FLIGHT_DATA, 0);
+									continue;
+								}
 								while(Logger_ReadNextData(&data_cursor, &data_sample) && sample_count < 0xFFFF) {
 									if((source_index++ % (step == 0 ? 1 : step)) == 0) {
-										AppComm_SendDataChunks(hm11_dev, &data_sample, sample_count++);
+										CriticalLED_SetColor(&critical_led, RED);
+										if(AppComm_SendDataChunks(hm11_dev, &data_sample, sample_count++)) {
+											CriticalLED_SetColor(&critical_led, NONE);
+											canceled = true;
+											break;
+										}
+										CriticalLED_SetColor(&critical_led, NONE);
 									}
 								}
+								CriticalLED_SetColor(&critical_led, NONE);
 								uint8_t ack_payload[8] = {
-									CMD_REQ_FLIGHT_DATA, 1,
+									CMD_REQ_FLIGHT_DATA, canceled ? 0 : 1,
 									(uint8_t)(sample_count & 0xFF),
 									(uint8_t)(sample_count >> 8),
 									(uint8_t)(flight_id & 0xFF),

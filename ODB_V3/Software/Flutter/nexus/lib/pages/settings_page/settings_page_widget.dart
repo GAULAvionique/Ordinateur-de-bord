@@ -126,6 +126,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
       data.odbName,
       data.stageRole,
       data.debugMode,
+      data.flightTestMode,
       data.axisProfile,
       data.enableBuzzer,
       data.minNeededPyroNb,
@@ -829,7 +830,10 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         ],
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Padding(padding: const EdgeInsets.all(12), child: child),
+      child: Material(
+        color: Colors.transparent,
+        child: Padding(padding: const EdgeInsets.all(12), child: child),
+      ),
     );
   }
 

@@ -416,13 +416,16 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
                 children: [
                   ...filteredResults.map((result) => _buildDeviceTile(context, result, dataService, bt)),
                   if (otherResults.isNotEmpty)
-                    ExpansionTile(
-                      initiallyExpanded: false,
-                      leading: const Icon(Icons.devices_other),
-                      title: Text('Autres appareils détectés (${otherResults.length})'),
-                      children: otherResults
-                          .map((result) => _buildDeviceTile(context, result, dataService, bt))
-                          .toList(),
+                    Material(
+                      color: Colors.transparent,
+                      child: ExpansionTile(
+                        initiallyExpanded: false,
+                        leading: const Icon(Icons.devices_other),
+                        title: Text('Autres appareils détectés (${otherResults.length})'),
+                        children: otherResults
+                            .map((result) => _buildDeviceTile(context, result, dataService, bt))
+                            .toList(),
+                      ),
                     ),
                 ],
               ),

@@ -31,21 +31,23 @@ void main() async {
           update: (ctx, bt, prev) => prev ?? DataServiceManager(bt),
         ),
       ],
-      child: MyApp(),
+      child: const MyApp(),
     ),
   );
 }
 
 class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
   // This widget is the root of your application.
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<MyApp> createState() => MyAppState();
 
-  static _MyAppState of(BuildContext context) =>
-      context.findAncestorStateOfType<_MyAppState>()!;
+  static MyAppState of(BuildContext context) =>
+      context.findAncestorStateOfType<MyAppState>()!;
 }
 
-class _MyAppState extends State<MyApp> {
+class MyAppState extends State<MyApp> {
   ThemeMode _themeMode = FlutterFlowTheme.themeMode;
 
   late AppStateNotifier _appStateNotifier;
@@ -101,18 +103,18 @@ class _MyAppState extends State<MyApp> {
 
 class NavBarPage extends StatefulWidget {
   const NavBarPage({
-    Key? key,
+    super.key,
     this.initialPage,
     this.page,
     this.disableResizeToAvoidBottomInset = false,
-  }) : super(key: key);
+  });
 
   final String? initialPage;
   final Widget? page;
   final bool disableResizeToAvoidBottomInset;
 
   @override
-  _NavBarPageState createState() => _NavBarPageState();
+  State<NavBarPage> createState() => _NavBarPageState();
 }
 
 /// This is the private State class that goes with NavBarPage.

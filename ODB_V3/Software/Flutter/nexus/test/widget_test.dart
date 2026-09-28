@@ -1,11 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'dart:typed_data';
 import 'package:provider/provider.dart';
 import 'package:nexus/services/bluetooth_service.dart';
 import 'package:nexus/services/data_service.dart';
 
 void main() {
-  testWidgets('parses the App_SendFrame telemetry and updates shared consumers', (tester) async {
+  Uint8List telemetryBytes() {
+    final data = ByteData(140);
+    data.setUint8(0, 1);
+    data.setUint8(1, 3);
+    data.setUint16(2, 140, Endian.little);
+    data.setUint32(4, 12345, Endian.little);
+    data.setUint16(13, 7400, Endian.little);
+    data.setFloat32(79, 1013.25, Endian.little);
+    data.setFloat32(83, 21.5, Endian.little);
+    data.setInt32(112, 123400, Endian.little);
+    data.setFloat32(135, 3.45, Endian.little);
+    return data.buffer.asUint8List();
+  }
+
+  testWidgets('parses binary telemetry and updates shared consumers', (tester) async {
     final bluetoothService = BluetoothServiceManager();
     final dataService = DataServiceManager(bluetoothService);
 
@@ -42,8 +57,9 @@ void main() {
       ),
     );
 
-    dataService.parseMessage(
-      'DATA,time_boot_ms=12345,battery_mv=7400,gps_alt=123400,temp_celsius=2150,pressure_hpa=101325,kalman_v=345,pyro_roles=1:2:3:4\r\n',
+    await dataService.parseBinaryMessage(
+      DataServiceManager.msgTypeTelemetry,
+      telemetryBytes(),
     );
 
     await tester.pump();
@@ -51,26 +67,49 @@ void main() {
     expect(find.byKey(const Key('overview-view')), findsOneWidget);
     expect(find.text('overview:12345|7400|123.4'), findsOneWidget);
     expect(find.byKey(const Key('settings-view')), findsOneWidget);
-    expect(find.text('settings:21.5|1013.25|3.45'), findsOneWidget);
+    expect(
+      find.textContaining('settings:21.5|1013.25|3.45'),
+      findsOneWidget,
+    );
   });
 
-  test('parser accepts configuration pyro roles', () {
+  test('configuration round-trip preserves pyro roles', () {
+    final config = OdbConfig(
+      odbName: 'test',
+      stageRole: DataServiceManager.stageRoleSustainer,
+      debugMode: false,
+      flightTestMode: false,
+      axisProfile: DataServiceManager.axisProfileP0,
+      fireAttemptDelayMs: 100,
+      pyrosArmingFailsafeMs: 200,
+      minNeededPyroNb: 1,
+      pyroRoles: [0, 1, 2, 3],
+      accZLaunchThreshold: 1,
+      boostPhaseVThreshold: 2,
+      apogeeDetectVThreshold: 3,
+      landingDetectVThreshold: 4,
+      landingDetectThresholdMs: 500,
+      apogeeFailsafeMs: 600,
+      mainDeployAltitudeThresholdM: 700,
+      drogueFireAttemptMaxNb: 2,
+      mainFireAttemptMaxNb: 2,
+      enableBuzzer: true,
+      buzzerReportToneHz: 1000,
+      idefixFrequencyHz: 2000000,
+    );
+
+    final decoded = OdbConfig.fromBytes(config.toBytes());
+    expect(decoded.pyroRoles, equals(<int>[0, 1, 2, 3]));
+  });
+
+  test('telemetry does not modify configuration roles', () async {
     final bluetoothService = BluetoothServiceManager();
     final dataService = DataServiceManager(bluetoothService);
 
-    dataService.parseMessage('CFG:PYRO_ROLE=0,0\r\n');
-    dataService.parseMessage('CFG:PYRO_ROLE=1,1\r\n');
-    dataService.parseMessage('CFG:PYRO_ROLE=2,2\r\n');
-    dataService.parseMessage('CFG:PYRO_ROLE=3,3\r\n');
-
-    expect(dataService.pyroRoles, equals(<int>[0, 1, 2, 3]));
-  });
-
-  test('parser keeps telemetry pyro roles separate from config roles', () {
-    final bluetoothService = BluetoothServiceManager();
-    final dataService = DataServiceManager(bluetoothService);
-
-    dataService.parseMessage('DATA,pyro_roles=1:2:3:4');
+    await dataService.parseBinaryMessage(
+      DataServiceManager.msgTypeTelemetry,
+      telemetryBytes(),
+    );
 
     expect(dataService.pyroRoles, equals(<int>[0, 0, 0, 0]));
   });

@@ -40,6 +40,18 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
     return '${(timeMs / 1000.0).toStringAsFixed(2)} s';
   }
 
+  // Formatage du pourcentage de données de vol reçues
+  String _formatFlightDataProgress(DataServiceManager data) {
+    final total = data.flightDataSamplesTotal;
+    if (total == null) return '...';
+    if (total <= 0) return '0 %';
+
+    final percentage = (data.flightDataSamplesReceived * 100 / total)
+        .clamp(0, 100)
+        .toStringAsFixed(0);
+    return '$percentage %';
+  }
+
   // Formatage spécifique pour les window_event_t (Start -> End)
   String _formatWindow(WindowEvent window) {
     if (!window.activated && window.startTimeMs == 0) return '—';
@@ -104,7 +116,7 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
                           ),
 
                           Text(
-                            'Données des vols et statistiques récupérées depuis l’ODB.',
+                            'Données des vols récupérées de l’ODB.',
                             style: FlutterFlowTheme.of(context).bodyMedium.override(
                                   font: GoogleFonts.inter(),
                                   color: FlutterFlowTheme.of(context).secondaryText,
@@ -232,13 +244,19 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
                                   children: [
                                     const _AnimatedDownloadIndicator(),
                                     const SizedBox(width: 6.0),
-                                    Text(
-                                      data.flightDataSamplesTotal == null
-                                          ? '...'
-                                          : '${data.flightDataSamplesReceived}/${data.flightDataSamplesTotal}',
+                                    Text(_formatFlightDataProgress(data)),
+                                    IconButton(
+                                      onPressed: data.cancelFlightDataDownload,
+                                      icon: const Icon(Icons.stop_rounded),
+                                      tooltip: 'Arrêter le téléchargement',
                                     ),
                                   ],
                                 ),
+                              )
+                            else if (data.isStoppingFlightData)
+                              const Padding(
+                                padding: EdgeInsets.only(right: 8.0),
+                                child: Text('Arrêt en cours...'),
                               )
                             else
                               IconButton(
@@ -251,7 +269,7 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
                             const Icon(Icons.expand_more),
                           ],
                         ),
-                        children: _buildFlightDetailSections(context, stats),
+                        children: _buildFlightStatistics(context, stats),
                       ),
                     ),
                   ],
@@ -337,17 +355,12 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
       title: Text('Vol #${stats.flightId}'),
       subtitle: Text(_formatGPSDate(stats.date)),
       children: [
-        ..._buildFlightDetailSections(context, stats),
-        if (samples.isNotEmpty)
-          _buildFlightCharts(context, stats, samples),
-        if (samples.isEmpty)
-          Text(
-            'Données détaillées indisponibles pour ce vol.',
-            style: FlutterFlowTheme.of(context).bodySmall.override(
-                  font: GoogleFonts.inter(),
-                  color: FlutterFlowTheme.of(context).secondaryText,
-                ),
-          ),
+        ..._buildFlightSections(
+          context,
+          stats,
+          data,
+          samples: samples,
+        ),
         const SizedBox(height: 12.0),
         Align(
           alignment: Alignment.center,
@@ -462,7 +475,62 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
     if (confirmed == true) await data.deleteSavedFlightStats(stats);
   }
 
-  List<Widget> _buildFlightDetailSections(BuildContext context, OdbStats stats) {
+  List<Widget> _buildFlightSections(
+    BuildContext context,
+    OdbStats stats,
+    DataServiceManager data, {
+    required List<FlightDataSample> samples,
+  }) {
+    final flightConfig = data.flightConfigs[stats.flightId];
+    return [
+      ExpansionTile(
+        initiallyExpanded: false,
+        leading: const Icon(Icons.analytics_outlined),
+        title: const Text('Statistiques'),
+        children: _buildFlightStatistics(context, stats),
+      ),
+      ExpansionTile(
+        initiallyExpanded: false,
+        leading: const Icon(Icons.tune),
+        title: const Text('Configuration'),
+        children: [
+          if (flightConfig != null)
+            _buildFlightConfigSection(context, flightConfig)
+          else
+            _buildUnavailableSection(context, 'Configuration indisponible pour ce vol.'),
+        ],
+      ),
+      ExpansionTile(
+        initiallyExpanded: false,
+        leading: const Icon(Icons.show_chart),
+        title: const Text('Graphiques'),
+        children: [
+          if (samples.isNotEmpty)
+            _buildFlightCharts(context, stats, samples)
+          else
+            _buildUnavailableSection(context, 'Données graphiques indisponibles pour ce vol.'),
+        ],
+      ),
+    ];
+  }
+
+  Widget _buildUnavailableSection(BuildContext context, String message) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Text(
+        message,
+        style: FlutterFlowTheme.of(context).bodySmall.override(
+              font: GoogleFonts.inter(),
+              color: FlutterFlowTheme.of(context).secondaryText,
+            ),
+      ),
+    );
+  }
+
+  List<Widget> _buildFlightStatistics(
+    BuildContext context,
+    OdbStats stats,
+  ) {
     return [
       _buildSectionCard(context, 'Informations Générales', Icons.info_outline, [
         _buildDataRow(context, 'ID du Vol', '#${stats.flightId}', ''),
@@ -501,6 +569,38 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
     ];
   }
 
+  Widget _buildFlightConfigSection(BuildContext context, OdbConfig config) {
+    final stage = config.stageRole == DataServiceManager.stageRoleBooster
+        ? 'Booster'
+        : config.stageRole == DataServiceManager.stageRoleSustainer
+            ? 'Sustainer'
+            : 'Inconnu';
+    const roleLabels = [
+      'Aucun',
+      'Principal',
+      'Drogue',
+      'Principal secours',
+      'Drogue secours',
+    ];
+    final pyroRoles = config.pyroRoles.map((role) {
+      return role >= 0 && role < roleLabels.length ? roleLabels[role] : 'Inconnu';
+    }).join(' / ');
+
+    return _buildSectionCard(context, 'Configuration du vol', Icons.tune, [
+      _buildDataRow(context, 'Nom ODB', config.odbName, ''),
+      _buildDataRow(context, 'Rôle d’étage', stage, ''),
+      _buildDataRow(context, 'Profil d’axe', 'P${config.axisProfile}', ''),
+      _buildDataRow(context, 'Mode test', config.flightTestMode ? 'Oui' : 'Non', ''),
+      _buildDataRow(context, 'Rôles des pyros', pyroRoles, ''),
+      _buildDataRow(context, 'Armement minimum', '${config.pyrosArmingFailsafeMs} ms', ''),
+      _buildDataRow(context, 'Seuil lancement', '${config.accZLaunchThreshold.toStringAsFixed(2)} m/s²', ''),
+      _buildDataRow(context, 'Seuil apogée', '${config.apogeeDetectVThreshold.toStringAsFixed(2)} m/s', ''),
+      _buildDataRow(context, 'Altitude principal', '${config.mainDeployAltitudeThresholdM.toStringAsFixed(1)} m', ''),
+      _buildDataRow(context, 'Délai tentative pyro', '${config.fireAttemptDelayMs} ms', ''),
+      _buildDataRow(context, 'Buzzer', config.enableBuzzer ? '${config.buzzerReportToneHz} Hz' : 'Désactivé', ''),
+    ]);
+  }
+
   Widget _buildSectionCard(BuildContext context, String title, IconData icon, List<Widget> rows) {
     return Material(
       color: Colors.transparent,
@@ -515,9 +615,11 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
         ),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          child: Material(
+            color: Colors.transparent,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               Row(
                 children: [
                   Icon(icon, color: FlutterFlowTheme.of(context).primary, size: 24.0),
@@ -532,7 +634,8 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
               ),
               const Divider(height: 24.0, thickness: 1.0, color: Color(0xFFE0E3E7)),
               ...rows.divide(const SizedBox(height: 12.0)),
-            ],
+              ],
+            ),
           ),
         ),
       ),

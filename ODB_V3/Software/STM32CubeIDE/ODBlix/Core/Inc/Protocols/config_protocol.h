@@ -64,7 +64,7 @@ typedef struct __attribute__((packed)) {
     uint8_t				flight_test_mode;
 
     // Sensors
-    acc_axis_profile_t	axis_profile;
+    uint8_t			    axis_profile;
 
     // Pyros
     uint32_t 			fire_attempt_delay_ms;
@@ -93,6 +93,8 @@ typedef struct __attribute__((packed)) {
     uint32_t 			idefix_frequency_hz;
 
     // TOTAL 94
+    // Empty data to reach ... bytes
+	//uint8_t padding[0];
 } odb_config_t;
 #define CONFIG_DATA_SIZE sizeof(odb_config_t)
 

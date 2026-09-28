@@ -42,6 +42,11 @@ typedef struct __attribute__((packed)) {
     odb_stats_t stats;      // The actual ODB stats
 } logger_stats_t;
 
+typedef struct __attribute__((packed)) {
+    uint32_t magic_number; 	// To identify the start of a valid flight config packet
+    odb_config_t config; 	// The actual ODB config
+} logger_config_t;
+
 
 int8_t Logger_Init(void);
 
@@ -53,12 +58,14 @@ void Logger_SaveStats(const odb_stats_t *stats);
 void Logger_FlushRemaining(void);
 uint32_t Logger_GetCurrentFlightAddress(void);
 uint32_t Logger_GetCurrentFlightId(void);
+bool Logger_GetFlightHeaderAddressById(uint32_t flight_id, uint32_t *header_addr);
 void Logger_StartReadingFlight(uint32_t header_addr, uint32_t *cursor);
 bool Logger_ReadNextData(uint32_t *cursor, odb_data_t *out_data);
 bool Logger_StartReadingFlightById(uint32_t flight_id, uint32_t *cursor);
 void Logger_StartReadingStats(uint32_t *cursor);
 bool Logger_ReadNextStats(uint32_t *cursor, odb_stats_t *out_stats);
 const odb_stats_t* Logger_GetLastFlightStats(void);
+bool Logger_ReadFlightConfig(uint32_t header_addr, odb_config_t *out_config);
 void Logger_ExportToSD(const odb_stats_t *stats);
 //void Logger_DumpAllToSD(void);
 

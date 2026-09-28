@@ -130,6 +130,15 @@ int8_t Logger_Init(void) {
     	return LOGGER_ERROR_FLASH_WRITE;
     }
 
+    // Save config
+    logger_config_t log_cfg;
+	log_cfg.magic_number = CONFIG_MAGIC_NUMBER;
+	log_cfg.config = *Config_Get();
+	if(W25Q_WritePage(&w25q, (uint8_t*)&log_cfg, flash_current_address + W25Q512_PAGE_SIZE, sizeof(logger_config_t)) != 0) {
+		return LOGGER_ERROR_FLASH_WRITE;
+	}
+
+	// Prepare flight data
     last_flight_header_addr = flash_current_address;
     last_flight_id = next_id;
 
@@ -281,6 +290,23 @@ uint32_t Logger_GetCurrentFlightId(void) {
     return last_flight_id;
 }
 
+bool Logger_GetFlightHeaderAddressById(uint32_t flight_id, uint32_t *header_addr) {
+    if(!header_addr) {
+        return false;
+    }
+
+    for(uint32_t addr = 0; addr < LOGGER_MAX_ALLOWED_ADDRESS; addr += FLASH_SECTOR_SIZE_BYTE) {
+        logger_header_t header;
+        if(Logger_ReadHeader(addr, &header) && header.flight_id == flight_id) {
+            *header_addr = addr;
+            return true;
+        }
+    }
+
+    *header_addr = 0xFFFFFFFF;
+    return false;
+}
+
 void Logger_StartReadingFlight(uint32_t header_addr, uint32_t *cursor) {
     if(header_addr == 0xFFFFFFFF) {
         *cursor = 0xFFFFFFFF;
@@ -382,6 +408,24 @@ const odb_stats_t* Logger_GetLastFlightStats(void) {
     return NULL;
 }
 
+bool Logger_ReadFlightConfig(uint32_t header_addr, odb_config_t *out_config) {
+    if(!out_config || header_addr == 0xFFFFFFFF) {
+        return false;
+    }
+
+    logger_config_t temp_cfg;
+    uint32_t config_addr = header_addr + W25Q512_PAGE_SIZE;
+
+    if(W25Q_Read(&w25q, (uint8_t*)&temp_cfg, config_addr, sizeof(logger_config_t)) == 0) {
+        if(temp_cfg.magic_number == CONFIG_MAGIC_NUMBER) {
+            *out_config = temp_cfg.config;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool Logger_Erase(void) {
 	uint32_t current_addr = 0;
 	while(current_addr < LOGGER_MAX_ALLOWED_ADDRESS) {
@@ -481,6 +525,14 @@ void Logger_ExportToSD(const odb_stats_t *stats) {
 	f_puts(header_buf, &active_file);
 
     f_puts("# =======================================\n\n", &active_file);
+
+    odb_config_t flight_cfg;
+	if(Logger_ReadFlightConfig(Logger_GetCurrentFlightAddress(), &flight_cfg)) {
+		f_puts("# === ODB CONFIGURATION ===\n", &active_file);
+		sprintf(header_buf, "# Nom : %s | Role : %d | Profil Axe : %d\n", flight_cfg.odb_name, flight_cfg.stage_role, flight_cfg.axis_profile);
+		f_puts(header_buf, &active_file);
+		f_puts("# =======================================\n\n", &active_file);
+	}
 
     f_puts("TimeBoot_ms,Sys_States,Event_States,Mission_State,Battery_mV,"
            "Roll,Pitch,Yaw,IMU_Acc_X,IMU_Acc_Y,IMU_Acc_Z,IMU_Gyro_X,IMU_Gyro_Y,IMU_Gyro_Z,IMU_Mag_X,IMU_Mag_Y,IMU_Mag_Z,"

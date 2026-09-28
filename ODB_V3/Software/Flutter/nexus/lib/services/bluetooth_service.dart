@@ -114,8 +114,8 @@ class BluetoothServiceManager with ChangeNotifier {
   BluetoothDevice? connectedDevice;
   final List<ConnectedDeviceRecord> connectedDeviceHistory = [];
   StreamSubscription<BluetoothConnectionState>? connectionSubscription;
+  StreamSubscription<List<ScanResult>>? scanResultsSubscription;
   final Map<Guid, StreamSubscription<List<int>>> notifySubscriptions = {};
-  final Map<Guid, String> _notifyBuffers = {};
   BluetoothCharacteristic? _writeCharacteristic;
   final List<BluetoothCharacteristic> _writeCandidates = [];
   DataServiceManager? _dataService;
@@ -173,7 +173,8 @@ class BluetoothServiceManager with ChangeNotifier {
     isScanning = true;
     notifyListeners();
 
-    FlutterBluePlus.scanResults.listen((results) {
+    await scanResultsSubscription?.cancel();
+    scanResultsSubscription = FlutterBluePlus.scanResults.listen((results) {
       scanResults = results;
       // Met à jour le RSSI en prenant la valeur du périphérique connecté (si présent)
       if (results.isNotEmpty) {
@@ -223,7 +224,7 @@ class BluetoothServiceManager with ChangeNotifier {
       await stopScan();
 
       await device.connect(
-        license: License.free,
+        license: License.nonprofit,
         timeout: const Duration(seconds: 10),
         autoConnect: false,
       );
@@ -288,7 +289,6 @@ class BluetoothServiceManager with ChangeNotifier {
       sub.cancel();
     }
     notifySubscriptions.clear();
-    _notifyBuffers.clear();
     _dataService = null;
 
     notifyListeners();
@@ -447,6 +447,7 @@ class BluetoothServiceManager with ChangeNotifier {
         
     if (preferred.isEmpty) return;
 
+    Object? lastError;
     try {
       for (final c in preferred) {
         try {
@@ -460,9 +461,12 @@ class BluetoothServiceManager with ChangeNotifier {
             await Future.delayed(const Duration(milliseconds: 20));
           }
           return;
-        } catch (_) {
+        } catch (error) {
+          lastError = error;
         }
       }
+      ConsoleService().log(
+          'Erreur TX Binaire: aucune caractéristique n\'a accepté la trame${lastError == null ? '' : ': $lastError'}');
     } catch (e) {
       ConsoleService().log('Erreur TX Binaire: $e');
     }
@@ -512,11 +516,11 @@ class BluetoothServiceManager with ChangeNotifier {
     } catch (_) {}
 
     connectionSubscription?.cancel();
+    scanResultsSubscription?.cancel();
     for (final sub in notifySubscriptions.values) {
       sub.cancel();
     }
     notifySubscriptions.clear();
-    _notifyBuffers.clear();
     super.dispose();
   }
 }

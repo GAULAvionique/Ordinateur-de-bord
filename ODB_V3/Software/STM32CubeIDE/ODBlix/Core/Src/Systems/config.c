@@ -143,7 +143,6 @@ static config_error_t Config_Validate(const odb_config_t* new_config) {
 
 void Config_Init(void) {
     odb_config_t temp_config;
-
     if(W25Q_Read(&w25q, (uint8_t*)&temp_config, FLASH_CONFIG_START_ADDRESS, CONFIG_DATA_SIZE) == 0) {
         if(temp_config.magic_number == CONFIG_MAGIC_NUMBER) {
             if(temp_config.version_major == CONFIG_PROTOCOL_VERSION_MAJOR && temp_config.version_minor == CONFIG_PROTOCOL_VERSION_MINOR && temp_config.payload_size == CONFIG_DATA_SIZE) {

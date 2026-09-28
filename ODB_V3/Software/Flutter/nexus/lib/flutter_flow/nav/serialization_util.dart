@@ -7,6 +7,9 @@ import '../../flutter_flow/lat_lng.dart';
 import '../../flutter_flow/place.dart';
 import '../../flutter_flow/uploaded_file.dart';
 
+// These names are part of the generated serialization API.
+// ignore_for_file: constant_identifier_names
+
 /// SERIALIZATION HELPERS
 
 String dateTimeRangeToString(DateTimeRange dateTimeRange) {
@@ -72,7 +75,7 @@ String? serializeParam(
     }
     return data;
   } catch (e) {
-    print('Error serializing parameter: $e');
+    debugPrint('Error serializing parameter: $e');
     return null;
   }
 }
@@ -159,8 +162,7 @@ dynamic deserializeParam<T>(
         return null;
       }
       return paramValues
-          .where((p) => p is String)
-          .map((p) => p as String)
+          .whereType<String>()
           .map((p) => deserializeParam<T>(p, paramType, false))
           .where((p) => p != null)
           .map((p) => p! as T)
@@ -194,7 +196,7 @@ dynamic deserializeParam<T>(
         return json.decode(param);
     }
   } catch (e) {
-    print('Error deserializing parameter: $e');
+    debugPrint('Error deserializing parameter: $e');
     return null;
   }
 }

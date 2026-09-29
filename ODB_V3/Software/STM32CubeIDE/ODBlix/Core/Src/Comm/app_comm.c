@@ -2,7 +2,7 @@
  * app_comm.c
  *
  *  Created on: 6 juin 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 
@@ -211,13 +211,19 @@ void AppComm_ProcessRx(hm11_t *hm11_dev) {
             app_msg_type_t type = (app_msg_type_t)rx_buf[2];
             uint8_t *payload = &rx_buf[4];
 
-            if(calc_crc == recv_crc || (type == MSG_GENERIC_DATA && expected_len == CONFIG_DATA_SIZE)) {
+			if(calc_crc == recv_crc) {
 				CriticalLED_SetColor(&critical_led, GREEN);
 
 				if(type == MSG_GENERIC_DATA) {
 					if(expected_len == CONFIG_DATA_SIZE) {
-						memcpy(&current_config, payload, expected_len);
-						AppComm_SendAck(hm11_dev, CMD_REQ_CFG, (calc_crc == recv_crc) ? 1 : 2);
+						odb_config_t received_config;
+						memcpy(&received_config, payload, sizeof(received_config));
+						if(Config_CheckCrc(&received_config)) {
+							memcpy(&current_config, &received_config, sizeof(current_config));
+							AppComm_SendAck(hm11_dev, CMD_REQ_CFG, 1);
+						} else {
+							AppComm_SendAck(hm11_dev, CMD_REQ_CFG, 0);
+						}
 					}
 				} else if (type == MSG_CMD) {
                     app_cmd_id_t cmd = (app_cmd_id_t)payload[0];

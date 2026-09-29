@@ -2,7 +2,7 @@
  * idefix.h
  *
  *  Created on: 27 mai 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #ifndef INC_DRIVERS_IDEFIX_H_

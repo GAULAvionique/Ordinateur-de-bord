@@ -2,7 +2,7 @@
  * hm11.h
  *
  *  Created on: 12 avr. 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #ifndef INC_DRIVERS_HM11_H_

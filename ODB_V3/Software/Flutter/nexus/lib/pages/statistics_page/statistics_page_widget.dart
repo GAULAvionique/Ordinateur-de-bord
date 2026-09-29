@@ -2402,6 +2402,30 @@ class _BottomMetricsGrid extends StatelessWidget {
                                   .fontStyle,
                             ),
                       ),
+                          Text(
+                          connected &&
+                              data.barometerSensorState == SensorState.ok
+                            ? data.barometricTrendDisplay
+                            : '—',
+                          style: FlutterFlowTheme.of(context).bodySmall.override(
+                              font: GoogleFonts.inter(
+                              fontWeight: FlutterFlowTheme.of(context)
+                                .bodySmall
+                                .fontWeight,
+                              fontStyle: FlutterFlowTheme.of(context)
+                                .bodySmall
+                                .fontStyle,
+                              ),
+                              color: FlutterFlowTheme.of(context).success,
+                              letterSpacing: 0.0,
+                              fontWeight: FlutterFlowTheme.of(context)
+                                .bodySmall
+                                .fontWeight,
+                              fontStyle: FlutterFlowTheme.of(context)
+                                .bodySmall
+                                .fontStyle,
+                            ),
+                          ),
                     ].divide(const SizedBox(height: 4.0)),
                   ),
                   Text(

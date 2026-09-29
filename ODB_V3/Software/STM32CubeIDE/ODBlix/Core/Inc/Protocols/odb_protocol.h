@@ -2,18 +2,18 @@
  * telemetry_protocol.h
  *
  *  Created on: 6 juin 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #ifndef INC_PROTOCOLS_ODB_PROTOCOL_H_
 #define INC_PROTOCOLS_ODB_PROTOCOL_H_
 
 #include <stdint.h>
-#include <stdbool.h>
+#include "Protocols/protocol_constants.h"
 
 /* === Protocol Versioning === */
 #define ODB_PROTOCOL_VERSION_MAJOR 1
-#define ODB_PROTOCOL_VERSION_MINOR 3
+#define ODB_PROTOCOL_VERSION_MINOR 4
 
 /* === ODB === */
 // Init system_states
@@ -74,20 +74,20 @@
 
 // pyro event stucture with time of event and pyro number
 typedef struct __attribute__((packed)) {
-    bool fired;
+    uint8_t fired;
     uint32_t time_ms;
 } pyro_event_t;
 
 // window event structure with start/end time of event
 typedef struct __attribute__((packed)) {
-    bool activated;
+    uint8_t activated;
     uint32_t start_time_ms;
     uint32_t end_time_ms;
 } window_event_t;
 
 // metrics structure with value and time of occurrence
 typedef struct __attribute__((packed)) {
-    bool valid;
+    uint8_t valid;
     float value;
     uint32_t time_ms;
 } metric_t;
@@ -145,7 +145,7 @@ typedef struct __attribute__((packed)) {
     // Empty data to reach ... bytes
     //uint8_t padding[0];
 } odb_stats_t;
-#define ODB_STATS_SIZE sizeof(odb_stats_t)
+#define ODB_STATS_SIZE (sizeof(odb_stats_t))
 
 // Main ODB data structure
 typedef struct __attribute__((packed)) {
@@ -153,56 +153,57 @@ typedef struct __attribute__((packed)) {
 	uint8_t  	version_minor;
 	uint16_t 	payload_size;
     // Status
-    uint32_t    time_boot_ms;       // Timestamp since system boot in milliseconds (ms)
-    uint16_t    system_states;      // Current system/component states
-    uint16_t    event_states;       // Current events states (pyros fired, apogee detected, etc.) -> linked with odb_stats_t
-    uint8_t     mission_state;      // Mission state (preflight, inflight, postflight) -> Linked with FSM
-    uint16_t    battery_mv;         // Main battery voltage in millivolts (mV)
-    uint16_t	pyros_mv[4];		// Each pyros voltage in millivolts (mV)
+    uint32_t    time_boot_ms;       			// Timestamp since system boot in milliseconds (ms)
+    uint16_t    system_states;      			// Current system/component states
+    uint16_t    event_states;       			// Current events states (pyros fired, apogee detected, etc.) -> linked with odb_stats_t
+    uint8_t     mission_state;      			// Mission state (preflight, inflight, postflight) -> Linked with FSM
+    uint16_t    battery_mv;         			// Main battery voltage in millivolts (mV)
+    uint16_t	pyros_mv[PROTOCOL_PYRO_COUNT];	// Each pyros voltage in millivolts (mV)
     // IMU (Attitude & Rates)
-    float       roll;               // Roll angle in degrees (converted to cdeg for MAVLink) -> Linked with BNO055
-    float       pitch;              // Pitch angle in degrees (converted to cdeg for MAVLink) -> Linked with BNO055
-    float       yaw;                // Yaw angle in degrees between -180 and 180 (converted to cdeg for MAVLink) -> Linked with BNO055
-    float       imu_acc_x;          // IMU Acceleration X in m/s2 (converted to cm/s2 for MAVLink) -> Linked with BNO055
-    float       imu_acc_y;          // IMU Acceleration Y in m/s2 (converted to cm/s2 for MAVLink) -> Linked with BNO055
-    float       imu_acc_z;          // IMU Acceleration Z in m/s2 (converted to cm/s2 for MAVLink) -> Linked with BNO055
-    float       imu_gyro_x;         // IMU Angular rate X in deg/s (converted to cdeg/s for MAVLink) -> Linked with BNO055
-    float       imu_gyro_y;         // IMU Angular rate Y in deg/s (converted to cdeg/s for MAVLink) -> Linked with BNO055
-    float       imu_gyro_z;         // IMU Angular rate Z in deg/s (converted to cdeg/s for MAVLink) -> Linked with BNO055
-    float		imu_mag_x;			// IMU Magnetometer X in uT (converted to cuT for MAVLink) -> Linked with BNO055
-    float		imu_mag_y;			// IMU Magnetometer Y in uT (converted to cuT for MAVLink) -> Linked with BNO055
-    float		imu_mag_z;			// IMU Magnetometer Z in uT (converted to cuT for MAVLink) -> Linked with BNO055
-    float		imu_temp;			// IMU Temperature in °C (converted to °cC for MAVLink) -> Linked with BNO055
+    float       roll;               			// Roll angle in degrees (converted to cdeg for MAVLink) -> Linked with BNO055
+    float       pitch;              			// Pitch angle in degrees (converted to cdeg for MAVLink) -> Linked with BNO055
+    float       yaw;                			// Yaw angle in degrees between -180 and 180 (converted to cdeg for MAVLink) -> Linked with BNO055
+    float       imu_acc_x;          			// IMU Acceleration X in m/s2 (converted to cm/s2 for MAVLink) -> Linked with BNO055
+    float       imu_acc_y;         			 	// IMU Acceleration Y in m/s2 (converted to cm/s2 for MAVLink) -> Linked with BNO055
+    float       imu_acc_z;          			// IMU Acceleration Z in m/s2 (converted to cm/s2 for MAVLink) -> Linked with BNO055
+    float       imu_gyro_x;         			// IMU Angular rate X in deg/s (converted to cdeg/s for MAVLink) -> Linked with BNO055
+    float       imu_gyro_y;         			// IMU Angular rate Y in deg/s (converted to cdeg/s for MAVLink) -> Linked with BNO055
+    float       imu_gyro_z;         			// IMU Angular rate Z in deg/s (converted to cdeg/s for MAVLink) -> Linked with BNO055
+    float		imu_mag_x;						// IMU Magnetometer X in uT (converted to cuT for MAVLink) -> Linked with BNO055
+    float		imu_mag_y;						// IMU Magnetometer Y in uT (converted to cuT for MAVLink) -> Linked with BNO055
+    float		imu_mag_z;						// IMU Magnetometer Z in uT (converted to cuT for MAVLink) -> Linked with BNO055
+    float		imu_temp;						// IMU Temperature in °C (converted to °cC for MAVLink) -> Linked with BNO055
     // Pressure & Temp
-    float		altitude_agl_m;		// Altitude in m (converted to cm for MAVLink) from barometer referenced with the sea level (AGL)-> Linked with MS5611
-    float       pressure_pa;       	// Atmospheric pressure in Pa (converted to hPa for MAVLink) -> Linked with MS5611
-    float       temp_celsius;       // Board or environment temperature in °C (converted to °cC for MAVLink) -> Linked with MAX6612MXK
+    float		altitude_agl_m;					// Barometric altitude above ground level (AGL) in m (converted to cm for MAVLink) -> Linked with MS5611
+    float       pressure_pa;       				// Atmospheric pressure in Pa (converted to hPa for MAVLink) -> Linked with MS5611
+    float       temp_celsius;       			// Board or environment temperature in °C (converted to °cC for MAVLink) -> Linked with MAX6612MXK
     // High-G Acclerometer
-    float       highg_acc_x;        // High-G Acceleration X in m/s2 (converted to cm/s2 for MAVLink) -> Linked with ADXL382
-    float       highg_acc_y;        // High-G Acceleration Y in m/s2 (converted to cm/s2 for MAVLink) -> Linked with ADXL382
-    float       highg_acc_z;        // High-G Acceleration Z in m/s2 (converted to cm/s2 for MAVLink) -> Linked with ADXL382
-    float		highg_temp;			// High-G Temperature in °C (converted to °cC for MAVLink) -> Linked with ADXL382
+    float       highg_acc_x;        			// High-G Acceleration X in m/s2 (converted to cm/s2 for MAVLink) -> Linked with ADXL382
+    float       highg_acc_y;        			// High-G Acceleration Y in m/s2 (converted to cm/s2 for MAVLink) -> Linked with ADXL382
+    float       highg_acc_z;        			// High-G Acceleration Z in m/s2 (converted to cm/s2 for MAVLink) -> Linked with ADXL382
+    float		highg_temp;						// High-G Temperature in °C (converted to °cC for MAVLink) -> Linked with ADXL382
     // GPS
-    uint8_t     gps_fix;            // 1 = Active fix, 0 = Void/No fix, 2 = ... -> Linked with L76LM33
-    int32_t     lat;                // Latitude in degE7 (MAVLink format: deg * 10^7) -> Linked with L76LM33
-    int32_t     lon;                // Longitude in degE7 (MAVLink format: deg * 10^7) -> Linked with L76LM33
-    int32_t     gps_alt;            // Altitude (MSL) based on GPS in mm -> Linked with L76LM33
-    uint16_t    vel;                // Ground velocity in cm/s -> Linked with L76LM33
-    uint16_t    cog;                // Course Over Ground in centi-degrees -> Linked with L76LM33
-    uint8_t     satellites_nb;      // Number of satellites used for the fix -> Linked with L76LM33
+    uint8_t     gps_fix;            			// 1 = Active fix, 0 = Void/No fix, 2 = ... -> Linked with L76LM33
+    int32_t     lat;                			// Latitude in degE7 (MAVLink format: deg * 10^7) -> Linked with L76LM33
+    int32_t     lon;                			// Longitude in degE7 (MAVLink format: deg * 10^7) -> Linked with L76LM33
+    int32_t     gps_alt;            			// Altitude (MSL) based on GPS in mm -> Linked with L76LM33
+    uint16_t    vel;                			// Ground velocity in cm/s -> Linked with L76LM33
+    uint16_t    cog;                			// Course Over Ground in centi-degrees -> Linked with L76LM33
+    uint8_t     satellites_nb;      			// Number of satellites used for the fix -> Linked with L76LM33
     // SD
-    uint16_t	sd_space;			// Available space in current sd card -> Linked with MEM2067
+    uint16_t	sd_space;						// Available space in current sd card -> Linked with MEM2067
 
     // Statistics
-    float       imu_acc_vertical;   // Vertical acceleration (World frame) from IMU in m/s2 (converted to cm/s2 for MAVLink) -> Linked with BNO055
-    float       highg_acc_vertical; // Vertical acceleration (World frame) from High-G Accelerometer in m/s2 (converted to cm/s2 for MAVLink) -> Linked with ADXL382
-    float       kalman_z;           // filtered altitude from Kalman filter in m (converted to cm for MAVLink) referenced with the above ground level (AGL) -> altitude_msl_m - initial altitude value
-    float       kalman_v;           // filtered velocity from Kalman filter in m/s (converted to cm/s for MAVLink)
+    float       imu_acc_vertical;   			// Vertical acceleration (World frame) from IMU in m/s2 (converted to cm/s2 for MAVLink) -> Linked with BNO055
+    float       highg_acc_vertical; 			// Vertical acceleration (World frame) from High-G Accelerometer in m/s2 (converted to cm/s2 for MAVLink) -> Linked with ADXL382
+    float       kalman_z;           			// Kalman-filtered altitude above ground level (AGL) in m (converted to cm for MAVLink) -> altitude_agl_m
+    float       kalman_v;           			// Filtered velocity from Kalman filter in m/s (converted to cm/s for MAVLink)
+    uint8_t		barometric_trend;               // Barometric altitude trend (0 = descending, 1 = ascending, 2 = stable) -> Linked with AltitudeTrend & MS5611
 
-    // TOTAL 135 + 4 (header)
-    // Empty data to reach 140 bytes
-    uint8_t padding[1];
+    // TOTAL 136 + 4 (header)
+    // Empty data to reach 144 bytes
+    uint8_t padding[3];
 } odb_data_t;
-#define ODB_DATA_SIZE sizeof(odb_data_t)
+#define ODB_DATA_SIZE (sizeof(odb_data_t))
 
 #endif /* INC_PROTOCOLS_ODB_PROTOCOL_H_ */

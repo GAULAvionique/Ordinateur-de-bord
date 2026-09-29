@@ -7,10 +7,10 @@ import 'package:nexus/services/data_service.dart';
 
 void main() {
   Uint8List telemetryBytes() {
-    final data = ByteData(140);
+    final data = ByteData(144);
     data.setUint8(0, 1);
-    data.setUint8(1, 3);
-    data.setUint16(2, 140, Endian.little);
+    data.setUint8(1, 4);
+    data.setUint16(2, 144, Endian.little);
     data.setUint32(4, 12345, Endian.little);
     data.setUint16(13, 7400, Endian.little);
     data.setFloat32(79, 1013.25, Endian.little);
@@ -81,9 +81,10 @@ void main() {
       flightTestMode: false,
       axisProfile: DataServiceManager.axisProfileP0,
       fireAttemptDelayMs: 100,
-      pyrosArmingFailsafeMs: 200,
+      pyrosArmingMinAltitudeM: 200,
       minNeededPyroNb: 1,
       pyroRoles: [0, 1, 2, 3],
+      apogeeDetectionMode: DataServiceManager.apogeeDetectionKalman,
       accZLaunchThreshold: 1,
       boostPhaseVThreshold: 2,
       apogeeDetectVThreshold: 3,

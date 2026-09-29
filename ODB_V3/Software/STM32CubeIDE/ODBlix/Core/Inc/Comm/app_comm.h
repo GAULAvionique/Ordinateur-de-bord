@@ -2,7 +2,7 @@
  * app_comm.h
  *
  *  Created on: 6 juin 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #ifndef INC_COMM_APP_COMM_H_

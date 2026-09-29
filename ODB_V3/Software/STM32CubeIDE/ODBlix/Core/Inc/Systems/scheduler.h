@@ -2,7 +2,7 @@
  * scheduler.h
  *
  *  Created on: 24 avr. 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #ifndef INC_SYSTEMS_SCHEDULER_H_

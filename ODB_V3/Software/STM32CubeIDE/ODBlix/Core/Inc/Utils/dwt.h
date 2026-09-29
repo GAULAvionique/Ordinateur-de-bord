@@ -2,7 +2,7 @@
  * dwt.h
  *
  *  Created on: 6 mai 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #ifndef INC_UTILS_DWT_H_

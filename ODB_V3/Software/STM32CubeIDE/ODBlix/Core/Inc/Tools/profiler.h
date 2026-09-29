@@ -2,7 +2,7 @@
  * profiler.h
  *
  *  Created on: 18 mai 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #ifndef INC_TOOLS_PROFILER_H_
@@ -17,6 +17,7 @@ typedef enum {
 	PROFILE_TASK_HIGHG,
     PROFILE_TASK_GPS,
     PROFILE_TASK_KALMAN,
+	PROFILE_TASK_BAROMETRIC,
     PROFILE_TASK_TELEMETRY,
 	PROFILE_TASK_BLE,
 	PROFILE_TASK_ADC,

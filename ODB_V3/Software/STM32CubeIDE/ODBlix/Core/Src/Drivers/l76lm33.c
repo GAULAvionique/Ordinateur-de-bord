@@ -78,7 +78,7 @@ l76lm33_state_t L76LM33_Init(l76lm33_t *dev) {
 
     HAL_Delay(500);
 
-    dev->profile = current_config.stage_role - 2;
+    dev->profile = current_config.stage_role - STAGE_ROLE_BOOSTER;
     dev->line_count = 0;
     dev->old_pos = 0;
 

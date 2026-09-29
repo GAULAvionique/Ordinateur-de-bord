@@ -2,7 +2,7 @@
  * adxl382.h
  *
  *  Created on: 13 avr. 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #ifndef INC_DRIVERS_ADXL382_H_

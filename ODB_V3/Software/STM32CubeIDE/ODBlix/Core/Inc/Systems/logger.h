@@ -2,7 +2,7 @@
  * logger.h
  *
  *  Created on: 8 mai 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #ifndef INC_SYSTEMS_LOGGER_H_
@@ -17,6 +17,10 @@
 #define LOG_BUFFER_SIZE				512 				// 400 ms (max wait erase sector w25q) / TASK_LOGGER_FREQ_MS = 20 frames + security
 #define LOGGER_MIN_FLIGHT_SPACE  	(5 * 1024 * 1024) 	// 5Mo
 #define LOGGER_DECIMATION_SIZE		4000U				// samples
+#define LOGGER_MAX_ALLOWED_ADDRESS	FLASH_CONFIG_START_ADDRESS
+#define LOGGER_MAGIC_HEADER			0x48454144U			// HEAD
+#define LOGGER_DATA_MAGIC_NUMBER	0x44415441U			// DATA
+#define LOGGER_STATS_MAGIC_NUMBER	0x53544154U			// STAT
 
 
 typedef enum {

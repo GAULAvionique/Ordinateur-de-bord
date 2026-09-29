@@ -592,7 +592,7 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
       _buildDataRow(context, 'Profil d’axe', 'P${config.axisProfile}', ''),
       _buildDataRow(context, 'Mode test', config.flightTestMode ? 'Oui' : 'Non', ''),
       _buildDataRow(context, 'Rôles des pyros', pyroRoles, ''),
-      _buildDataRow(context, 'Armement minimum', '${config.pyrosArmingFailsafeMs} ms', ''),
+      _buildDataRow(context, 'Armement minimum', '${config.pyrosArmingMinAltitudeM.toStringAsFixed(1)} m', ''),
       _buildDataRow(context, 'Seuil lancement', '${config.accZLaunchThreshold.toStringAsFixed(2)} m/s²', ''),
       _buildDataRow(context, 'Seuil apogée', '${config.apogeeDetectVThreshold.toStringAsFixed(2)} m/s', ''),
       _buildDataRow(context, 'Altitude principal', '${config.mainDeployAltitudeThresholdM.toStringAsFixed(1)} m', ''),

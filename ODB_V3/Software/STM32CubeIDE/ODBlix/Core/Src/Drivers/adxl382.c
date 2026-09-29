@@ -2,7 +2,7 @@
  * adxl382.c
  *
  *  Created on: 13 avr. 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 

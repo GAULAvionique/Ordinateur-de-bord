@@ -2,7 +2,7 @@
  * logger.c
  *
  * Created on: 8 mai 2026
- * 		Author: gagno
+ * 		Author: SamLol12
  */
 
 #include "Systems/logger.h"

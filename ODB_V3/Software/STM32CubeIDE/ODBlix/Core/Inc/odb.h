@@ -2,7 +2,7 @@
  * odb.h
  *
  *  Created on: 3 mai 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #ifndef INC_ODB_H_
@@ -17,6 +17,7 @@
 #include "Drivers/ltste682krkgwt.h"
 #include "Utils/dwt.h"
 #include "Drivers/LowLevel/kalman_nav.h"
+#include "Drivers/LowLevel/altitude_trend.h"
 #include "Drivers/ms5611.h"
 #include "Drivers/pyros.h"
 #include "Drivers/rfd900x.h"

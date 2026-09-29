@@ -106,6 +106,17 @@ class ByteBuilder {
   Uint8List toBytes() => data.buffer.asUint8List();
 }
 
+int _calculateCrc32(Uint8List bytes, int length) {
+  var crc = 0xFFFFFFFF;
+  for (var index = 0; index < length; index++) {
+    crc ^= bytes[index];
+    for (var bit = 0; bit < 8; bit++) {
+      crc = (crc >> 1) ^ (0xEDB88320 & -(crc & 1));
+    }
+  }
+  return (~crc) & 0xFFFFFFFF;
+}
+
 // ============================================================================
 // ========================== CLASSES DE DONNÉES ==============================
 // ============================================================================
@@ -280,7 +291,7 @@ class OdbStats {
 }
 
 class OdbConfig {
-  static const int serializedSize = 94;
+  static const int serializedSize = 99;
   static const int magicNumberSize = 4;
   static const int flightPacketSize = magicNumberSize + serializedSize;
 
@@ -295,9 +306,10 @@ class OdbConfig {
   final bool flightTestMode;
   final int axisProfile;
   final int fireAttemptDelayMs;
-  final int pyrosArmingFailsafeMs;
+  final double pyrosArmingMinAltitudeM;
   final int minNeededPyroNb;
   final List<int> pyroRoles;
+  final int apogeeDetectionMode;
   final double accZLaunchThreshold;
   final double boostPhaseVThreshold;
   final double apogeeDetectVThreshold;
@@ -310,11 +322,12 @@ class OdbConfig {
   final bool enableBuzzer;
   final int buzzerReportToneHz;
   final int idefixFrequencyHz;
+  final int crc32;
 
   OdbConfig({
     this.magicNumber = 0x434F4E46,
     this.versionMajor = 1,
-    this.versionMinor = 2,
+    this.versionMinor = 3,
     this.payloadSize = serializedSize,
     required this.odbName,
     required this.stageRole,
@@ -322,9 +335,10 @@ class OdbConfig {
     required this.flightTestMode,
     required this.axisProfile,
     required this.fireAttemptDelayMs,
-    required this.pyrosArmingFailsafeMs,
+    required this.pyrosArmingMinAltitudeM,
     required this.minNeededPyroNb,
     required this.pyroRoles,
+    required this.apogeeDetectionMode,
     required this.accZLaunchThreshold,
     required this.boostPhaseVThreshold,
     required this.apogeeDetectVThreshold,
@@ -337,6 +351,7 @@ class OdbConfig {
     required this.enableBuzzer,
     required this.buzzerReportToneHz,
     required this.idefixFrequencyHz,
+    this.crc32 = 0,
   });
 
   factory OdbConfig.fromBytes(Uint8List bytes) {
@@ -352,9 +367,10 @@ class OdbConfig {
       flightTestMode: reader.readUint8() == 1,
       axisProfile: reader.readUint8(),
       fireAttemptDelayMs: reader.readUint32(),
-      pyrosArmingFailsafeMs: reader.readUint32(),
+      pyrosArmingMinAltitudeM: reader.readFloat32(),
       minNeededPyroNb: reader.readUint8(),
       pyroRoles: reader.readUint8Array(4),
+      apogeeDetectionMode: reader.readUint8(),
       accZLaunchThreshold: reader.readFloat32(),
       boostPhaseVThreshold: reader.readFloat32(),
       apogeeDetectVThreshold: reader.readFloat32(),
@@ -367,6 +383,7 @@ class OdbConfig {
       enableBuzzer: reader.readUint8() == 1,
       buzzerReportToneHz: reader.readUint16(),
       idefixFrequencyHz: reader.readUint32(),
+      crc32: reader.readUint32(),
     );
   }
 
@@ -377,9 +394,10 @@ class OdbConfig {
     bool? flightTestMode,
     int? axisProfile,
     int? fireAttemptDelayMs,
-    int? pyrosArmingFailsafeMs,
+    double? pyrosArmingMinAltitudeM,
     int? minNeededPyroNb,
     List<int>? pyroRoles,
+    int? apogeeDetectionMode,
     double? accZLaunchThreshold,
     double? boostPhaseVThreshold,
     double? apogeeDetectVThreshold,
@@ -392,6 +410,7 @@ class OdbConfig {
     bool? enableBuzzer,
     int? buzzerReportToneHz,
     int? idefixFrequencyHz,
+    int? crc32,
   }) {
     return OdbConfig(
       odbName: odbName ?? this.odbName,
@@ -400,10 +419,12 @@ class OdbConfig {
       flightTestMode: flightTestMode ?? this.flightTestMode,
       axisProfile: axisProfile ?? this.axisProfile,
       fireAttemptDelayMs: fireAttemptDelayMs ?? this.fireAttemptDelayMs,
-      pyrosArmingFailsafeMs:
-          pyrosArmingFailsafeMs ?? this.pyrosArmingFailsafeMs,
+        pyrosArmingMinAltitudeM:
+          pyrosArmingMinAltitudeM ?? this.pyrosArmingMinAltitudeM,
       minNeededPyroNb: minNeededPyroNb ?? this.minNeededPyroNb,
       pyroRoles: pyroRoles ?? this.pyroRoles,
+        apogeeDetectionMode:
+          apogeeDetectionMode ?? this.apogeeDetectionMode,
       accZLaunchThreshold: accZLaunchThreshold ?? this.accZLaunchThreshold,
       boostPhaseVThreshold: boostPhaseVThreshold ?? this.boostPhaseVThreshold,
       apogeeDetectVThreshold:
@@ -421,6 +442,7 @@ class OdbConfig {
       enableBuzzer: enableBuzzer ?? this.enableBuzzer,
       buzzerReportToneHz: buzzerReportToneHz ?? this.buzzerReportToneHz,
       idefixFrequencyHz: idefixFrequencyHz ?? this.idefixFrequencyHz,
+      crc32: crc32 ?? this.crc32,
     );
   }
 
@@ -436,9 +458,10 @@ class OdbConfig {
     writer.writeUint8(flightTestMode ? 1 : 0);
     writer.writeUint8(axisProfile);
     writer.writeUint32(fireAttemptDelayMs);
-    writer.writeUint32(pyrosArmingFailsafeMs);
+    writer.writeFloat32(pyrosArmingMinAltitudeM);
     writer.writeUint8(minNeededPyroNb);
     writer.writeUint8Array(pyroRoles);
+    writer.writeUint8(apogeeDetectionMode);
     writer.writeFloat32(accZLaunchThreshold);
     writer.writeFloat32(boostPhaseVThreshold);
     writer.writeFloat32(apogeeDetectVThreshold);
@@ -451,12 +474,27 @@ class OdbConfig {
     writer.writeUint8(enableBuzzer ? 1 : 0);
     writer.writeUint16(buzzerReportToneHz);
     writer.writeUint32(idefixFrequencyHz);
-    return writer.toBytes();
+    final bytes = writer.toBytes();
+    ByteData.sublistView(bytes).setUint32(
+      serializedSize - 4,
+      _calculateCrc32(bytes, serializedSize - 4),
+      Endian.little,
+    );
+    return bytes;
+  }
+
+  bool get hasValidCrc {
+    final bytes = toBytes();
+    final calculatedCrc = ByteData.sublistView(bytes).getUint32(
+      serializedSize - 4,
+      Endian.little,
+    );
+    return crc32 == calculatedCrc;
   }
 }
 
 class OdbTelemetry {
-  static const int serializedSize = 140;
+  static const int serializedSize = 144;
 
   final int versionMajor;
   final int versionMinor;
@@ -485,6 +523,7 @@ class OdbTelemetry {
 
   final int sdSpace;
   final double imuAccVertical, highgAccVertical, kalmanZ, kalmanV;
+  final int barometricTrend;
 
   OdbTelemetry.fromBytes(Uint8List bytes) : this._internal(ByteCursor(bytes));
 
@@ -529,8 +568,9 @@ class OdbTelemetry {
         imuAccVertical = reader.readFloat32(),
         highgAccVertical = reader.readFloat32(),
         kalmanZ = reader.readFloat32(),
-        kalmanV = reader.readFloat32() {
-    reader.readUint8(); // End padding
+        kalmanV = reader.readFloat32(),
+        barometricTrend = reader.readUint8() {
+      reader.readUint8Array(3); // End padding
   }
 }
 
@@ -597,6 +637,9 @@ class DataServiceManager with ChangeNotifier {
 
   static const int stageRoleBooster = 2;
   static const int stageRoleSustainer = 3;
+  static const int apogeeDetectionAuto = 0;
+  static const int apogeeDetectionKalman = 1;
+  static const int apogeeDetectionBarometric = 2;
   static const int axisProfileP0 = 0;
   static const int axisProfileP1 = 1;
   static const int axisProfileP2 = 2;
@@ -615,9 +658,9 @@ class DataServiceManager with ChangeNotifier {
   static const int eventFlagDrogueDeployed = 1 << 7;
   static const int eventFlagMachLockEnabled = 1 << 8;
   static const int expectedConfigMajor = 1;
-  static const int expectedConfigMinor = 2;
+  static const int expectedConfigMinor = 3;
   static const int expectedTelemetryMajor = 1;
-  static const int expectedTelemetryMinor = 3;
+  static const int expectedTelemetryMinor = 4;
 
   final BluetoothServiceManager btService;
   DataServiceManager(this.btService) {
@@ -713,6 +756,7 @@ class DataServiceManager with ChangeNotifier {
 
   double get barometerPressure => telemetry?.pressurePa ?? 0.0;
   double get altitudeMslM => telemetry?.altitudeMslM ?? 0.0;
+  int get barometricTrend => telemetry?.barometricTrend ?? 0;
   double get kalmanAltitudeM => telemetry?.kalmanZ ?? 0.0;
   double get kalmanVelocityMS => telemetry?.kalmanV ?? 0.0;
 
@@ -739,13 +783,16 @@ class DataServiceManager with ChangeNotifier {
   double get accZLaunchThreshold => config?.accZLaunchThreshold ?? 0.0;
   double get boostPhaseVThreshold => config?.boostPhaseVThreshold ?? 0.0;
   double get apogeeDetectVThreshold => config?.apogeeDetectVThreshold ?? 0.0;
+  int get apogeeDetectionMode =>
+      config?.apogeeDetectionMode ?? apogeeDetectionKalman;
   double get mainDeployAltitudeThresholdM =>
       config?.mainDeployAltitudeThresholdM ?? 0.0;
   double get landingDetectVThreshold => config?.landingDetectVThreshold ?? 0.0;
   int get buzzerReportToneHz => config?.buzzerReportToneHz ?? 0;
   int get landingDetectThresholdMs => config?.landingDetectThresholdMs ?? 0;
   int get fireAttemptDelayMs => config?.fireAttemptDelayMs ?? 0;
-  int get pyrosArmingFailsafeMs => config?.pyrosArmingFailsafeMs ?? 0;
+  double get pyrosArmingMinAltitudeM =>
+      config?.pyrosArmingMinAltitudeM ?? 0.0;
   int get apogeeFailsafeMs => config?.apogeeFailsafeMs ?? 0;
   int get idefixFrequencyHz => config?.idefixFrequencyHz ?? 0;
   List<int> get pyroRoles => config?.pyroRoles ?? List.filled(4, 0);
@@ -837,8 +884,13 @@ class DataServiceManager with ChangeNotifier {
     _safeNotifyListeners();
   }
 
-  set pyrosArmingFailsafeMs(int value) {
-    config = config?.copyWith(pyrosArmingFailsafeMs: value);
+  set pyrosArmingMinAltitudeM(double value) {
+    config = config?.copyWith(pyrosArmingMinAltitudeM: value);
+    _safeNotifyListeners();
+  }
+
+  set apogeeDetectionMode(int value) {
+    config = config?.copyWith(apogeeDetectionMode: value);
     _safeNotifyListeners();
   }
 
@@ -1472,6 +1524,10 @@ class DataServiceManager with ChangeNotifier {
           OdbConfig.magicNumberSize, OdbConfig.flightPacketSize)
           : bytes;
       final tempConfig = OdbConfig.fromBytes(configBytes);
+      if (!tempConfig.hasValidCrc) {
+        ConsoleService().log('Configuration ODB rejetée: CRC32 invalide.');
+        return;
+      }
       if (tempConfig.versionMajor == expectedConfigMajor &&
           tempConfig.versionMinor == expectedConfigMinor) {
         if (isFlightConfig) {
@@ -1855,6 +1911,22 @@ extension DataServiceDisplay on DataServiceManager {
           : '—';
   String get altitudeMslDisplay =>
       hasConnection ? altitudeMslM.toStringAsFixed(2) : '—';
+  String get barometricTrendDisplay {
+    final usesBarometricTrend =
+      apogeeDetectionMode == DataServiceManager.apogeeDetectionBarometric ||
+      (apogeeDetectionMode == DataServiceManager.apogeeDetectionAuto &&
+        stageRole == DataServiceManager.stageRoleBooster);
+    if (!usesBarometricTrend) return 'Indisponible';
+    if (!hasConnection || barometerSensorState != SensorState.ok) return '—';
+    switch (barometricTrend) {
+      case 1:
+        return 'Ascendante';
+      case 2:
+        return 'Descendante';
+      default:
+        return 'Stable';
+    }
+  }
   String get kalmanAltitudeDisplay =>
       hasConnection ? kalmanAltitudeM.toStringAsFixed(2) : '—';
   String get kalmanVelocityDisplay =>

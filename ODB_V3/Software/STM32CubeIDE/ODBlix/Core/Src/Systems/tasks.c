@@ -2,7 +2,7 @@
  * tasks.c
  *
  *  Created on: 10 mai 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 

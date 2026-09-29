@@ -2,7 +2,7 @@
  * telemtry_comm.h
  *
  *  Created on: 14 juin 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #ifndef INC_COMM_TELEMETRY_COMM_H_

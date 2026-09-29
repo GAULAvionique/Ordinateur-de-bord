@@ -2,7 +2,7 @@
  * tasks.h
  *
  *  Created on: 10 mai 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #ifndef INC_SYSTEMS_TASKS_H_

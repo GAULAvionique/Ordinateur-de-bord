@@ -2,7 +2,7 @@
  * mem2067.h
  *
  *  Created on: 19 juin 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #ifndef INC_DRIVERS_MEM2067_H_

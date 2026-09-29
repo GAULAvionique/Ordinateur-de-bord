@@ -2,13 +2,13 @@
  * NMEA.h
  *
  * Created on: May 12, 2024
- * Author: gagnon
+ * Author: SamLol12
  *
  * Edited on: Jul 4, 2024
  * Autor: mathouqc
  *
  * Edited on: Mar 02, 2026
- * Autor: AudaceLol12
+ * Autor: SamLol12
  */
 
 #ifndef INC_DRIVERS_LOWLEVEL_NMEA_H
@@ -45,6 +45,7 @@ typedef struct {
     uint16_t    cog;            // Cap au sol en centi-degrés
     uint8_t     satellites_nb;  // Number of satellites used for the fix
 } nmea_t;
+
 
 int8_t NMEA_ValidateRMC(const char *nmea_sentence);
 int8_t NMEA_ParseRMC(nmea_t *gps_data, const char *nmea_sentence);

@@ -208,7 +208,7 @@ void Load_Config_From_File(bool is_sustainer) {
         char key[64] = {0}, value[64] = {0};
         if (sscanf(line, " %63[^= \t] = %63s", key, value) == 2) {
             if (strcmp(key, "odb_name") == 0) strncpy(current_config.odb_name, value, sizeof(current_config.odb_name)-1);
-            else if (strcmp(key, "stage_role") == 0) current_config.stage_role = atoi(value);
+            else if (strcmp(key, "stage_role") == 0) current_config.stage_role = (uint8_t)atoi(value);
             else if (strcmp(key, "pyros_arming_failsafe_ms") == 0) current_config.pyros_arming_failsafe_ms = atoi(value);
             else if (strcmp(key, "apogee_failsafe_ms") == 0) current_config.apogee_failsafe_ms = atoi(value);
             else if (strcmp(key, "main_deploy_altitude_threshold_m") == 0) current_config.main_deploy_altitude_threshold_m = atof(value);
@@ -549,7 +549,7 @@ int main(int argc, char** argv) {
 	fprintf(html, "<tr><th>Source Config</th><td><b><span class='%s'>%s</span></b></td></tr>", strstr(config_file_used, "ÉCHEC") ? "fail" : "pass", config_file_used);
 
 	fprintf(html, "<tr><th>Nom ODB</th><td>%s</td></tr>", current_config.odb_name);
-	fprintf(html, "<tr><th>Rôle Étage</th><td>%s</td></tr>", (current_config.stage_role == 3 ? "SUSTAINER" : "BOOSTER"));
+    fprintf(html, "<tr><th>Rôle Étage</th><td>%s</td></tr>", (current_config.stage_role == STAGE_ROLE_SUSTAINER ? "SUSTAINER" : "BOOSTER"));
 	fprintf(html, "<tr><th>Armement Pyro (ms)</th><td>%d</td></tr>", current_config.pyros_arming_failsafe_ms);
 	fprintf(html, "<tr><th>Failsafe Apogée (ms)</th><td>%d</td></tr>", current_config.apogee_failsafe_ms);
 	fprintf(html, "<tr><th>Altitude Main (m)</th><td>%.1f</td></tr>", current_config.main_deploy_altitude_threshold_m);

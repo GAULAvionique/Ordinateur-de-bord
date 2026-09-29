@@ -2,7 +2,7 @@
  * reboot_manager.h
  *
  *  Created on: 4 juin 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #ifndef INC_UTILS_REBOOT_MANAGER_H_

@@ -2,7 +2,7 @@
  * stm32f4xx_hal.h
  *
  *  Created on: 10 juin 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 

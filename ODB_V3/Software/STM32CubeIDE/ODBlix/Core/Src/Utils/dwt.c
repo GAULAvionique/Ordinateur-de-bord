@@ -2,7 +2,7 @@
  * dwt.c
  *
  *  Created on: 6 mai 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #include "stm32f4xx_hal.h"

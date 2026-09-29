@@ -2,16 +2,35 @@
  * config.c
  *
  *  Created on: 19 mai 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 
 #include "Systems/config.h"
+#include <stddef.h>
 #include <string.h>
 #include <stdio.h>
 
 extern w25q_t w25q;
 odb_config_t current_config;
+
+enum {
+	CONFIG_PYRO_NEEDED_MIN = 1U,
+	CONFIG_PYRO_ATTEMPTS_MIN = 1U
+};
+
+static const float config_acc_z_launch_min_ms2 = 0.0f;
+static const float config_acc_z_launch_max_ms2 = 39.24f;
+static const float config_main_deploy_alt_min_m = 50.0f;
+static const float config_apogee_detect_v_max_ms = 0.0f;
+
+static uint32_t Config_CalculateCrc(const odb_config_t *config) {
+	return Utils_Crc32Calculate(config, offsetof(odb_config_t, crc32));
+}
+
+bool Config_CheckCrc(const odb_config_t *config) {
+	return config != NULL && Utils_Crc32Validate(config, offsetof(odb_config_t, crc32), config->crc32);
+}
 
 // Default configuration
 const odb_config_t default_config = {
@@ -25,12 +44,12 @@ const odb_config_t default_config = {
     .odb_name = "ODBlix",
 
     // Stage
-    .stage_role = 2,
-    .debug_mode = 1,
-	.flight_test_mode = 0,
+	.stage_role = STAGE_ROLE_BOOSTER,
+    .debug_mode = STATE_TRUE,
+	.flight_test_mode = STATE_FALSE,
 
 	// Sensors
-	.axis_profile = 0,
+	.axis_profile = ACC_AXIS_PROFILE_P0,
 
     // Pyros
     .fire_attempt_delay_ms = 250,
@@ -44,12 +63,13 @@ const odb_config_t default_config = {
     },
 
     // Phase
-    .acc_z_launch_threshold = 29.42f, 				// m/s2 (3.0G)
-    .boost_phase_v_threshold = 100.0f,				// m/s
-    .apogee_detect_v_threshold = -5.0f,				// m/s
-    .landing_detect_v_threshold = 5.0f,				// m/s
-    .landing_detect_threshold_ms = 10000,			// ms
-    .apogee_failsafe_ms = 60000,					// ms
+	.apogee_detection_mode = APOGEE_DETECTION_KALMAN,	// Kalman
+    .acc_z_launch_threshold = 29.42f, 					// m/s2 (3.0G)
+    .boost_phase_v_threshold = 100.0f,					// m/s
+    .apogee_detect_v_threshold = -5.0f,					// m/s
+    .landing_detect_v_threshold = 5.0f,					// m/s
+    .landing_detect_threshold_ms = 10000,				// ms
+    .apogee_failsafe_ms = 60000,						// ms
 
     // Parachute
     .main_deploy_altitude_threshold_m = 450.0f,
@@ -57,14 +77,16 @@ const odb_config_t default_config = {
     .main_fire_attempt_max_nb = 3,
 
     // Buzzer
-    .enable_buzzer = 0,
+	.enable_buzzer = STATE_FALSE,
     .buzzer_report_tone_hz = 500,
 
 	// IdeFIX
 	.idefix_frequency_hz = 444270000,
+
+	.crc32 = 0,
 };
 
-static config_error_t Config_Validate(const odb_config_t* new_config) {
+static config_error_t Config_ValidateFields(const odb_config_t* new_config) {
     if(new_config == NULL) {
         return CONFIG_ERR_MAGIC_NUMBER;
     }
@@ -77,18 +99,18 @@ static config_error_t Config_Validate(const odb_config_t* new_config) {
         return CONFIG_ERR_VERSION;
     }
 
-    if(new_config->debug_mode == 0) {
+	if(new_config->debug_mode == STATE_FALSE) {
     	/* Validate ODB Name */
     	if(new_config->odb_name[0] == ' ') {
     		return CONFIG_ERR_ODB_NAME;
     	}
     	/* Validate Stage Role */
-		if(new_config->stage_role < CONFIG_STAGE_ROLE_MIN || new_config->stage_role > CONFIG_STAGE_ROLE_MAX) {
+		if(new_config->stage_role != STAGE_ROLE_BOOSTER && new_config->stage_role != STAGE_ROLE_SUSTAINER) {
 			return CONFIG_ERR_STAGE_ROLE;
 		}
 
 		/* Validate Profile Axis */
-		if(new_config->stage_role < ACC_AXIS_PROFILE_P0 || new_config->stage_role > ACC_AXIS_PROFILE_MAX) {
+		if(new_config->axis_profile < ACC_AXIS_PROFILE_P0 || new_config->axis_profile >= ACC_AXIS_PROFILE_MAX) {
 			return CONFIG_ERR_PROFILE_AXIS;
 		}
 
@@ -103,12 +125,12 @@ static config_error_t Config_Validate(const odb_config_t* new_config) {
 		}
 
 		/* Validate Pyro Configuration */
-		if(new_config->min_needed_pyro_nb < CONFIG_PYRO_NEEDED_MIN || new_config->min_needed_pyro_nb > CONFIG_PYRO_NEEDED_MAX) {
+		if(new_config->min_needed_pyro_nb < CONFIG_PYRO_NEEDED_MIN || new_config->min_needed_pyro_nb > CONFIG_PYRO_COUNT) {
 			return CONFIG_ERR_PYRO_LIMITS;
 		}
 
 		bool is_drogue = false;
-		for(uint8_t i = 0; i < CONFIG_PYRO_NEEDED_MAX; i++) {
+		for(uint8_t i = 0; i < CONFIG_PYRO_COUNT; i++) {
 			if(new_config->pyro_roles[i] == PYRO_ROLE_DROGUE) {
 				is_drogue = true;
 				break;
@@ -123,18 +145,22 @@ static config_error_t Config_Validate(const odb_config_t* new_config) {
 		}
 
 		/* Validate Acceleration Thresholds */
-		if(new_config->acc_z_launch_threshold <= CONFIG_ACC_Z_LAUNCH_MIN_MS2 || new_config->acc_z_launch_threshold >= CONFIG_ACC_Z_LAUNCH_MAX_MS2) {
+		if(new_config->acc_z_launch_threshold <= config_acc_z_launch_min_ms2 || new_config->acc_z_launch_threshold >= config_acc_z_launch_max_ms2) {
 			return CONFIG_ERR_THRESHOLDS;
 		}
 
 		/* Validate Altitude Thresholds */
-		if(new_config->main_deploy_altitude_threshold_m < CONFIG_MAIN_DEPLOY_ALT_MIN_M) {
+		if(new_config->main_deploy_altitude_threshold_m < config_main_deploy_alt_min_m) {
 			return CONFIG_ERR_THRESHOLDS;
 		}
 
 		/* Validate Velocity Thresholds */
-		if(new_config->apogee_detect_v_threshold > CONFIG_APOGEE_DETECT_V_MAX_MS) {
+		if(new_config->apogee_detect_v_threshold > config_apogee_detect_v_max_ms) {
 			return CONFIG_ERR_THRESHOLDS;
+		}
+
+		if(new_config->apogee_detection_mode >= APOGEE_DETECTION_MAX || new_config->apogee_detection_mode < APOGEE_DETECTION_AUTO) {
+			return CONFIG_ERR_APOGEE_DETECTION_MODE;
 		}
     }
 
@@ -145,9 +171,8 @@ void Config_Init(void) {
     odb_config_t temp_config;
     if(W25Q_Read(&w25q, (uint8_t*)&temp_config, FLASH_CONFIG_START_ADDRESS, CONFIG_DATA_SIZE) == 0) {
         if(temp_config.magic_number == CONFIG_MAGIC_NUMBER) {
-            if(temp_config.version_major == CONFIG_PROTOCOL_VERSION_MAJOR && temp_config.version_minor == CONFIG_PROTOCOL_VERSION_MINOR && temp_config.payload_size == CONFIG_DATA_SIZE) {
+			if(temp_config.version_major == CONFIG_PROTOCOL_VERSION_MAJOR && temp_config.version_minor == CONFIG_PROTOCOL_VERSION_MINOR && temp_config.payload_size == CONFIG_DATA_SIZE && Config_CheckCrc(&temp_config) && Config_ValidateFields(&temp_config) == CONFIG_VALID_OK) {
                 memcpy(&current_config, &temp_config, CONFIG_DATA_SIZE);
-
                 return;
             } else {
                 DEBUG_PRINTF("WARNING : Config version mismatch (Flash V%d.%d, FW V%d.%d). Loading defaults.\n", temp_config.version_major, temp_config.version_minor, CONFIG_PROTOCOL_VERSION_MAJOR, CONFIG_PROTOCOL_VERSION_MINOR);
@@ -160,10 +185,11 @@ void Config_Init(void) {
 }
 
 int8_t Config_SaveToFlash(void) {
-	config_error_t validation_result = Config_Validate(&current_config);
+	config_error_t validation_result = Config_ValidateFields(&current_config);
 	if(validation_result != CONFIG_VALID_OK) {
 		return (int8_t)validation_result;
 	}
+	current_config.crc32 = Config_CalculateCrc(&current_config);
 
 	if(W25Q_EraseSector(&w25q, FLASH_CONFIG_START_ADDRESS) != 0) {
     	return -1; // failed
@@ -178,6 +204,7 @@ int8_t Config_SaveToFlash(void) {
 
 void Config_LoadDefaults(void) {
     memcpy(&current_config, &default_config, CONFIG_DATA_SIZE);
+	current_config.crc32 = Config_CalculateCrc(&current_config);
 }
 
 const odb_config_t* Config_Get(void) {

@@ -2,7 +2,7 @@
  * w25q512jv.c
  *
  * Created on: 12 avr. 2026
- * Author: gagno
+ * Author: SamLol12
  */
 
 #include "Drivers/w25q512jveim.h"

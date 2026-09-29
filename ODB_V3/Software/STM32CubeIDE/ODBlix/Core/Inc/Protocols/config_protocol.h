@@ -2,17 +2,28 @@
  * app_protocol.h
  *
  *  Created on: 6 juin 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #ifndef INC_PROTOCOLS_CONFIG_PROTOCOL_H_
 #define INC_PROTOCOLS_CONFIG_PROTOCOL_H_
 
 #include <stdint.h>
+#include "Protocols/protocol_constants.h"
 
 /* === Protocol Versioning === */
 #define CONFIG_PROTOCOL_VERSION_MAJOR 1
-#define CONFIG_PROTOCOL_VERSION_MINOR 2
+#define CONFIG_PROTOCOL_VERSION_MINOR 3
+
+enum {
+    CONFIG_ODB_NAME_SIZE = 32,
+    CONFIG_PYRO_COUNT = PROTOCOL_PYRO_COUNT
+};
+
+typedef enum {
+	STAGE_ROLE_BOOSTER = 2,
+	STAGE_ROLE_SUSTAINER = 3
+} stage_role_t;
 
 /* === Pyro Role === */
 #define PYRO_ROLES(X)			\
@@ -47,6 +58,14 @@ typedef enum {
     ACC_AXIS_PROFILE_MAX
 } acc_axis_profile_t;
 
+/* === Apogee Detection Mode === */
+typedef enum {
+	APOGEE_DETECTION_AUTO 		= 0,
+    APOGEE_DETECTION_KALMAN 	= 1,
+    APOGEE_DETECTION_BAROMETRIC = 2,
+	APOGEE_DETECTION_MAX
+} apogee_detection_mode_t;
+
 /* === Configuration Structure === */
 typedef struct __attribute__((packed)) {
 	uint32_t 			magic_number;
@@ -56,10 +75,10 @@ typedef struct __attribute__((packed)) {
 	uint16_t 			payload_size;
 
     // Profile
-    char 				odb_name[32];				// max 12 char
+    char 				odb_name[CONFIG_ODB_NAME_SIZE]; // max 12 char
 
     // Stage
-    uint8_t 			stage_role;         		// 2 = BOOSTER, 3 = SUSTAINER
+    uint8_t 			stage_role;
     uint8_t 			debug_mode;
     uint8_t				flight_test_mode;
 
@@ -70,9 +89,10 @@ typedef struct __attribute__((packed)) {
     uint32_t 			fire_attempt_delay_ms;
     float	 			pyros_arming_min_altitude_m;
     uint8_t 			min_needed_pyro_nb;
-    uint8_t 			pyro_roles[4];
+    uint8_t 			pyro_roles[CONFIG_PYRO_COUNT];
 
     // Phase
+    uint8_t 			apogee_detection_mode; // 0 = AUTO, 1 = KALMAN, 2 = BAROMETRIC
     float 				acc_z_launch_threshold;
     float 				boost_phase_v_threshold;
     float 				apogee_detect_v_threshold;
@@ -92,10 +112,13 @@ typedef struct __attribute__((packed)) {
     // IdeFIX
     uint32_t 			idefix_frequency_hz;
 
-    // TOTAL 94
+    // Integrity
+    uint32_t			crc32;
+
+    // TOTAL 99
     // Empty data to reach ... bytes
 	//uint8_t padding[0];
 } odb_config_t;
-#define CONFIG_DATA_SIZE sizeof(odb_config_t)
+#define CONFIG_DATA_SIZE (sizeof(odb_config_t))
 
 #endif /* INC_PROTOCOLS_CONFIG_PROTOCOL_H_ */

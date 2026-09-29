@@ -2,7 +2,7 @@
  * profiler.c
  *
  *  Created on: 18 mai 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 
@@ -21,6 +21,7 @@ static const char *const task_names[PROFILE_MAX_TASKS] = {
     "HIGHG",
     "GPS",
     "KALMAN",
+	"BAROMETRIC"
     "TELEMETRY",
     "BLE",
     "ADC",

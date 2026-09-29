@@ -11,13 +11,14 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #define GRAVITY_MS2 			9.80665f	// m/s2
 #define G_TO_MS2(g) 			((GRAVITY_MS2) * (g))
 #define PRESSURE_SEA_LEVEL_HPA	1013.25f    // hPa
 
 #define DEBUG_PRINTF(...) do { \
-    if(current_config.debug_mode) { \
+    if(current_config.debug_mode == STATE_TRUE) { \
         printf(__VA_ARGS__); \
     } \
 } while(0)
@@ -45,7 +46,18 @@ float Math_ComputeAltitudeMSL(float current_pressure);
 float Math_ComputeAltitudeAGL(float current_pressure, float ground_elevation_msl);
 /* =========== */
 
+/* === CRC === */
+uint32_t Utils_Crc32Calculate(const void *data, size_t size);
+bool Utils_Crc32Validate(const void *data, size_t size, uint32_t expected_crc);
+/* =========== */
+
 /* === HELPERS === */
+typedef enum {
+    STATE_FALSE = 0U,
+    STATE_TRUE = 1U
+} state_t;
+
+
 typedef struct {
 	uint32_t  	start_time;
 	uint32_t  	elapsed_time_ms;

@@ -2,7 +2,7 @@
  * odb.c
  *
  *  Created on: 3 mai 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 
@@ -34,8 +34,9 @@ extern w25q_t w25q;
 extern idefix_t idefix;
 extern mem2067_t mem2067;
 static kalman_nav_t kalman_filter;
+static altitude_trend_t altitude_trend;
 
-static float ground_altitude_msl_m = 0.0f;
+static float ground_elevation_msl_m = 0.0f;
 
 
 static void ODB_UpdateMetricMax(metric_t *metric, float candidate_value, uint32_t time_ms) {
@@ -44,7 +45,7 @@ static void ODB_UpdateMetricMax(metric_t *metric, float candidate_value, uint32_
     }
 
     if(!metric->valid || candidate_value > metric->value) {
-        metric->valid = true;
+        metric->valid = STATE_TRUE;
         metric->value = candidate_value;
         metric->time_ms = time_ms;
     }
@@ -57,14 +58,14 @@ static void ODB_UpdateWindowEvent(window_event_t *event, bool active, uint32_t t
 
     if(active) {
         if(!event->activated) {
-            event->activated = true;
+            event->activated = STATE_TRUE;
             if(event->start_time_ms == 0) {
                 event->start_time_ms = time_ms;
             }
             event->end_time_ms = 0;
         }
     } else if(event->activated) {
-        event->activated = false;
+        event->activated = STATE_FALSE;
         event->end_time_ms = time_ms;
     }
 }
@@ -116,48 +117,48 @@ void ODB_Reset(odb_data_t *data, odb_stats_t *stats) {
 
     stats->flight_id = 0;
     stats->date = 0;
-    stats->pyros_arm.activated = false;
+    stats->pyros_arm.activated = STATE_FALSE;
     stats->pyros_arm.start_time_ms = 0;
     stats->pyros_arm.end_time_ms = 0;
-    stats->pyro1.fired = false;
+    stats->pyro1.fired = STATE_FALSE;
     stats->pyro1.time_ms = 0;
-    stats->pyro2.fired = false;
+    stats->pyro2.fired = STATE_FALSE;
     stats->pyro2.time_ms = 0;
-    stats->pyro3.fired = false;
+    stats->pyro3.fired = STATE_FALSE;
     stats->pyro3.time_ms = 0;
-    stats->pyro4.fired = false;
+    stats->pyro4.fired = STATE_FALSE;
     stats->pyro4.time_ms = 0;
-    stats->mach_lock.activated = false;
+    stats->mach_lock.activated = STATE_FALSE;
     stats->mach_lock.start_time_ms = 0;
     stats->mach_lock.end_time_ms = 0;
-    stats->max_altitude_gps.valid = false;
+    stats->max_altitude_gps.valid = STATE_FALSE;
     stats->max_altitude_gps.value = 0.0f;
     stats->max_altitude_gps.time_ms = 0;
-    stats->max_altitude_baro.valid = false;
+    stats->max_altitude_baro.valid = STATE_FALSE;
     stats->max_altitude_baro.value = 0.0f;
     stats->max_altitude_baro.time_ms = 0;
-    stats->max_altitude_kalman.valid = false;
+    stats->max_altitude_kalman.valid = STATE_FALSE;
     stats->max_altitude_kalman.value = 0.0f;
     stats->max_altitude_kalman.time_ms = 0;
-    stats->apogee.valid = false;
+    stats->apogee.valid = STATE_FALSE;
     stats->apogee.value = 0.0f;
     stats->apogee.time_ms = 0;
-    stats->main_deploy.valid = false;
+    stats->main_deploy.valid = STATE_FALSE;
     stats->main_deploy.value = 0.0f;
     stats->main_deploy.time_ms = 0;
-    stats->drogue_deploy.valid = false;
+    stats->drogue_deploy.valid = STATE_FALSE;
     stats->drogue_deploy.value = 0.0f;
     stats->drogue_deploy.time_ms = 0;
-    stats->max_ascend_speed.valid = false;
+    stats->max_ascend_speed.valid = STATE_FALSE;
     stats->max_ascend_speed.value = 0.0f;
     stats->max_ascend_speed.time_ms = 0;
-    stats->max_ascend_accel.valid = false;
+    stats->max_ascend_accel.valid = STATE_FALSE;
     stats->max_ascend_accel.value = 0.0f;
     stats->max_ascend_accel.time_ms = 0;
-    stats->max_descend_speed.valid = false;
+    stats->max_descend_speed.valid = STATE_FALSE;
     stats->max_descend_speed.value = 0.0f;
     stats->max_descend_speed.time_ms = 0;
-    stats->max_descend_accel.valid = false;
+    stats->max_descend_accel.valid = STATE_FALSE;
     stats->max_descend_accel.value = 0.0f;
     stats->max_descend_accel.time_ms = 0;
     stats->flight_time_ms = 0;
@@ -287,13 +288,18 @@ odb_state_t ODB_Init(odb_data_t *data, odb_stats_t *stats) {
 		}
 
 		// Kalman use AGL instead of MSL
-		ground_altitude_msl_m = sum / KALMAN_NAV_SAMPLE_NB;
+        ground_elevation_msl_m = sum / KALMAN_NAV_SAMPLE_NB;
 		for(int i = 0; i < KALMAN_NAV_SAMPLE_NB; i++) {
-			samples[i] -= ground_altitude_msl_m;
+            samples[i] -= ground_elevation_msl_m;
 		}
 
 		KalmanNav_Init(&kalman_filter, 0.0f, samples, KALMAN_NAV_SAMPLE_NB);
 	}
+
+    // Barometric option
+    if(current_config.apogee_detection_mode == APOGEE_DETECTION_BAROMETRIC) {
+    	AltitudeTrend_Init(&altitude_trend);
+    }
 
     if(Idefix_Init(&idefix) == IDEFIX_OK) {
         system_states |= FLAG_IDEFIX_OK;
@@ -333,7 +339,7 @@ odb_state_t ODB_Init(odb_data_t *data, odb_stats_t *stats) {
     } else if(error > 0) {
         odb_state = ODB_ERROR;
         DEBUG_PRINTF("ERROR : %d ERROR(s) detected during system initialization. Some essential features are unavailable\n", error);
-        if(!current_config.debug_mode) {
+        if(current_config.debug_mode == STATE_FALSE) {
         	CriticalLED_SetColor(&critical_led, RED);
         	//while(1) {} // Stop execution
         }
@@ -350,7 +356,7 @@ odb_state_t ODB_Init(odb_data_t *data, odb_stats_t *stats) {
     data->system_states = system_states;
     data->version_major = ODB_PROTOCOL_VERSION_MAJOR;
 	data->version_minor = ODB_PROTOCOL_VERSION_MINOR;
-	data->payload_size = ODB_DATA_SIZE;
+	data->payload_size  = ODB_DATA_SIZE;
 
     return odb_state;
 }
@@ -406,7 +412,7 @@ void ODB_Update(odb_data_t *data, odb_stats_t *stats) {
     MS5611_Update(&ms5611);
     if(MS5611_Compute(&ms5611, &temperature, &pressure) == MS5611_OK) {
     	data->pressure_pa = pressure;
-    	data->altitude_agl_m = Math_ComputeAltitudeMSL(pressure) - ground_altitude_msl_m;
+    	data->altitude_agl_m = Math_ComputeAltitudeMSL(pressure) - ground_elevation_msl_m;
 		data->system_states |= FLAG_BARO_OK;
     } else {
         data->system_states &= ~FLAG_BARO_OK;
@@ -483,6 +489,13 @@ void ODB_Update(odb_data_t *data, odb_stats_t *stats) {
     data->kalman_z = (float)kalman_filter.z;
     data->kalman_v = (float)kalman_filter.v;
     //Profiler_StopTask(PROFILE_TASK_KALMAN);
+
+    //Profiler_StartTask(PROFILE_TASK_BAROMETRIC);
+    if(current_config.apogee_detection_mode == APOGEE_DETECTION_BAROMETRIC) {
+    	AltitudeTrend_Update(&altitude_trend, data->altitude_agl_m);
+    	data->barometric_trend = (uint8_t)altitude_trend.state;
+	}
+    //Profiler_StopTask(PROFILE_TASK_BAROMETRIC);
 
     //Profiler_StartTask(PROFILE_TASK_GPS);
     l76lm33_state_t gps_status = L76LM33_Compute(&l76lm33);

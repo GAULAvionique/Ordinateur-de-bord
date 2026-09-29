@@ -2,7 +2,7 @@
  * beacon_comm.c
  *
  *  Created on: 14 juin 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #include "Comm/beacon_comm.h"

@@ -2,7 +2,7 @@
  * utils.c
  *
  *  Created on: 2 mars 2026
- *      Author: gagno
+ *      Author: SamLol12
  */
 
 #include "Utils/utils.h"
@@ -107,6 +107,28 @@ int printt(const char *format, ...) {
     va_end(args);
 
     return ret;
+}
+
+uint32_t Utils_Crc32Calculate(const void *data, size_t size) {
+    const uint8_t *bytes = (const uint8_t *)data;
+    uint32_t crc = 0xFFFFFFFFU;
+
+    if(data == NULL) {
+        return 0U;
+    }
+
+    for(size_t i = 0; i < size; i++) {
+        crc ^= bytes[i];
+        for(uint8_t bit = 0; bit < 8U; bit++) {
+            crc = (crc >> 1U) ^ (0xEDB88320U & (uint32_t)-(int32_t)(crc & 1U));
+        }
+    }
+
+    return ~crc;
+}
+
+bool Utils_Crc32Validate(const void *data, size_t size, uint32_t expected_crc) {
+    return data != NULL && Utils_Crc32Calculate(data, size) == expected_crc;
 }
 
 /*

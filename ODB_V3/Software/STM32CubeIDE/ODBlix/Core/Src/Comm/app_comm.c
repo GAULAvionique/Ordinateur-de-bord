@@ -294,7 +294,7 @@ void AppComm_ProcessRx(hm11_t *hm11_dev) {
 						}
 						AppComm_SendEventsAck(hm11_dev, has_stats ? 1 : 0, flight_index);
                     } else if(cmd == CMD_PLAY_MELODY) {
-                    	Buzzer_PlayMelody(&buzzer, ram_ranch_solo, 21, 3);
+                    	Buzzer_PlayMelody(&buzzer, ram_ranch_solo, RAM_RANCH_SOLO_NOTE_COUNT, 1);
 					} else if(cmd == CMD_REQ_FLIGHT_DATA) {
 						if(expected_len < 5) {
 							AppComm_SendAck(hm11_dev, CMD_REQ_FLIGHT_DATA, 0);

@@ -163,7 +163,7 @@ void FSM_Update(void) {
 								Buzzer_ReportStatus(&buzzer, current_config.buzzer_report_tone_hz, system_measurements.vin_batt, (bool[]){(flight_data.system_states & FLAG_PYRO1_CONN) != 0U, (flight_data.system_states & FLAG_PYRO2_CONN) != 0U, (flight_data.system_states & FLAG_PYRO3_CONN) != 0U, (flight_data.system_states & FLAG_PYRO4_CONN) != 0U}, 0U, 0, 0.0f, false);
 							}
 							HAL_Delay(2000);
-							Buzzer_PlayMelody(&buzzer, ram_ranch_solo, 21, 3);
+							Buzzer_PlayMelody(&buzzer, ram_ranch_solo, RAM_RANCH_SOLO_NOTE_COUNT, 3);
 						}
 
 						Pyro_SetContinuity(false);

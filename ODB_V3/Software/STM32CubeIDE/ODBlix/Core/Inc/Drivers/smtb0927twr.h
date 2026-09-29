@@ -44,15 +44,38 @@ typedef struct {
 	uint32_t inf_bip_last_tick;
 } buzzer_t;
 
-// Melody
-#define NOTE_C4  262
-#define NOTE_D4  294
-#define NOTE_E4  330
-#define NOTE_F4  349
-#define NOTE_G4  392
-#define REST     0
+// Melody frequencies
+#define NOTE_F3   175
+#define NOTE_G3   196
+#define NOTE_A3   220
+#define NOTE_BB3  233
+#define NOTE_C4   262
+#define NOTE_D4   294
+#define NOTE_E4   330
+#define NOTE_F4   349
+#define NOTE_G4   392
+#define NOTE_A4   440
+#define NOTE_BB4  466
+#define NOTE_C5   523
+#define NOTE_D5   587
+#define NOTE_E5   659
+#define NOTE_F5   698
+#define NOTE_G5   784
+#define NOTE_A5   880
+#define NOTE_BB5  932
+#define NOTE_C6   1047
+#define NOTE_D6   1175
+#define NOTE_E6   1319
+#define NOTE_F6   1397
+#define NOTE_G6   1568
+#define NOTE_A6   1760
+#define NOTE_BB6  1865
+#define NOTE_C7   2093
+#define NOTE_D7   2349
+#define NOTE_E7   2637
+#define REST      0
 
-#define BPM       	135
+#define BPM       	169
 #define MS_PER_BEAT (60000 / BPM)
 
 #define T_16  (MS_PER_BEAT / 4)
@@ -66,6 +89,7 @@ typedef struct {
     uint32_t duration;
 } note_t;
 
+#define RAM_RANCH_SOLO_NOTE_COUNT 91U
 extern note_t ram_ranch_solo[];
 
 

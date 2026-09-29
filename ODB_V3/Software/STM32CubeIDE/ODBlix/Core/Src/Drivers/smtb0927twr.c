@@ -25,34 +25,114 @@ static const buzzer_parametres_t buzzParams[] = {
 // Melody
 #define TEMPO_NOTE 200
 note_t ram_ranch_solo[] = {
-	{NOTE_D4, T_8},
-	{NOTE_F4, T_8},
-	{NOTE_E4, T_8},
-	{NOTE_C4, T_8},
-	{NOTE_D4, T_8D},
-	{REST,    T_16},
+	{NOTE_D4, T_4},
 	{NOTE_F4, T_4},
-
-	{NOTE_F4, T_8},
 	{NOTE_E4, T_8},
-	{NOTE_C4, T_8},
-	{NOTE_G4, T_8D},
-	{REST,    T_16},
+	{NOTE_C4, T_4},
+	{NOTE_D4, T_8},
+
+	{REST,    T_8},
+	{NOTE_F4, T_4},
 	{NOTE_E4, T_4},
-
-	{NOTE_D4, T_8},
-	{NOTE_F4, T_8},
-	{NOTE_E4, T_8},
+	{NOTE_G4, T_8},
 	{NOTE_C4, T_8},
+	{NOTE_E4, T_8},
+
+	{NOTE_D4, T_4},
+	{NOTE_F4, T_4},
+	{NOTE_E4, T_8},
+	{NOTE_C4, T_4},
 	{NOTE_D4, T_8},
-	{NOTE_F4, T_8},
+
+	{REST,    T_8},
+	{NOTE_F4, T_4},
 	{NOTE_G4, T_4},
-
 	{NOTE_E4, T_8},
 	{NOTE_C4, T_8},
-	{NOTE_E4, T_8D},
-	{REST,    T_16},
-	{NOTE_D4, T_2}
+	{NOTE_E4, T_8},
+
+	{NOTE_D4, T_4},
+	{NOTE_F4, T_4},
+	{NOTE_E4, T_8},
+	{NOTE_C4, T_4},
+	{NOTE_D4, T_8},
+
+	{REST,    T_8},
+	{NOTE_F4, T_4},
+	{NOTE_E4, T_4},
+	{NOTE_G4, T_8},
+	{NOTE_C4, T_8},
+	{NOTE_E4, T_8},
+
+	{NOTE_D4, T_4},
+	{NOTE_F4, T_4},
+	{NOTE_E4, T_8},
+	{NOTE_C4, T_4},
+	{NOTE_D4, T_8},
+
+	{REST,    T_8},
+	{NOTE_F4, T_4},
+	{NOTE_G4, T_4},
+	{NOTE_E4, T_8},
+	{NOTE_C4, T_8},
+	{NOTE_E4, T_8},
+
+	{NOTE_D4, T_4},
+	{NOTE_F4, T_4},
+	{NOTE_E4, T_8},
+	{NOTE_C4, T_4},
+	{NOTE_D4, T_8},
+
+	{REST,    T_8},
+	{NOTE_F4, T_4},
+	{NOTE_G4, T_4},
+	{NOTE_E4, T_8},
+	{NOTE_C4, T_8},
+	{NOTE_E4, T_8},
+
+	{REST,    T_8},
+	{NOTE_A4, T_8},
+	{NOTE_G4, T_8},
+	{NOTE_A4, T_8},
+	{REST,    T_8},
+	{NOTE_BB4, T_8},
+	{NOTE_A4, T_8},
+	{NOTE_BB4, T_8},
+
+	{REST,    T_2},
+
+	{REST,    T_8},
+	{NOTE_BB4, T_8},
+	{NOTE_A4,  T_8},
+	{NOTE_BB4, T_8},
+	{REST,     T_8},
+	{NOTE_A4,  T_8},
+	{NOTE_G4,  T_8},
+	{NOTE_A4,  T_8},
+
+	{REST,    T_2},
+
+	{REST,    T_8},
+	{NOTE_A4, T_8},
+	{NOTE_G4, T_8},
+	{NOTE_A4, T_8},
+	{REST,    T_8},
+	{NOTE_BB4, T_8},
+	{NOTE_A4, T_8},
+	{NOTE_BB4, T_8},
+
+	{REST,    T_2},
+
+	{REST,    T_8},
+	{NOTE_BB4, T_8},
+	{NOTE_A4,  T_8},
+	{NOTE_BB4, T_8},
+	{REST,     T_8},
+	{NOTE_A4,  T_8},
+	{NOTE_G4,  T_8},
+	{NOTE_A4,  T_8},
+
+	{REST,    T_2},
 };
 
 
@@ -260,7 +340,7 @@ void Buzzer_ProcessPeriodicBip(buzzer_t *dev) {
 
 // Melody
 void Buzzer_PlayMelody(buzzer_t *dev, note_t *melody, uint16_t num_notes, uint8_t loop) {
-    for(uint8_t j = 1; j < loop; j++) {
+    for(uint8_t j = 1; j <= loop; j++) {
     	for(uint16_t i = 0; i < num_notes; i++) {
 			if(melody[i].frequency == REST) {
 				HAL_TIM_PWM_Stop(dev->htim, dev->channel);

@@ -269,7 +269,7 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
                             const Icon(Icons.expand_more),
                           ],
                         ),
-                        children: _buildFlightStatistics(context, stats),
+                        children: _buildFlightStatistics(context, stats, data, samples: data.savedFlightData[stats.flightId] ?? []),
                       ),
                     ),
                   ],
@@ -487,7 +487,7 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
         initiallyExpanded: false,
         leading: const Icon(Icons.analytics_outlined),
         title: const Text('Statistiques'),
-        children: _buildFlightStatistics(context, stats),
+        children: _buildFlightStatistics(context, stats, data, samples: samples),
       ),
       ExpansionTile(
         initiallyExpanded: false,
@@ -530,12 +530,22 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
   List<Widget> _buildFlightStatistics(
     BuildContext context,
     OdbStats stats,
-  ) {
+    DataServiceManager data, {
+    required List<FlightDataSample> samples,
+  }) {
+    final config = data.flightConfigs[stats.flightId];
+    final telemetryVersions = samples
+        .map((sample) => 'v${sample.telemetry.versionMajor}.${sample.telemetry.versionMinor}')
+        .toSet()
+        .join(', ');
+
     return [
       _buildSectionCard(context, 'Informations Générales', Icons.info_outline, [
         _buildDataRow(context, 'ID du Vol', '#${stats.flightId}', ''),
         _buildDataRow(context, 'Temps de Vol Total', _formatTimeMs(stats.flightTimeMs), ''),
         _buildDataRow(context, 'Date', _formatGPSDate(stats.date), ''),
+        _buildDataRow(context, 'Protocole configuration', config == null ? '—' : 'v${config.versionMajor}.${config.versionMinor}', ''),
+        _buildDataRow(context, 'Protocole télémétrie', telemetryVersions.isEmpty ? '—' : telemetryVersions, ''),
         _buildDataRow(context, 'Dernière Latitude', '${(stats.lastLat / 10000000.0).toStringAsFixed(5)}°', ''),
         _buildDataRow(context, 'Dernière Longitude', '${(stats.lastLon / 10000000.0).toStringAsFixed(5)}°', ''),
       ]),

@@ -557,6 +557,10 @@ void Logger_ExportToSD(const odb_stats_t *stats) {
     odb_config_t flight_cfg;
 	if(Logger_ReadFlightConfig(Logger_GetCurrentFlightAddress(), &flight_cfg)) {
 		f_puts("# === ODB CONFIGURATION ===\n", &active_file);
+		sprintf(header_buf, "# Config Protocol Version : %d.%d\n", flight_cfg.version_major, flight_cfg.version_minor);
+		f_puts(header_buf, &active_file);
+		sprintf(header_buf, "# Telemetry Protocol Version : %d.%d\n", ODB_PROTOCOL_VERSION_MAJOR, ODB_PROTOCOL_VERSION_MINOR);
+		f_puts(header_buf, &active_file);
 		sprintf(header_buf, "# Nom : %s | Role : %d | Profil Axe : %d\n", flight_cfg.odb_name, flight_cfg.stage_role, flight_cfg.axis_profile);
 		f_puts(header_buf, &active_file);
 		f_puts("# =======================================\n\n", &active_file);

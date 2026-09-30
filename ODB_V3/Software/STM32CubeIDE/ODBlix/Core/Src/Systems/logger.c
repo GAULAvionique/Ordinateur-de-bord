@@ -23,6 +23,8 @@ static logger_data_t buffer_A[LOG_BUFFER_SIZE];
 static logger_data_t buffer_B[LOG_BUFFER_SIZE];
 static logger_data_t *current_write_buf = buffer_A;
 static logger_data_t *current_flush_buf = NULL;
+static uint32_t prebuffer_write_index = 0;
+static uint32_t prebuffer_count = 0;
 
 static uint32_t write_index = 0;
 static uint32_t flash_current_address = 0;
@@ -152,13 +154,25 @@ int8_t Logger_Init(void) {
     flush_pending = false;
     current_write_buf = buffer_A;
     current_flush_buf = NULL;
+    prebuffer_write_index = 0;
+    prebuffer_count = 0;
     logger_state = LOGGER_IDLE;
 
     return LOGGER_SUCCESS;
 }
 
 void Logger_PushData(odb_data_t *new_data) {
-	if(!is_logging || new_data == NULL) return;
+    if(new_data == NULL) return;
+
+    if(!is_logging) {
+        buffer_A[prebuffer_write_index].magic_number = LOGGER_DATA_MAGIC_NUMBER;
+        buffer_A[prebuffer_write_index].data = *new_data;
+        prebuffer_write_index = (prebuffer_write_index + 1U) % LOGGER_PREBUFFER_SIZE;
+        if(prebuffer_count < LOGGER_PREBUFFER_SIZE) {
+            prebuffer_count++;
+        }
+        return;
+    }
 
     if(write_index >= LOG_BUFFER_SIZE) {
         if(flush_pending) {
@@ -263,11 +277,25 @@ void Logger_SaveStats(const odb_stats_t *stats) {
 }
 
 void Logger_Enable(bool enable) {
-    is_logging = enable;
-    if(enable) {
+    if(enable && !is_logging) {
         write_index = 0;
         flush_pending = false;
+        current_write_buf = buffer_B;
+
+        if(prebuffer_count > 0) {
+            uint32_t oldest_index = (prebuffer_count == LOGGER_PREBUFFER_SIZE) ? prebuffer_write_index : 0U;
+            uint32_t newest_index = (prebuffer_write_index + LOGGER_PREBUFFER_SIZE - 1U) % LOGGER_PREBUFFER_SIZE;
+            uint32_t newest_time = buffer_A[newest_index].data.time_boot_ms;
+
+            for(uint32_t i = 0; i < prebuffer_count; i++) {
+                uint32_t source_index = (oldest_index + i) % LOGGER_PREBUFFER_SIZE;
+                if((newest_time - buffer_A[source_index].data.time_boot_ms) <= LOGGER_PREBUFFER_DURATION_MS) {
+                    current_write_buf[write_index++] = buffer_A[source_index];
+                }
+            }
+        }
     }
+    is_logging = enable;
 }
 
 bool Logger_IsLogging(void) {

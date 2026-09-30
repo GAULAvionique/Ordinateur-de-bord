@@ -414,6 +414,17 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                             await data.testMachLock();
                           } : null,
                         ),
+                        _buildActionRow(
+                          context,
+                          title: 'Test d\'acquisition de données de vol',
+                          description: 'Test de l\'acquisition de données de vol',
+                          buttonText: 'Exécuter',
+                          buttonColor: connected ? FlutterFlowTheme.of(context).primary : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected ? () async {
+                            ConsoleService().log('Test d\'acquisition de données de vol demandé');
+                            await data.testFlightFlash();
+                          } : null,
+                        ),
                       ].divide(const SizedBox(height: 12.0)),
                     ),
                   ),

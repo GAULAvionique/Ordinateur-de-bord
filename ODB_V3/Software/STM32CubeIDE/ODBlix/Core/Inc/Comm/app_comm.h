@@ -53,6 +53,7 @@ typedef enum {
 	CMD_TEST_MACHLOCK			= 0x15,
 	CMD_REQ_FLIGHT_DATA   		= 0x16,
 	CMD_REQ_CANCEL_FLIGHT_DATA 	= 0x17,
+	CMD_TEST_FLIGHT_FLASH		= 0x18,
 } app_cmd_id_t;
 
 void AppComm_SendTelemetry(hm11_t *hm11_dev, const odb_data_t *data);

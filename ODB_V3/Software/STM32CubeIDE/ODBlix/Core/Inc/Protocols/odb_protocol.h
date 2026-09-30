@@ -200,9 +200,9 @@ typedef struct __attribute__((packed)) {
     float       kalman_v;           			// Filtered velocity from Kalman filter in m/s (converted to cm/s for MAVLink)
     uint8_t		barometric_trend;               // Barometric altitude trend (0 = descending, 1 = ascending, 2 = stable) -> Linked with AltitudeTrend & MS5611
 
-    // TOTAL 136 + 4 (header)
+    // TOTAL 140 bytes
     // Empty data to reach 144 bytes
-    uint8_t padding[3];
+    uint8_t padding[4];
 } odb_data_t;
 #define ODB_DATA_SIZE (sizeof(odb_data_t))
 

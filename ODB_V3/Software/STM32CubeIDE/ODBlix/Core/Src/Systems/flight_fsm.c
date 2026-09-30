@@ -33,6 +33,7 @@ volatile global_state_t current_global_state = STATE_PREFLIGHT;
 volatile preflight_substate_t current_preflight_substate = SUB_STATIC_ORIENTED;
 volatile inflight_substate_t current_inflight_substate = SUB_BOOST;
 volatile bool is_ready_by_app = false;
+volatile bool is_force_flight = false;
 
 static uint32_t fire_timer = 0;
 static uint32_t flight_duration = 0;
@@ -153,7 +154,7 @@ void FSM_Update(void) {
 
     			case SUB_WAITING_FLIGHT:
     				// Security : app unlock
-					if(is_ready_by_app) {
+					if(is_ready_by_app || is_force_flight) {
 						// Buzzer report (Blocking routine)
 						if(current_config.enable_buzzer == STATE_TRUE) {
 							const odb_stats_t *last_stats = Logger_GetLastFlightStats();
@@ -169,8 +170,6 @@ void FSM_Update(void) {
 						Pyro_SetContinuity(false);
 						Pyro_Arming(&system_measurements, false, false);
 
-						Logger_Enable(true);
-
 						current_global_state = STATE_ARMED;
 						flight_stats.fsm_trans.armed = HAL_GetTick();
 						ODB_SetMissionState(&flight_data, STATE_ARMED, 0);
@@ -180,7 +179,7 @@ void FSM_Update(void) {
         	break;
 
         case STATE_ARMED:
-            if(flight_data.highg_acc_z > current_config.acc_z_launch_threshold) {
+            if(flight_data.highg_acc_z > current_config.acc_z_launch_threshold || is_force_flight) {
 				if(current_config.flight_test_mode == STATE_FALSE) {
                 	Scheduler_SetActive("BTRx", false);
                 	Scheduler_SetActive("BTTx", false);
@@ -193,6 +192,10 @@ void FSM_Update(void) {
                 current_inflight_substate = SUB_BOOST;
                 flight_stats.fsm_trans.inflight_boost = 0;
                 ODB_SetMissionState(&flight_data, STATE_INFLIGHT, SUB_BOOST);
+
+                Logger_Enable(true);
+
+                is_force_flight = false;
             }
             break;
 

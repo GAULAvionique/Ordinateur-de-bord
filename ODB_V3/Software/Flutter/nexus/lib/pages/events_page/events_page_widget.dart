@@ -253,7 +253,7 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
                                   ],
                                 ),
                               )
-                            else if (data.isStoppingFlightData)
+                            else if (data.isStoppingFlightData && data.flightDataFlightId == stats.flightId)
                               const Padding(
                                 padding: EdgeInsets.only(right: 8.0),
                                 child: Text('Arrêt en cours...'),

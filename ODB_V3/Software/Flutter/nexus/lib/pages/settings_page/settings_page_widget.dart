@@ -1588,6 +1588,11 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                       : 'Inconnue',
                 ),
               ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Auteur'),
+                subtitle: Text('Samuel Gagnon'),
+              ),
             ],
           ),
         ),

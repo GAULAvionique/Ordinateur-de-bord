@@ -419,12 +419,11 @@ class OdbConfig {
       flightTestMode: flightTestMode ?? this.flightTestMode,
       axisProfile: axisProfile ?? this.axisProfile,
       fireAttemptDelayMs: fireAttemptDelayMs ?? this.fireAttemptDelayMs,
-        pyrosArmingMinAltitudeM:
+      pyrosArmingMinAltitudeM:
           pyrosArmingMinAltitudeM ?? this.pyrosArmingMinAltitudeM,
       minNeededPyroNb: minNeededPyroNb ?? this.minNeededPyroNb,
       pyroRoles: pyroRoles ?? this.pyroRoles,
-        apogeeDetectionMode:
-          apogeeDetectionMode ?? this.apogeeDetectionMode,
+      apogeeDetectionMode: apogeeDetectionMode ?? this.apogeeDetectionMode,
       accZLaunchThreshold: accZLaunchThreshold ?? this.accZLaunchThreshold,
       boostPhaseVThreshold: boostPhaseVThreshold ?? this.boostPhaseVThreshold,
       apogeeDetectVThreshold:
@@ -570,7 +569,7 @@ class OdbTelemetry {
         kalmanZ = reader.readFloat32(),
         kalmanV = reader.readFloat32(),
         barometricTrend = reader.readUint8() {
-      reader.readUint8Array(3); // End padding
+    reader.readUint8Array(3); // End padding
   }
 }
 
@@ -632,6 +631,7 @@ class DataServiceManager with ChangeNotifier {
   static const int actionTestMachLock = 0x15;
   static const int actionRequestFlightData = 0x16;
   static const int actionCancelFlightData = 0x17;
+  static const int actionTestFlightFlash = 0x18;
 
   static const int configMagicNumber = 0x434F4E46;
 
@@ -791,8 +791,7 @@ class DataServiceManager with ChangeNotifier {
   int get buzzerReportToneHz => config?.buzzerReportToneHz ?? 0;
   int get landingDetectThresholdMs => config?.landingDetectThresholdMs ?? 0;
   int get fireAttemptDelayMs => config?.fireAttemptDelayMs ?? 0;
-  double get pyrosArmingMinAltitudeM =>
-      config?.pyrosArmingMinAltitudeM ?? 0.0;
+  double get pyrosArmingMinAltitudeM => config?.pyrosArmingMinAltitudeM ?? 0.0;
   int get apogeeFailsafeMs => config?.apogeeFailsafeMs ?? 0;
   int get idefixFrequencyHz => config?.idefixFrequencyHz ?? 0;
   List<int> get pyroRoles => config?.pyroRoles ?? List.filled(4, 0);
@@ -1082,8 +1081,8 @@ class DataServiceManager with ChangeNotifier {
     }
 
     if (_isDrainingCanceledFlightData) {
-      ConsoleService().log(
-          'Le téléchargement précédent est encore en cours d’arrêt.');
+      ConsoleService()
+          .log('Le téléchargement précédent est encore en cours d’arrêt.');
       return;
     }
 
@@ -1151,8 +1150,8 @@ class DataServiceManager with ChangeNotifier {
       _pendingFlightSave = null;
       flightDataFlightId = null;
       _isDrainingCanceledFlightData = false;
-      ConsoleService().log(
-          'Délai d’arrêt dépassé; nouveau téléchargement autorisé.');
+      ConsoleService()
+          .log('Délai d’arrêt dépassé; nouveau téléchargement autorisé.');
       _safeNotifyListeners();
     });
   }
@@ -1207,6 +1206,15 @@ class DataServiceManager with ChangeNotifier {
           .map((sample) => base64Encode(sample.bytes))
           .toList(),
     );
+  }
+
+  String _flightTelemetryVersions(List<FlightDataSample> samples) {
+    final versions = samples
+        .map((sample) =>
+            'v${sample.telemetry.versionMajor}.${sample.telemetry.versionMinor}')
+        .toSet()
+        .toList();
+    return versions.isEmpty ? 'inconnue' : versions.join(', ');
   }
 
   Future<void> _persistSavedFlightConfig(int flightId) async {
@@ -1447,6 +1455,15 @@ class DataServiceManager with ChangeNotifier {
     ConsoleService().log('Demande de test mach lock envoyée.');
   }
 
+  Future<void> testFlightFlash() async {
+    if (!hasConnection) {
+      ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
+      return;
+    }
+    await btService.sendBinary(cmdTypeAction, [actionTestFlightFlash]);
+    ConsoleService().log('Demande de test du flash de vol envoyée.');
+  }
+
   // ---------- PARSER ----------
 
   Future<void> parseBinaryMessage(int type, List<int> payload) async {
@@ -1511,17 +1528,16 @@ class DataServiceManager with ChangeNotifier {
     }
     final magicNumber = ByteData.sublistView(bytes).getUint32(0, Endian.little);
     if (magicNumber == configMagicNumber) {
-      final isFlightConfig =
-          payloadLength == OdbConfig.flightPacketSize &&
-            _pendingFlightSave != null &&
-            isLoadingFlightData;
+      final isFlightConfig = payloadLength == OdbConfig.flightPacketSize &&
+          _pendingFlightSave != null &&
+          isLoadingFlightData;
       if (payloadLength != OdbConfig.serializedSize && !isFlightConfig) {
-      ConsoleService().log('Configuration de vol ignorée hors téléchargement.');
-      return;
+        ConsoleService()
+            .log('Configuration de vol ignorée hors téléchargement.');
+        return;
       }
-        final configBytes = isFlightConfig
-        ? bytes.sublist(
-          OdbConfig.magicNumberSize, OdbConfig.flightPacketSize)
+      final configBytes = isFlightConfig
+          ? bytes.sublist(OdbConfig.magicNumberSize, OdbConfig.flightPacketSize)
           : bytes;
       final tempConfig = OdbConfig.fromBytes(configBytes);
       if (!tempConfig.hasValidCrc) {
@@ -1533,7 +1549,7 @@ class DataServiceManager with ChangeNotifier {
         if (isFlightConfig) {
           flightConfigs[_pendingFlightSave!.flightId] = tempConfig;
           ConsoleService().log(
-              'Configuration historique du vol #${_pendingFlightSave!.flightId} reçue.');
+              'Configuration historique du vol #${_pendingFlightSave!.flightId} reçue (protocole config v${tempConfig.versionMajor}.${tempConfig.versionMinor}).');
         } else {
           config = tempConfig;
           ConsoleService()
@@ -1599,8 +1615,7 @@ class DataServiceManager with ChangeNotifier {
           flightDataFlightId = null;
           _isDrainingCanceledFlightData = false;
           _flightDataChunks.clear();
-          ConsoleService().log(
-              'Transmission du vol annulé terminée côté ODB.');
+          ConsoleService().log('Transmission du vol annulé terminée côté ODB.');
           _safeNotifyListeners();
         }
         return;
@@ -1625,6 +1640,12 @@ class DataServiceManager with ChangeNotifier {
             : stats.flightId;
         ConsoleService().log(
             'Données du vol #$receivedFlightId sauvegardées (${samples.length} échantillons, $flightDataChunksReceived morceaux).');
+        final flightConfig = flightConfigs[stats.flightId];
+        final configVersion = flightConfig == null
+            ? 'inconnue'
+            : 'v${flightConfig.versionMajor}.${flightConfig.versionMinor}';
+        ConsoleService().log(
+            'Versions du vol #$receivedFlightId : protocole config $configVersion, protocole ODB ${_flightTelemetryVersions(samples)}.');
       } else {
         ConsoleService()
             .log('Échec du téléchargement du vol #${stats.flightId}.');
@@ -1704,8 +1725,8 @@ class DataServiceManager with ChangeNotifier {
     }
 
     final chunks = _flightStatsChunks.putIfAbsent(flightIndex, () => {});
-    chunks[chunkIndex] = bytes.sublist(
-      chunkHeaderSize, chunkHeaderSize + chunkLength);
+    chunks[chunkIndex] =
+        bytes.sublist(chunkHeaderSize, chunkHeaderSize + chunkLength);
     if (chunks.length != chunkCount) return;
 
     final completeStats = <int>[];
@@ -1913,9 +1934,9 @@ extension DataServiceDisplay on DataServiceManager {
       hasConnection ? altitudeMslM.toStringAsFixed(2) : '—';
   String get barometricTrendDisplay {
     final usesBarometricTrend =
-      apogeeDetectionMode == DataServiceManager.apogeeDetectionBarometric ||
-      (apogeeDetectionMode == DataServiceManager.apogeeDetectionAuto &&
-        stageRole == DataServiceManager.stageRoleBooster);
+        apogeeDetectionMode == DataServiceManager.apogeeDetectionBarometric ||
+            (apogeeDetectionMode == DataServiceManager.apogeeDetectionAuto &&
+                stageRole == DataServiceManager.stageRoleBooster);
     if (!usesBarometricTrend) return 'Indisponible';
     if (!hasConnection || barometerSensorState != SensorState.ok) return '—';
     switch (barometricTrend) {
@@ -1927,6 +1948,7 @@ extension DataServiceDisplay on DataServiceManager {
         return 'Stable';
     }
   }
+
   String get kalmanAltitudeDisplay =>
       hasConnection ? kalmanAltitudeM.toStringAsFixed(2) : '—';
   String get kalmanVelocityDisplay =>

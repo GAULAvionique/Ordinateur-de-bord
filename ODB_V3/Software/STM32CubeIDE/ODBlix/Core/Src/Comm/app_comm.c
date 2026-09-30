@@ -24,6 +24,7 @@ extern global_state_t current_global_state;
 extern preflight_substate_t current_preflight_substate;
 extern inflight_substate_t current_inflight_substate;
 extern bool is_ready_by_app;
+extern bool is_force_flight;
 
 extern note_t ram_ranch_solo[];
 
@@ -32,6 +33,8 @@ static void AppComm_SendFrame(hm11_t *hm11_dev, app_msg_type_t type, const uint8
     if(!hm11_dev || !hm11_dev->is_connected) return;
 
     static uint8_t buffer[256];
+	const uint16_t frame_length = (uint16_t)len + 5U;
+	const uint16_t transport_chunk_size = 20U;
 
     buffer[0] = APP_SYNC_1;
     buffer[1] = APP_SYNC_2;
@@ -45,7 +48,12 @@ static void AppComm_SendFrame(hm11_t *hm11_dev, app_msg_type_t type, const uint8
     }
     buffer[4 + len] = checksum;
 
-    HM11_SendData(hm11_dev, buffer, len + 5);
+	for(uint16_t offset = 0; offset < frame_length; offset += transport_chunk_size) {
+		uint16_t chunk_length = frame_length - offset;
+		if(chunk_length > transport_chunk_size) chunk_length = transport_chunk_size;
+		if(!HM11_SendData(hm11_dev, &buffer[offset], chunk_length)) return;
+		HAL_Delay(2);
+	}
 }
 
 void AppComm_SendTelemetry(hm11_t *hm11_dev, const odb_data_t *data) {
@@ -464,6 +472,13 @@ void AppComm_ProcessRx(hm11_t *hm11_dev) {
 							flight_data.event_states |= FLAG_MACH_LOCK_ENABLED;
 						}
 						AppComm_SendAck(hm11_dev, CMD_TEST_MACHLOCK, 1);
+					} else if(cmd == CMD_TEST_FLIGHT_FLASH) {
+						if(current_config.debug_mode == STATE_TRUE) {
+							is_force_flight = true;
+							AppComm_SendAck(hm11_dev, CMD_TEST_FLIGHT_FLASH, 1);
+						} else {
+							AppComm_SendAck(hm11_dev, CMD_TEST_FLIGHT_FLASH, 0);
+						}
 					}
                 }
                 CriticalLED_SetColor(&critical_led, NONE);

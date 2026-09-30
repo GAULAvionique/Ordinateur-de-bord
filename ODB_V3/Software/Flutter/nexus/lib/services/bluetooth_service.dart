@@ -224,7 +224,7 @@ class BluetoothServiceManager with ChangeNotifier {
       await stopScan();
 
       await device.connect(
-        license: License.nonprofit,
+        license: License.free,
         timeout: const Duration(seconds: 10),
         autoConnect: false,
       );
@@ -397,6 +397,14 @@ class BluetoothServiceManager with ChangeNotifier {
           int type = _rxBuffer[2];
           int length = _rxBuffer[3];
 
+          if (length > 200) {
+            ConsoleService().log(
+              'Longueur de trame binaire invalide: $length octets',
+            );
+            _rxBuffer.removeAt(0);
+            continue;
+          }
+
           if (_rxBuffer.length < length + 5) {
             break;
           }
@@ -413,12 +421,20 @@ class BluetoothServiceManager with ChangeNotifier {
             if (!dataService.isDisposed) {
               dataService.parseBinaryMessage(type, payload);
             }
+            _rxBuffer.removeRange(0, length + 5);
           } else {
-            ConsoleService().log('Erreur CRC Trame binaire (Type: $type)');
+            ConsoleService().log(
+              'Erreur CRC Trame binaire (Type: $type, attendu: '
+              '$expectedChecksum, reçu: $receivedChecksum)',
+            );
+            _rxBuffer.removeAt(0);
+            while (_rxBuffer.length >= 2 &&
+                !(_rxBuffer[0] == 0xAB && _rxBuffer[1] == 0xCD)) {
+              _rxBuffer.removeAt(0);
+            }
+            continue;
           }
 
-          // Retire la trame traitée du buffer
-          _rxBuffer.removeRange(0, length + 5);
         }
       });
 

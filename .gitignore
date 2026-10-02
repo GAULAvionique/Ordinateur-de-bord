@@ -64,6 +64,9 @@
 # Logs Python
 **/*.log
 
+# Github
+**/.github/
+
 # === Versions ===
 ODB_V1/
 ODB_V2/

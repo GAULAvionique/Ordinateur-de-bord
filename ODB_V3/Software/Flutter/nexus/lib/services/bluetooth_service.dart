@@ -304,7 +304,7 @@ class BluetoothServiceManager with ChangeNotifier {
       _writeCharacteristic = null;
       _writeCandidates.clear();
       final services = await connectedDevice!.discoverServices().timeout(
-        const Duration(seconds: 30),
+        const Duration(seconds: 10),
         onTimeout: () => throw TimeoutException('Service discovery timeout'),
       );
       ConsoleService().log('${services.length} service(s) trouvé(s)');

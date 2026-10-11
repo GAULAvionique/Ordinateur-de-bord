@@ -38,6 +38,10 @@ static altitude_trend_t altitude_trend;
 
 static float ground_elevation_msl_m = 0.0f;
 
+/* DEBUG */
+//inertial_nav_t highg_nav;
+//inertial_nav_t imu_nav;
+
 
 static void ODB_UpdateMetricMax(metric_t *metric, float candidate_value, uint32_t time_ms) {
     if(!metric) {
@@ -233,6 +237,8 @@ odb_state_t ODB_Init(odb_data_t *data, odb_stats_t *stats) {
 
     if(BNO055_Init(&bno055) == BNO055_OK) {
         system_states |= FLAG_IMU_OK;
+        /* DEBUG */
+        //InertialNav_Init(&imu_nav, bno055.acc_vertical);
     } else {
         error++;
         DEBUG_PRINTF("ERROR : Init BNO055\n");
@@ -247,6 +253,8 @@ odb_state_t ODB_Init(odb_data_t *data, odb_stats_t *stats) {
 
     if(ADXL382_Init(&adxl382) == ADXL382_OK) {
         system_states |= FLAG_HIGHG_OK;
+        /* DEBUG */
+        //InertialNav_Init(&highg_nav, adxl382.acc_vertical);
     } else {
         error++;
         DEBUG_PRINTF("ERROR : Init ADXL382\n");
@@ -440,6 +448,9 @@ void ODB_Update(odb_data_t *data, odb_stats_t *stats) {
 		BNO055_ComputeVerticalAcc(&bno055);
 		data->imu_acc_vertical = bno055.acc_vertical;
 
+        /* DEBUG */
+        //printt("[IMU] Acc: [%.2f, %.2f, %.2f] | Gyro: [%.2f, %.2f, %.2f] | Mag: [%.2f, %.2f, %.2f] | Euler: [%.2f, %.2f, %.2f] | Vertical Acc: [%.2f]\n", data->imu_acc_x, data->imu_acc_y, data->imu_acc_z, data->imu_gyro_x, data->imu_gyro_y, data->imu_gyro_z, data->imu_mag_x, data->imu_mag_y, data->imu_mag_z, data->roll, data->pitch, data->yaw, data->imu_acc_vertical);
+
 		data->system_states |= FLAG_IMU_OK;
 	} else {
         data->system_states &= ~FLAG_IMU_OK;
@@ -472,6 +483,9 @@ void ODB_Update(odb_data_t *data, odb_stats_t *stats) {
 		data->highg_acc_vertical = adxl382.acc_vertical;
 		data->highg_temp = adxl382.temperature;
 
+        /* DEBUG */
+        //printt("[HIGHG] Acc: [%.2f, %.2f, %.2f] | Vertical Acc: [%.2f] | Temp: [%.2f]\n", data->highg_acc_x, data->highg_acc_y, data->highg_acc_z, data->highg_acc_vertical, data->highg_temp);
+
 		data->system_states |= FLAG_HIGHG_OK;
     } else {
     	data->system_states &= ~FLAG_HIGHG_OK;
@@ -488,6 +502,10 @@ void ODB_Update(odb_data_t *data, odb_stats_t *stats) {
     KalmanNav_Update(&kalman_filter, data->altitude_agl_m, mach_lock_enabled);
     data->kalman_z = (float)kalman_filter.z;
     data->kalman_v = (float)kalman_filter.v;
+    /* DEBUG */
+    //InertialNav_Update(&imu_nav, data->imu_acc_vertical);
+    //InertialNav_Update(&highg_nav, data->highg_acc_vertical);
+    //printt("[HIGHG_Z:%.2f ; DWT:%d] | [IMU_Z:%.2f ; DWT:%d] | KALMAN_Z:%.2f | [HIGHG_V:%.2f ; DWT:%d] | [IMU_V:%.2f ; DWT:%d] | KALMAN_V:%.2f\n", highg_nav.z, highg_nav.last_cycles, imu_nav.z, imu_nav.last_cycles, data->kalman_z, highg_nav.v, highg_nav.last_cycles, imu_nav.v, imu_nav.last_cycles, data->kalman_v);
     //Profiler_StopTask(PROFILE_TASK_KALMAN);
 
     //Profiler_StartTask(PROFILE_TASK_BAROMETRIC);

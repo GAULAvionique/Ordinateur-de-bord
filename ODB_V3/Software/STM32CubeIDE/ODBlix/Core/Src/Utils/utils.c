@@ -6,6 +6,7 @@
  */
 
 #include "Utils/utils.h"
+#include "Utils/dwt.h"
 #include "stm32f4xx_hal.h"
 #include <stdlib.h>
 #include <stdarg.h>
@@ -141,4 +142,28 @@ int _write(int le, char *ptr, int len) {
     return len;
 }
 */
+/* =========== */
+
+/* === DEBUG === */
+void InertialNav_Init(inertial_nav_t *nav, float initial_alt) {
+    nav->z = initial_alt;
+    nav->v = 0.0f;
+    nav->last_cycles = DWT_GetCycles();
+}
+
+void InertialNav_Update(inertial_nav_t *nav, float acc_vertical) {
+    uint32_t now_cycles = DWT_GetCycles();
+    uint32_t diff_cycles = now_cycles - nav->last_cycles;
+    float dt = (float)diff_cycles / (float)SystemCoreClock;
+    nav->last_cycles = now_cycles;
+
+    if(dt <= 0.0f) return;
+    if(dt > 0.5f) dt = 0.5f;
+
+    // v = v0 + a * dt
+    nav->v += acc_vertical * dt;
+
+    // z = z0 + v * dt + 0.5 * a * dt^2
+    nav->z += nav->v * dt + 0.5f * acc_vertical * dt * dt;
+}
 /* =========== */

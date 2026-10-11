@@ -71,5 +71,16 @@ void RunTimer_Update(runTimer_t *dev);
 int printt(const char *format, ...);
 /* =========== */
 
+/* === DEBUG === */
+typedef struct {
+    float z;
+    float v;
+    uint32_t last_cycles;
+} inertial_nav_t;
+
+void InertialNav_Init(inertial_nav_t *nav, float initial_alt);
+void InertialNav_Update(inertial_nav_t *nav, float acc_vertical);
+/* =========== */
+
 
 #endif /* INC_UTILS_UTILS_H_ */

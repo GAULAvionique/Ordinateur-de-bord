@@ -214,12 +214,27 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
                     ),
 
                   for (final stats in statsList) ...[
-                    Card(
+                    Container(
                       margin: const EdgeInsets.only(bottom: 12.0),
-                      elevation: 2.0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-                      child: ExpansionTile(
-                        initiallyExpanded: false,
+                      decoration: BoxDecoration(
+                        color: FlutterFlowTheme.of(context).secondaryBackground,
+                        boxShadow: const [
+                          BoxShadow(
+                            blurRadius: 4,
+                            color: Color(0x33000000),
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12.0),
+                        child: ExpansionTile(
+                          initiallyExpanded: false,
+                          backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+                          collapsedBackgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+                          iconColor: FlutterFlowTheme.of(context).primaryText,
+                          collapsedIconColor: FlutterFlowTheme.of(context).primaryText,
                         title: Text(
                           'Vol #${stats.flightId}',
                           style: FlutterFlowTheme.of(context).titleLarge.override(
@@ -270,15 +285,25 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
                           ],
                         ),
                         children: _buildFlightStatistics(context, stats, data, samples: data.savedFlightData[stats.flightId] ?? []),
+                        ),
                       ),
                     ),
                   ],
                   const SizedBox(height: 16.0),
-                  Card(
-                    elevation: 2.0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: FlutterFlowTheme.of(context).secondaryBackground,
+                      boxShadow: const [
+                        BoxShadow(
+                          blurRadius: 4,
+                          color: Color(0x33000000),
+                          offset: Offset(0, 2),
+                        ),
+                      ],
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: const EdgeInsets.all(12.0),
                       child: Column(
                         children: [
                           Row(
@@ -352,6 +377,10 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
     final samples = data.savedFlightData[stats.flightId] ?? [];
     return ExpansionTile(
       initiallyExpanded: false,
+      backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+      collapsedBackgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+      iconColor: FlutterFlowTheme.of(context).primaryText,
+      collapsedIconColor: FlutterFlowTheme.of(context).primaryText,
       title: Text('Vol #${stats.flightId}'),
       subtitle: Text(_formatGPSDate(stats.date)),
       children: [
@@ -485,12 +514,20 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
     return [
       ExpansionTile(
         initiallyExpanded: false,
+        backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+        collapsedBackgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+        iconColor: FlutterFlowTheme.of(context).primaryText,
+        collapsedIconColor: FlutterFlowTheme.of(context).primaryText,
         leading: const Icon(Icons.analytics_outlined),
         title: const Text('Statistiques'),
         children: _buildFlightStatistics(context, stats, data, samples: samples),
       ),
       ExpansionTile(
         initiallyExpanded: false,
+        backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+        collapsedBackgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+        iconColor: FlutterFlowTheme.of(context).primaryText,
+        collapsedIconColor: FlutterFlowTheme.of(context).primaryText,
         leading: const Icon(Icons.tune),
         title: const Text('Configuration'),
         children: [
@@ -502,6 +539,10 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
       ),
       ExpansionTile(
         initiallyExpanded: false,
+        backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+        collapsedBackgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
+        iconColor: FlutterFlowTheme.of(context).primaryText,
+        collapsedIconColor: FlutterFlowTheme.of(context).primaryText,
         leading: const Icon(Icons.show_chart),
         title: const Text('Graphiques'),
         children: [
@@ -614,17 +655,22 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
   Widget _buildSectionCard(BuildContext context, String title, IconData icon, List<Widget> rows) {
     return Material(
       color: Colors.transparent,
-      elevation: 2.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+      elevation: 0.0,
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
           color: FlutterFlowTheme.of(context).secondaryBackground,
-          borderRadius: BorderRadius.circular(16.0),
-          border: Border.all(color: FlutterFlowTheme.of(context).alternate, width: 1.0),
+          boxShadow: const [
+            BoxShadow(
+              blurRadius: 4,
+              color: Color(0x33000000),
+              offset: Offset(0, 2),
+            ),
+          ],
+          borderRadius: BorderRadius.circular(12.0),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12.0),
           child: Material(
             color: Colors.transparent,
             child: Column(

@@ -121,6 +121,48 @@ int _calculateCrc32(Uint8List bytes, int length) {
 // ========================== CLASSES DE DONNÉES ==============================
 // ============================================================================
 
+class FacesCalibration {
+  final List<double> scaleMatrix; // [scale_x, scale_y, scale_z]
+  final List<double> bias; // [bias_x, bias_y, bias_z]
+
+  FacesCalibration({
+    required this.scaleMatrix,
+    required this.bias,
+  });
+
+  factory FacesCalibration.fromBytes(ByteCursor reader) {
+    final scaleMatrix = List.generate(3, (_) => reader.readFloat32());
+    final bias = List.generate(3, (_) => reader.readFloat32());
+    return FacesCalibration(scaleMatrix: scaleMatrix, bias: bias);
+  }
+
+  void writeTo(ByteBuilder writer) {
+    for (final val in scaleMatrix) {
+      writer.writeFloat32(val);
+    }
+    for (final b in bias) {
+      writer.writeFloat32(b);
+    }
+  }
+
+  static FacesCalibration identity() {
+    return FacesCalibration(
+      scaleMatrix: [1.0, 1.0, 1.0],
+      bias: [0.0, 0.0, 0.0],
+    );
+  }
+
+  FacesCalibration copyWith({
+    List<double>? scaleMatrix,
+    List<double>? bias,
+  }) {
+    return FacesCalibration(
+      scaleMatrix: scaleMatrix ?? List<double>.from(this.scaleMatrix),
+      bias: bias ?? List<double>.from(this.bias),
+    );
+  }
+}
+
 class PyroEvent {
   final bool fired;
   final int timeMs;
@@ -291,7 +333,7 @@ class OdbStats {
 }
 
 class OdbConfig {
-  static const int serializedSize = 99;
+  static const int serializedSize = 124;
   static const int magicNumberSize = 4;
   static const int flightPacketSize = magicNumberSize + serializedSize;
 
@@ -305,6 +347,9 @@ class OdbConfig {
   final bool debugMode;
   final bool flightTestMode;
   final int axisProfile;
+  final FacesCalibration highgCalib6Faces;
+  //final FacesCalibration imuCalib6Faces;
+  final int calibStates;
   final int fireAttemptDelayMs;
   final double pyrosArmingMinAltitudeM;
   final int minNeededPyroNb;
@@ -326,7 +371,7 @@ class OdbConfig {
 
   OdbConfig({
     this.magicNumber = 0x434F4E46,
-    this.versionMajor = 1,
+    this.versionMajor = 2,
     this.versionMinor = 3,
     this.payloadSize = serializedSize,
     required this.odbName,
@@ -334,6 +379,9 @@ class OdbConfig {
     required this.debugMode,
     required this.flightTestMode,
     required this.axisProfile,
+    FacesCalibration? highgCalib6Faces,
+    //FacesCalibration? imuCalib6Faces,
+    this.calibStates = 0x000,
     required this.fireAttemptDelayMs,
     required this.pyrosArmingMinAltitudeM,
     required this.minNeededPyroNb,
@@ -352,7 +400,9 @@ class OdbConfig {
     required this.buzzerReportToneHz,
     required this.idefixFrequencyHz,
     this.crc32 = 0,
-  });
+  }) : highgCalib6Faces = highgCalib6Faces ??
+            FacesCalibration
+                .identity(); //, imuCalib6Faces = imuCalib6Faces ?? FacesCalibration.identity();
 
   factory OdbConfig.fromBytes(Uint8List bytes) {
     final reader = ByteCursor(bytes);
@@ -366,6 +416,9 @@ class OdbConfig {
       debugMode: reader.readUint8() == 1,
       flightTestMode: reader.readUint8() == 1,
       axisProfile: reader.readUint8(),
+      highgCalib6Faces: FacesCalibration.fromBytes(reader),
+      //imuCalib6Faces: FacesCalibration.fromBytes(reader),
+      calibStates: reader.readUint8(),
       fireAttemptDelayMs: reader.readUint32(),
       pyrosArmingMinAltitudeM: reader.readFloat32(),
       minNeededPyroNb: reader.readUint8(),
@@ -393,6 +446,9 @@ class OdbConfig {
     bool? debugMode,
     bool? flightTestMode,
     int? axisProfile,
+    FacesCalibration? highgCalib6Faces,
+    //FacesCalibration? imuCalib6Faces,
+    int? calibStates,
     int? fireAttemptDelayMs,
     double? pyrosArmingMinAltitudeM,
     int? minNeededPyroNb,
@@ -418,6 +474,9 @@ class OdbConfig {
       debugMode: debugMode ?? this.debugMode,
       flightTestMode: flightTestMode ?? this.flightTestMode,
       axisProfile: axisProfile ?? this.axisProfile,
+      highgCalib6Faces: highgCalib6Faces ?? this.highgCalib6Faces,
+      //imuCalib6Faces: imuCalib6Faces ?? this.imuCalib6Faces,
+      calibStates: calibStates ?? this.calibStates,
       fireAttemptDelayMs: fireAttemptDelayMs ?? this.fireAttemptDelayMs,
       pyrosArmingMinAltitudeM:
           pyrosArmingMinAltitudeM ?? this.pyrosArmingMinAltitudeM,
@@ -456,6 +515,9 @@ class OdbConfig {
     writer.writeUint8(debugMode ? 1 : 0);
     writer.writeUint8(flightTestMode ? 1 : 0);
     writer.writeUint8(axisProfile);
+    highgCalib6Faces.writeTo(writer);
+    //imuCalib6Faces.writeTo(writer);
+    writer.writeUint8(calibStates);
     writer.writeUint32(fireAttemptDelayMs);
     writer.writeFloat32(pyrosArmingMinAltitudeM);
     writer.writeUint8(minNeededPyroNb);
@@ -491,6 +553,8 @@ class OdbConfig {
     return crc32 == calculatedCrc;
   }
 }
+
+enum CalibrationState { unknown, valid, dirty }
 
 class OdbTelemetry {
   static const int serializedSize = 144;
@@ -589,13 +653,14 @@ class FlightDataSample {
 // ============================================================================
 
 class DataServiceManager with ChangeNotifier {
+  // Constantes de communication
   static const int chunkHeaderSize = 4;
   static const int chunkMinimumSize = chunkHeaderSize + 1;
   static const int ackMinimumSize = 2;
   static const int flightIdSize = 4;
   static const int flightDataAckSize = ackMinimumSize + 2 + flightIdSize;
 
-  // Types de messages entrants.
+  // Types de messages entrants
   static const int msgTypeTelemetry = 0x01;
   static const int msgTypeConfig = 0x02;
   static const int msgTypeCommand = 0x03;
@@ -603,11 +668,11 @@ class DataServiceManager with ChangeNotifier {
   static const int msgTypeStatsChunk = 0x05;
   static const int msgTypeDataChunk = 0x06;
 
-  // Types de commandes sortantes.
+  // Types de commandes sortantes
   static const int cmdTypeAction = 0x03;
   static const int cmdTypeConfig = 0x02;
 
-  // Actions.
+  // Actions
   static const int actionPing = 0x01;
   static const int actionArm = 0x02;
   static const int actionFire = 0x03;
@@ -632,9 +697,13 @@ class DataServiceManager with ChangeNotifier {
   static const int actionRequestFlightData = 0x16;
   static const int actionCancelFlightData = 0x17;
   static const int actionTestFlightFlash = 0x18;
+  static const int actionStartLogDataCSV = 0x19;
+  static const int actionStopLogDataCSV = 0x1A;
+  static const int actionCalibAcc = 0x1B;
+  static const int actionCalibBaro = 0x1C;
+  static const int actionAutoAxisProfile = 0x1D;
 
   static const int configMagicNumber = 0x434F4E46;
-
   static const int stageRoleBooster = 2;
   static const int stageRoleSustainer = 3;
   static const int apogeeDetectionAuto = 0;
@@ -648,6 +717,12 @@ class DataServiceManager with ChangeNotifier {
   static const int axisProfileP5 = 5;
   static const int axisProfileP6 = 6;
   static const int axisProfileP7 = 7;
+  static const int axisProfileCalib = 8;
+  static const int flagImuTempOk = 1 << 3;
+  static const int flagImu6FacesOk = 1 << 2;
+  static const int flagHighgTempOk = 1 << 1;
+  static const int flagHighg6FacesOk = 1 << 0;
+  static const int flagCalibReset = 0x000;
   static const int eventFlagPyrosArmed = 1 << 0;
   static const int eventFlagPyro1Fired = 1 << 1;
   static const int eventFlagPyro2Fired = 1 << 2;
@@ -657,7 +732,8 @@ class DataServiceManager with ChangeNotifier {
   static const int eventFlagMainDeployed = 1 << 6;
   static const int eventFlagDrogueDeployed = 1 << 7;
   static const int eventFlagMachLockEnabled = 1 << 8;
-  static const int expectedConfigMajor = 1;
+
+  static const int expectedConfigMajor = 2;
   static const int expectedConfigMinor = 3;
   static const int expectedTelemetryMajor = 1;
   static const int expectedTelemetryMinor = 4;
@@ -699,6 +775,10 @@ class DataServiceManager with ChangeNotifier {
   String? flightStatsError;
   int? flightStatsFound;
   int _flightStatsRequestId = 0;
+  // Calibration
+  int accCalibCapturedFaces = 0;
+  bool isAccCalibBusy = false;
+  bool? accCalibFinishedSuccess;
 
   // Version Handler
   bool hasVersionMismatch = false;
@@ -776,6 +856,7 @@ class DataServiceManager with ChangeNotifier {
   bool get debugMode => config?.debugMode ?? false;
   bool get flightTestMode => config?.flightTestMode ?? false;
   int get axisProfile => config?.axisProfile ?? axisProfileP0;
+  int get calibStates => config?.calibStates ?? 0;
   bool get enableBuzzer => config?.enableBuzzer ?? false;
   int get minNeededPyroNb => config?.minNeededPyroNb ?? 0;
   int get drogueFireAttemptMaxNb => config?.drogueFireAttemptMaxNb ?? 0;
@@ -946,6 +1027,30 @@ class DataServiceManager with ChangeNotifier {
       ((systemStates & (1 << 0)) != 0) && !eventPyro4Fired,
     ];
   }
+
+  CalibrationState get highg6FacesCalibrationState {
+    if (config == null) return CalibrationState.unknown;
+    return (calibStates & flagHighg6FacesOk) != 0 ? CalibrationState.valid : CalibrationState.dirty;
+  }
+  CalibrationState get highgTempCalibrationState {
+    if (config == null) return CalibrationState.unknown;
+    return (calibStates & flagHighgTempOk) != 0 ? CalibrationState.valid : CalibrationState.dirty;
+  }
+  CalibrationState get imu6FacesCalibrationState {
+    if (config == null) return CalibrationState.unknown;
+    return (calibStates & flagImu6FacesOk) != 0 ? CalibrationState.valid : CalibrationState.dirty;
+  }
+  CalibrationState get imuTempCalibrationState {
+    if (config == null) return CalibrationState.unknown;
+    return (calibStates & flagImuTempOk) != 0 ? CalibrationState.valid : CalibrationState.dirty;
+  }
+
+  bool get imuCalibrationValid =>
+      imuTempCalibrationState == CalibrationState.valid ||
+      imu6FacesCalibrationState == CalibrationState.valid;
+  bool get highgCalibrationValid =>
+      highgTempCalibrationState == CalibrationState.valid ||
+      highg6FacesCalibrationState == CalibrationState.valid;
 
   double pressureToAltitude(double pressureHpa,
       [double seaLevelHpa = 1013.25]) {
@@ -1464,6 +1569,89 @@ class DataServiceManager with ChangeNotifier {
     ConsoleService().log('Demande de test du flash de vol envoyée.');
   }
 
+  Future<void> commandStartLogDataCSV() async {
+    if (!hasConnection) {
+      ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
+      return;
+    }
+    await btService.sendBinary(cmdTypeAction, [actionStartLogDataCSV]);
+    ConsoleService().log('Demande de log CSV pour debug envoyée.');
+  }
+
+  Future<void> commandStopLogDataCSV() async {
+    if (!hasConnection) {
+      ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
+      return;
+    }
+    await btService.sendBinary(cmdTypeAction, [actionStopLogDataCSV]);
+    ConsoleService().log('Demande de log CSV pour debug envoyée.');
+  }
+
+  Future<void> startAccCalibSession() async {
+    if (!hasConnection) return;
+    accCalibCapturedFaces = 0;
+    isAccCalibBusy = false;
+    accCalibFinishedSuccess = null;
+    _safeNotifyListeners();
+    await btService.sendBinary(cmdTypeAction, [actionCalibAcc, 0]);
+    ConsoleService().log('Session de calibration 6-faces démarrée.');
+  }
+
+  Future<void> captureAccCalibFace() async {
+    if (!hasConnection) return;
+    isAccCalibBusy = false;
+    _safeNotifyListeners();
+    await btService.sendBinary(cmdTypeAction, [actionCalibAcc, 1]);
+    ConsoleService().log('Capture de la face courante demandée.');
+  }
+
+  Future<void> finalizeAccCalib({double? latitude, double? altitude}) async {
+    if (!hasConnection) return;
+    isAccCalibBusy = true;
+    accCalibFinishedSuccess = null;
+    _safeNotifyListeners();
+
+    if (latitude != null && altitude != null) {
+      final builder = ByteBuilder(10);
+      builder.writeUint8(actionCalibAcc);
+      builder.writeUint8(2);
+      builder.writeFloat32(latitude);
+      builder.writeFloat32(altitude);
+      await btService.sendBinary(cmdTypeAction, builder.toBytes());
+    } else {
+      await btService.sendBinary(cmdTypeAction, [actionCalibAcc, 2]);
+    }
+    ConsoleService().log('Finalisation et calcul de l’optimisation demandés.');
+  }
+
+  Future<void> cancelAccCalibSession() async {
+    if (!hasConnection) return;
+    isAccCalibBusy = false;
+    accCalibCapturedFaces = 0;
+    accCalibFinishedSuccess = null;
+    _safeNotifyListeners();
+    await btService.sendBinary(cmdTypeAction, [actionCalibAcc, 3]);
+    ConsoleService().log('Session de calibration annulée.');
+  }
+
+  Future<void> commandCalibBaro() async {
+    if (!hasConnection) {
+      ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
+      return;
+    }
+    await btService.sendBinary(cmdTypeAction, [actionCalibBaro]);
+    ConsoleService().log('Demande de calibration du baromètre envoyée.');
+  }
+
+  Future<void> commandAutoAxisProfile() async {
+    if (!hasConnection) {
+      ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
+      return;
+    }
+    await btService.sendBinary(cmdTypeAction, [actionAutoAxisProfile]);
+    ConsoleService().log('Demande de calibration du baromètre envoyée.');
+  }
+
   // ---------- PARSER ----------
 
   Future<void> parseBinaryMessage(int type, List<int> payload) async {
@@ -1655,6 +1843,19 @@ class DataServiceManager with ChangeNotifier {
       flightDataFlightId = null;
       _isDrainingCanceledFlightData = false;
       _flightDataChunks.clear();
+      _safeNotifyListeners();
+    } else if (cmdAcked == actionCalibAcc) {
+      isAccCalibBusy = false;
+      if (bytes.length >= 3 && status == 1) {
+        accCalibCapturedFaces = bytes[2];
+        ConsoleService().log('Face $accCalibCapturedFaces/6 capturée par l\'ODB.');
+      } else if (bytes.length == 2 && accCalibCapturedFaces == 6) {
+        accCalibFinishedSuccess = (status == 1);
+        accCalibCapturedFaces = 0;
+        if (status == 1) {
+          await refreshOdb();
+        }
+      }
       _safeNotifyListeners();
     }
     ConsoleService().log(

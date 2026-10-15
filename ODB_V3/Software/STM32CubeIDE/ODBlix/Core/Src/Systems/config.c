@@ -50,6 +50,17 @@ const odb_config_t default_config = {
 
 	// Sensors
 	.axis_profile = ACC_AXIS_PROFILE_P0,
+	.highg_calib_6faces = {
+		.scale_matrix = {0.0f, 0.0f, 0.0f},
+		.bias = {0.0f, 0.0f, 0.0f}
+	},
+	/*
+	.imu_calib_6faces = {
+		.scale_matrix = {0.0f, 0.0f, 0.0f},
+		.bias = {0.0f, 0.0f, 0.0f}
+	},
+	*/
+	.calib_states = FLAG_CALIB_RESET,
 
     // Pyros
     .fire_attempt_delay_ms = 250,
@@ -167,21 +178,27 @@ static config_error_t Config_ValidateFields(const odb_config_t* new_config) {
     return CONFIG_VALID_OK;
 }
 
-void Config_Init(void) {
+int8_t Config_Init(void) {
     odb_config_t temp_config;
+    int8_t error = CONFIG_VALID_OK;
     if(W25Q_Read(&w25q, (uint8_t*)&temp_config, FLASH_CONFIG_START_ADDRESS, CONFIG_DATA_SIZE) == 0) {
         if(temp_config.magic_number == CONFIG_MAGIC_NUMBER) {
 			if(temp_config.version_major == CONFIG_PROTOCOL_VERSION_MAJOR && temp_config.version_minor == CONFIG_PROTOCOL_VERSION_MINOR && temp_config.payload_size == CONFIG_DATA_SIZE && Config_CheckCrc(&temp_config) && Config_ValidateFields(&temp_config) == CONFIG_VALID_OK) {
                 memcpy(&current_config, &temp_config, CONFIG_DATA_SIZE);
-                return;
+                return CONFIG_VALID_OK;
             } else {
+            	error = CONFIG_ERR_VERSION;
                 DEBUG_PRINTF("WARNING : Config version mismatch (Flash V%d.%d, FW V%d.%d). Loading defaults.\n", temp_config.version_major, temp_config.version_minor, CONFIG_PROTOCOL_VERSION_MAJOR, CONFIG_PROTOCOL_VERSION_MINOR);
             }
+        } else {
+        	error = CONFIG_ERR_MAGIC_NUMBER;
         }
     }
 
     Config_LoadDefaults();
     Config_SaveToFlash();
+
+    return error;
 }
 
 int8_t Config_SaveToFlash(void) {

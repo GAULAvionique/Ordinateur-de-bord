@@ -9,10 +9,13 @@
 #include "Comm/app_comm.h"
 #include "Comm/beacon_comm.h"
 #include "Utils/reboot_manager.h"
+#include "Systems/scheduler.h"
+#include "Systems/tasks.h"
 #include "Systems/flight_fsm.h"
 #include <string.h>
 
 extern w25q_t w25q;
+extern adxl382_t adxl382;
 extern critical_led_t critical_led;
 extern buzzer_t buzzer;
 extern system_measurements_t system_measurements;
@@ -133,8 +136,7 @@ static bool AppComm_SendDataChunks(hm11_t *hm11_dev, const odb_data_t *data, uin
 
 	for(uint8_t chunk_index = 0; chunk_index < chunk_count; chunk_index++) {
 		const uint16_t offset = (uint16_t)chunk_index * CHUNK_DATA_SIZE;
-		const uint8_t chunk_length = (uint8_t)(((sizeof(odb_data_t) - offset) < CHUNK_DATA_SIZE) ?
-																											(sizeof(odb_data_t) - offset) : CHUNK_DATA_SIZE);
+		const uint8_t chunk_length = (uint8_t)(((sizeof(odb_data_t) - offset) < CHUNK_DATA_SIZE) ? (sizeof(odb_data_t) - offset) : CHUNK_DATA_SIZE);
 		chunk_payload[0] = (uint8_t)(sample_index & 0xFF);
 		chunk_payload[1] = (uint8_t)(sample_index >> 8);
 		chunk_payload[2] = chunk_index;
@@ -195,7 +197,9 @@ void AppComm_ProcessRx(hm11_t *hm11_dev) {
         if(byte == str_lost[match_lost]) {
             match_lost++;
             if(match_lost == 7) {
-            	hm11_dev->is_connected = false; match_lost = 0;
+            	hm11_dev->is_connected = false;
+            	match_lost = 0;
+            	ADXL382_SetAxisProfile(&adxl382, current_config.axis_profile);
             }
         } else {
         	match_lost = (byte == str_lost[0]) ? 1 : 0;
@@ -336,8 +340,7 @@ void AppComm_ProcessRx(hm11_t *hm11_dev) {
 										.magic_number = CONFIG_MAGIC_NUMBER,
 										.config = flight_config,
 									};
-									AppComm_SendFrame(hm11_dev, MSG_GENERIC_DATA,
-													  (uint8_t*)&config_packet, sizeof(config_packet));
+									AppComm_SendFrame(hm11_dev, MSG_GENERIC_DATA,(uint8_t*)&config_packet, sizeof(config_packet));
 									HAL_Delay(5);
 								}
 
@@ -478,6 +481,95 @@ void AppComm_ProcessRx(hm11_t *hm11_dev) {
 							AppComm_SendAck(hm11_dev, CMD_TEST_FLIGHT_FLASH, 1);
 						} else {
 							AppComm_SendAck(hm11_dev, CMD_TEST_FLIGHT_FLASH, 0);
+						}
+					} else if(cmd == CMD_START_SD_LOG) {
+						if(current_config.debug_mode == STATE_TRUE && (flight_data.system_states & FLAG_SD_OK) != 0) {
+							Scheduler_AddTask("CSV_Logger", Task_SdCsvLogger, TASK_DATA_UPDATE_FREQ_MS);
+							Scheduler_SetActive("CSV_Logger", true);
+							AppComm_SendAck(hm11_dev, CMD_START_SD_LOG, Logger_StartSdCsv() ? 1 : 0);
+						} else {
+							AppComm_SendAck(hm11_dev, CMD_START_SD_LOG, Logger_StopSdCsv() ? 1 : 0);
+						}
+					} else if(cmd == CMD_STOP_SD_LOG) {
+						if(Logger_IsSdCsvLogging()) {
+							AppComm_SendAck(hm11_dev, CMD_STOP_SD_LOG, Logger_StopSdCsv() ? 1 : 0);
+							Scheduler_SetActive("CSV_Logger", false);
+						} else {
+							AppComm_SendAck(hm11_dev, CMD_STOP_SD_LOG, Logger_StopSdCsv() ? 1 : 0);
+						}
+					} else if(cmd == CMD_REQ_ACC_CALIB) {
+						static float calib_faces[6][3];
+						static uint8_t calib_face_count = 0;
+						static bool calib_session_active = false;
+
+						uint8_t sub_action = (expected_len >= 2) ? payload[1] : 0;
+						if(sub_action == 0) {
+							// 0: Start
+							CriticalLED_SetColor(&critical_led, RED);
+							calib_face_count = 0;
+							calib_session_active = true;
+							ADXL382_SetAxisProfile(&adxl382, ACC_AXIS_PROFILE_CALIB);
+							AppComm_SendAck(hm11_dev, CMD_REQ_ACC_CALIB, 1);
+						} else if(sub_action == 1) {
+							// 1: Capture & average
+							if(!calib_session_active || calib_face_count >= 6) {
+								AppComm_SendAck(hm11_dev, CMD_REQ_ACC_CALIB, 0);
+							} else {
+								if(ADXL382_CaptureFaceSample(&adxl382, calib_faces[calib_face_count], ADXL382_CALIB_SAMPLE)) {
+									calib_face_count++;
+									uint8_t ack_data[3] = { CMD_REQ_ACC_CALIB, 1, calib_face_count };
+									AppComm_SendFrame(hm11_dev, MSG_ACK, ack_data, 3);
+								} else {
+									AppComm_SendAck(hm11_dev, CMD_REQ_ACC_CALIB, 0);
+								}
+							}
+						} else if(sub_action == 2) {
+							// 2: Gradient descend & Save
+							if(!calib_session_active || calib_face_count < 6) {
+								AppComm_SendAck(hm11_dev, CMD_REQ_ACC_CALIB, 0);
+							} else {
+								float target_g = GRAVITY_MS2;
+								float lat = 0.0f;
+								float alt = 0.0f;
+								if(expected_len >= 10) {
+									// Smartphone lat and alt
+									memcpy(&lat, &payload[2], sizeof(float));
+									memcpy(&alt, &payload[6], sizeof(float));
+									target_g = Math_GetLocalGravity(lat, alt);
+								} else if(flight_data.gps_fix != 0 && (flight_data.system_states & FLAG_GPS_OK) != 0 && (flight_data.system_states & FLAG_BARO_OK) != 0) {
+									// GPS + Baro ODB
+									lat = (float)flight_data.lat / 1e7f;
+									alt = Math_ComputeAltitudeMSL(flight_data.pressure_pa * 0.01f);
+									target_g = Math_GetLocalGravity(lat, alt);
+								}
+
+								ADXL382_SetAxisProfile(&adxl382, current_config.axis_profile);
+
+								faces_calibration_t new_calib;
+								if(Math_Optimize6FacesCalibration(calib_faces, target_g, &new_calib)) {
+									adxl382.faces_offset = new_calib;
+									current_config.highg_calib_6faces = new_calib;
+									current_config.calib_states |= FLAG_HIGHG_6FACES_OK;
+									if(Config_SaveToFlash() == 0) {
+										calib_session_active = false;
+										AppComm_SendAck(hm11_dev, CMD_REQ_ACC_CALIB, 1);
+									} else {
+										current_config.calib_states &= ~FLAG_HIGHG_6FACES_OK;
+										AppComm_SendAck(hm11_dev, CMD_REQ_ACC_CALIB, 0);
+									}
+								} else {
+									AppComm_SendAck(hm11_dev, CMD_REQ_ACC_CALIB, 0);
+								}
+							}
+						} else if(sub_action == 3) {
+							// 3: Cancel
+							calib_session_active = false;
+							calib_face_count = 0;
+							ADXL382_SetAxisProfile(&adxl382, current_config.axis_profile);
+							AppComm_SendAck(hm11_dev, CMD_REQ_ACC_CALIB, 1);
+						} else {
+							ADXL382_SetAxisProfile(&adxl382, current_config.axis_profile);
+							AppComm_SendAck(hm11_dev, CMD_REQ_ACC_CALIB, 0);
 						}
 					}
                 }

@@ -154,6 +154,52 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
   double _parseDouble(String value, double fallback) =>
       double.tryParse(value.trim().replaceAll(',', '.')) ?? fallback;
 
+  Widget _buildStyledDropdown<T>({
+    required BuildContext context,
+    required T value,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?>? onChanged,
+  }) {
+    final theme = FlutterFlowTheme.of(context);
+
+    return InputDecorator(
+      decoration: InputDecoration(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
+        filled: true,
+        fillColor: theme.secondaryBackground,
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: theme.alternate, width: 1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: theme.primary, width: 1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: theme.alternate, width: 1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          value: value,
+          isDense: true,
+          isExpanded: true,
+          iconSize: 20,
+          padding: EdgeInsets.zero,
+          menuMaxHeight: 280,
+          borderRadius: BorderRadius.circular(12),
+          dropdownColor: theme.secondaryBackground,
+          onChanged: onChanged,
+          items: items,
+        ),
+      ),
+    );
+  }
+
   void _syncOdbConfig(DataServiceManager data) {
     if (!data.hasOdbConfig) {
       if (_lastHydratedConfigSignature.isEmpty) {
@@ -275,8 +321,9 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           ),
         ),
         Expanded(
-          child: DropdownButtonFormField<int>(
-            initialValue: _stageRoleValue == DataServiceManager.stageRoleBooster
+          child: _buildStyledDropdown<int>(
+            context: context,
+            value: _stageRoleValue == DataServiceManager.stageRoleBooster
                 ? DataServiceManager.stageRoleBooster
                 : DataServiceManager.stageRoleSustainer,
             onChanged: enabled
@@ -288,35 +335,6 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                     data.stageRole = value;
                   }
                 : null,
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 14,
-              ),
-              filled: true,
-              fillColor: FlutterFlowTheme.of(context).secondaryBackground,
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: FlutterFlowTheme.of(context).alternate,
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: FlutterFlowTheme.of(context).primary,
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              disabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: FlutterFlowTheme.of(context).alternate,
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
             items: const [
               DropdownMenuItem<int>(
                 value: DataServiceManager.stageRoleBooster,
@@ -379,8 +397,9 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           ),
         ),
         Expanded(
-          child: DropdownButtonFormField<int>(
-            initialValue: _axisProfileValue,
+          child: _buildStyledDropdown<int>(
+            context: context,
+            value: _axisProfileValue,
             onChanged: enabled
                 ? (value) {
                     if (value == null) return;
@@ -390,41 +409,11 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                     data.axisProfile = value;
                   }
                 : null,
-            isExpanded: true,
             items: List.generate(
               axisProfileLabels.length,
               (index) => DropdownMenuItem<int>(
                 value: index,
                 child: Text(axisProfileLabels[index]),
-              ),
-            ),
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 14,
-              ),
-              filled: true,
-              fillColor: FlutterFlowTheme.of(context).secondaryBackground,
-              enabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: FlutterFlowTheme.of(context).alternate,
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: FlutterFlowTheme.of(context).primary,
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              disabledBorder: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: FlutterFlowTheme.of(context).alternate,
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),
@@ -475,6 +464,11 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         visualIcon = Icons.arrow_upward_rounded;
         iconColor = FlutterFlowTheme.of(context).warning;
         break;
+      case 8:
+        noseAxis = 'Calibration';
+        description = 'La carte est configuré dans ses axes originels, prêt pour une calibration';
+        visualIcon = Icons.compass_calibration_rounded;
+        iconColor = FlutterFlowTheme.of(context).warning;
       default:
         noseAxis = 'Inconnu';
         description = 'Profil non reconnu.';
@@ -1118,9 +1112,84 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
             children: [
               _buildAxisProfileDropdown(context, data: data, enabled: enabled),
               _buildAxisVisualizer(context, _axisProfileValue),
+              _buildCalibrationStatuses(context, data),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCalibrationStatuses(
+    BuildContext context,
+    DataServiceManager data,
+  ) {
+    final statuses = <({String label, CalibrationState state})>[
+      (
+        label: 'IMU température',
+        state: data.imuTempCalibrationState,
+      ),
+      (
+        label: 'IMU 6 faces',
+        state: data.imu6FacesCalibrationState,
+      ),
+      (
+        label: 'HighG température',
+        state: data.highgTempCalibrationState,
+      ),
+      (
+        label: 'HighG 6 faces',
+        state: data.highg6FacesCalibrationState,
+      ),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'État des calibrations',
+            style: FlutterFlowTheme.of(context).bodyMedium.override(
+                  font: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    fontStyle:
+                        FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                  ),
+                  letterSpacing: 0.0,
+                  fontWeight: FontWeight.w600,
+                  fontStyle:
+                      FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                ),
+          ),
+          const SizedBox(height: 8.0),
+          ...statuses.map(
+            (status) => Padding(
+              padding: const EdgeInsets.only(bottom: 6.0),
+              child: Row(
+                children: [
+                  Container(
+                    width: 12.0,
+                    height: 12.0,
+                    decoration: BoxDecoration(
+                      color: data.hasOdbConfig
+                          ? (status.state == CalibrationState.valid
+                              ? FlutterFlowTheme.of(context).success
+                              : FlutterFlowTheme.of(context).warning)
+                          : FlutterFlowTheme.of(context).secondaryText,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8.0),
+                  Text(
+                    status.label,
+                    style: FlutterFlowTheme.of(context).bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1283,9 +1352,9 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         ),
         Expanded(
           flex: 3,
-          child: DropdownButtonFormField<int>(
-            initialValue: _apogeeDetectionMode,
-            isExpanded: true,
+          child: _buildStyledDropdown<int>(
+            context: context,
+            value: _apogeeDetectionMode,
             onChanged: enabled
                 ? (value) {
                     if (value == null) return;
@@ -1310,20 +1379,6 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                 child: Text('Barométrique'),
               ),
             ],
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 14,
-              ),
-              filled: true,
-              fillColor: FlutterFlowTheme.of(context).secondaryBackground,
-              border: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: FlutterFlowTheme.of(context).alternate,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
           ),
         ),
           ],

@@ -37,11 +37,14 @@ void Task_ExecuteFsm(void) {
 
 void Task_DataUpdate(void) {
     ODB_Update(&flight_data, &flight_stats);
-    Logger_PushData(&flight_data);
-}
+    Logger_PushData(&flight_data);}
 
 void Task_Logger(void) {
     Logger_Task();
+}
+
+void Task_SdCsvLogger(void) {
+	Logger_WriteSdCsv(&flight_data);
 }
 
 void Task_Telemetry(void) {

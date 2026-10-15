@@ -15,7 +15,9 @@
 #include <stdbool.h>
 
 
-#define ADXL382_I2C_ADDR (0x1D << 1)
+#define ADXL382_I2C_ADDR 		(0x1D << 1)
+
+#define ADXL382_CALIB_SAMPLE	400
 
 
 typedef enum {
@@ -105,8 +107,8 @@ typedef struct {
     adxl382_range_t                 range;
     adxl382_filters_t            	filters_cfg;
     acc_axis_profile_t              axis_profile;
-    coeff_poly3_t					x_axis_offset, y_axis_offset, z_axis_offset;
     faces_calibration_t				faces_offset;
+    coeff_poly3_t					x_axis_temp_offset, y_axis_temp_offset, z_axis_temp_offset;
 
     uint8_t                         raw_buffer[8];	// Data stored by registers
     float             				acc_x;	        // m/s2, after thermal compensation and local frame transformation
@@ -121,7 +123,9 @@ adxl382_error_t ADXL382_Init(adxl382_t *dev);
 
 bool ADXL382_IsDataReady(adxl382_t *dev);
 int8_t ADXL382_SetMode(adxl382_t *dev, adxl382_mode_t mode);
+void ADXL382_SetAxisProfile(adxl382_t *dev, acc_axis_profile_t profile);
 adxl382_error_t ADXL382_ReadData(adxl382_t *dev);
 void ADXL382_Compute(adxl382_t *dev, const float current_quat[4]);
+bool ADXL382_CaptureFaceSample(adxl382_t *dev, float out_face[3], uint16_t sample_count);
 
 #endif /* INC_DRIVERS_ADXL382_H_ */

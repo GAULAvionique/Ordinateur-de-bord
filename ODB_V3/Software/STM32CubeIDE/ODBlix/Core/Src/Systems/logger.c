@@ -8,8 +8,11 @@
 #include "Systems/logger.h"
 #include "Drivers/mem2067.h"
 #include "Systems/config.h"
+#include <stdio.h>
 #include <string.h>
 
+
+#define LOGGER_WRITE_SD_CSV_COUNT 100U
 
 typedef enum {
     LOGGER_IDLE,
@@ -39,6 +42,9 @@ static uint32_t previous_flight_header_addr = 0xFFFFFFFF;
 static uint32_t flight_read_end_address = 0;
 
 static bool is_logging = false;
+/* DEBUG */
+static bool is_sd_csv_logging = false;
+static uint32_t sd_csv_sample_count = 0;
 
 extern w25q_t w25q;
 extern odb_stats_t flight_stats;
@@ -566,10 +572,10 @@ void Logger_ExportToSD(const odb_stats_t *stats) {
 		f_puts("# =======================================\n\n", &active_file);
 	}
 
-    f_puts("TimeBoot_ms,Sys_States,Event_States,Mission_State,Battery_mV,"
-           "Roll,Pitch,Yaw,IMU_Acc_X,IMU_Acc_Y,IMU_Acc_Z,IMU_Gyro_X,IMU_Gyro_Y,IMU_Gyro_Z,IMU_Mag_X,IMU_Mag_Y,IMU_Mag_Z,"
-           "Alt_AGL_m,Press_Pa,Temp_C,HighG_Acc_X,HighG_Acc_Y,HighG_Acc_Z,"
-           "GPS_Fix,Lat,Lon,GPS_Alt_mm,Vel,COG,Sat_NB,SD_Space,IMU_Acc_Vert,HighG_Acc_Vert,Kalman_Z,Kalman_V\n", &active_file);
+        f_puts("TimeBoot_ms;Sys_States;Event_States;Mission_State;Battery_mV;"
+            "Roll;Pitch;Yaw;IMU_Acc_X;IMU_Acc_Y;IMU_Acc_Z;IMU_Gyro_X;IMU_Gyro_Y;IMU_Gyro_Z;IMU_Mag_X;IMU_Mag_Y;IMU_Mag_Z;"
+            "Alt_AGL_m;Press_Pa;Temp_C;HighG_Acc_X;HighG_Acc_Y;HighG_Acc_Z;"
+            "GPS_Fix;Lat;Lon;GPS_Alt_mm;Vel;COG;Sat_NB;SD_Space;IMU_Acc_Vert;HighG_Acc_Vert;Kalman_Z;Kalman_V\n", &active_file);
 
     uint32_t cursor = 0;
     Logger_StartReadingFlight(Logger_GetCurrentFlightAddress(), &cursor);
@@ -577,10 +583,10 @@ void Logger_ExportToSD(const odb_stats_t *stats) {
 
     while(Logger_ReadNextData(&cursor, &frame)) {
         snprintf(line_buf, sizeof(line_buf),
-            "%lu,%u,%u,%u,%u,"
-            "%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,"
-            "%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,"
-            "%u,%ld,%ld,%ld,%u,%u,%u,%u,%.4f,%.4f,%.4f,%.4f\n",
+            "%lu;%u;%u;%u;%u;"
+            "%.4f;%.4f;%.4f;%.4f;%.4f;%.4f;%.4f;%.4f;%.4f;%.4f;%.4f;%.4f;"
+            "%.4f;%.4f;%.4f;%.4f;%.4f;%.4f;"
+            "%u;%ld;%ld;%ld;%u;%u;%u;%u;%.4f;%.4f;%.4f;%.4f\n",
             frame.time_boot_ms, frame.system_states, frame.event_states,
             frame.mission_state, frame.battery_mv,
             frame.roll, frame.pitch, frame.yaw,
@@ -600,4 +606,59 @@ void Logger_ExportToSD(const odb_stats_t *stats) {
     MEM2067_Sync();
     MEM2067_CloseFile();
     MEM2067_Unmount();
+}
+
+
+/* DEBUG */
+bool Logger_StartSdCsv(void) {
+    if(!file_is_open) return false;
+
+    if(!is_sd_csv_logging) {
+        f_puts("# ODB data acquisition CSV\r\n", &active_file);
+        f_puts("version_major;version_minor;payload_size;time_boot_ms;system_states;event_states;mission_state;battery_mv;pyro1_mv;pyro2_mv;pyro3_mv;pyro4_mv;roll;pitch;yaw;imu_acc_x;imu_acc_y;imu_acc_z;imu_gyro_x;imu_gyro_y;imu_gyro_z;imu_mag_x;imu_mag_y;imu_mag_z;imu_temp;altitude_agl_m;pressure_pa;temp_celsius;highg_acc_x;highg_acc_y;highg_acc_z;highg_temp;gps_fix;lat;lon;gps_alt;vel;cog;satellites_nb;sd_space;imu_acc_vertical;highg_acc_vertical;kalman_z;kalman_v;barometric_trend\r\n", &active_file);
+        sd_csv_sample_count = 0;
+        is_sd_csv_logging = true;
+    }
+
+    return true;
+}
+
+bool Logger_StopSdCsv(void) {
+    if(!is_sd_csv_logging) return false;
+
+    const bool sync_ok = MEM2067_Sync() == MEM2067_OK;
+    is_sd_csv_logging = false;
+    return sync_ok;
+}
+
+bool Logger_IsSdCsvLogging(void) {
+    return is_sd_csv_logging;
+}
+
+void Logger_WriteSdCsv(const odb_data_t *data) {
+    if(!data || !is_sd_csv_logging || !file_is_open) return;
+
+    char line_buf[512];
+    snprintf(line_buf, sizeof(line_buf),
+        "%u;%u;%u;%lu;%u;%u;%u;%u;%u;%u;%u;%u;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%u;%ld;%ld;%ld;%u;%u;%u;%u;%.6f;%.6f;%.6f;%.6f;%u\r\n",
+        data->version_major, data->version_minor, data->payload_size,
+        data->time_boot_ms, data->system_states, data->event_states,
+        data->mission_state, data->battery_mv, data->pyros_mv[0],
+        data->pyros_mv[1], data->pyros_mv[2], data->pyros_mv[3], data->roll,
+        data->pitch, data->yaw, data->imu_acc_x, data->imu_acc_y,
+        data->imu_acc_z, data->imu_gyro_x, data->imu_gyro_y, data->imu_gyro_z,
+        data->imu_mag_x, data->imu_mag_y, data->imu_mag_z, data->imu_temp,
+        data->altitude_agl_m, data->pressure_pa, data->temp_celsius,
+        data->highg_acc_x, data->highg_acc_y, data->highg_acc_z,
+        data->highg_temp, data->gps_fix, data->lat, data->lon, data->gps_alt,
+        data->vel, data->cog, data->satellites_nb, data->sd_space,
+        data->imu_acc_vertical, data->highg_acc_vertical, data->kalman_z,
+        data->kalman_v, data->barometric_trend);
+    f_puts(line_buf, &active_file);
+
+    // Pre-increment
+    if(++sd_csv_sample_count >= LOGGER_WRITE_SD_CSV_COUNT) {
+        MEM2067_Sync();
+        sd_csv_sample_count = 0;
+    }
 }

@@ -93,41 +93,33 @@ adxl382_t adxl382 = {
 	.filters_cfg = {
 		.iir7_bypass  = false,
 		.sinc_rate    = ADXL382_SINC_32X,
-		.iir1_enable  = false,
-		.round_mode   = ADXL382_ROUND_TRUNCATE,
+		.iir1_enable  = true,
+		.round_mode   = ADXL382_ROUND_FLOOR,
 		.dcf_bypass   = false,
-		.eq_bypass    = true,
+		.eq_bypass    = false,
 		.lpf_mode     = ADXL382_LPF_ODR_16,
 		.hpf_path     = ADXL382_HPF_DSM,
 		.hpf_corner   = ADXL382_HPF_NONE,
 		.or_behavior  = ADXL382_OR_HOLD_PREV
 	},
-	.x_axis_offset = {
+	.x_axis_temp_offset = {
 		.c0 = 0.0f,
 		.c1 = 0.0f,
 		.c2 = 0.0f,
 		.c3 = 0.0f,
 	},
-	.y_axis_offset = {
+	.y_axis_temp_offset = {
 		.c0 = 0.0f,
 		.c1 = 0.0f,
 		.c2 = 0.0f,
 		.c3 = 0.0f,
 	},
-	.z_axis_offset = {
+	.z_axis_temp_offset = {
 		.c0 = 0.0f,
 		.c1 = 0.0f,
 		.c2 = 0.0f,
 		.c3 = 0.0f,
 	},
-	.faces_offset = {
-		.scale_matrix = {
-			{1.0f, 0.0f, 0.0f},
-			{0.0f, 1.0f, 0.0f},
-			{0.0f, 0.0f, 1.0f}
-		},
-		.bias = {0.0f, 0.0f, 0.0f}
-	}
 };
 bno055_t bno055 = {
     .hi2c = &hi2c1,

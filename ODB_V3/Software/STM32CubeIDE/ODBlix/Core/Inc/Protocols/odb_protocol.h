@@ -49,6 +49,7 @@
 #define FLAG_PYRO2_CONN                 (1 << 2)
 #define FLAG_PYRO3_CONN                 (1 << 1)
 #define FLAG_PYRO4_CONN                 (1 << 0)
+#define FLAG_SYSTEM_STATE_RESET			0x000
 // Events states
 /*
  * [8]  : Mach lock enabled
@@ -61,6 +62,7 @@
  * [1]  : Pyro 1 fired
  * [0]	: Pyros armed
 */
+#define FLAG_EVENT_STATE_RESET			0x000
 #define FLAG_PYROS_ARMED				(1 << 0)
 #define FLAG_PYRO1_FIRED                (1 << 1)
 #define FLAG_PYRO2_FIRED                (1 << 2)

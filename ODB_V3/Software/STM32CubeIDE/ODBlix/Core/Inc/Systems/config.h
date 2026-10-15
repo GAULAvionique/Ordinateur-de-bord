@@ -35,7 +35,7 @@ typedef enum {
 } config_error_t;
 extern odb_config_t current_config;
 
-void Config_Init(void);
+int8_t Config_Init(void);
 int8_t Config_SaveToFlash(void);
 void Config_LoadDefaults(void);
 const odb_config_t* Config_Get(void);

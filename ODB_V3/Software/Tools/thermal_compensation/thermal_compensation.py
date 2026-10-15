@@ -39,22 +39,22 @@ c_z = coefs_z[::-1]
 coeffs = f"""
 // ================= COEFFICIENTS =================
     // Coefficients Axe X (C0 à C3)
-    .c0_x = {c_x[0]:.8e}f,
-    .c1_x = {c_x[1]:.8e}f,
-    .c2_x = {c_x[2]:.8e}f,
-    .c3_x = {c_x[3]:.8e}f,
+    .c0 = {c_x[0]:.8e}f,
+    .c1 = {c_x[1]:.8e}f,
+    .c2 = {c_x[2]:.8e}f,
+    .c3 = {c_x[3]:.8e}f,
 
     // Coefficients Axe Y (C0 à C3)
-    .c0_y = {c_y[0]:.8e}f,
-    .c1_y = {c_y[1]:.8e}f,
-    .c2_y = {c_y[2]:.8e}f,
-    .c3_y = {c_y[3]:.8e}f,
+    .c0 = {c_y[0]:.8e}f,
+    .c1 = {c_y[1]:.8e}f,
+    .c2 = {c_y[2]:.8e}f,
+    .c3 = {c_y[3]:.8e}f,
 
     // Coefficients Axe Z (C0 à C3)
-    .c0_z = {c_z[0]:.8e}f,
-    .c1_z = {c_z[1]:.8e}f,
-    .c2_z = {c_z[2]:.8e}f,
-    .c3_z = {c_z[3]:.8e}f
+    .c0 = {c_z[0]:.8e}f,
+    .c1 = {c_z[1]:.8e}f,
+    .c2 = {c_z[2]:.8e}f,
+    .c3 = {c_z[3]:.8e}f
 // =================================================================
 """
 print(coeffs)

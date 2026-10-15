@@ -81,8 +81,9 @@ void ODB_Reset(odb_data_t *data, odb_stats_t *stats) {
     }
 
     data->time_boot_ms = 0;
-    data->system_states = 0x0000; // All flags cleared (components not OK)
-    data->event_states = 0x00;    // All flags cleared (events not occurred)
+    data->system_states = FLAG_SYSTEM_STATE_RESET; 	// All flags cleared (components not OK)
+    data->event_states = FLAG_EVENT_STATE_RESET;    // All flags cleared (events not occurred)
+    data->mission_state = 0x0000;
     data->battery_mv = 0;
     data->roll = 0.0f;
     data->pitch = 0.0f;
@@ -195,7 +196,10 @@ odb_state_t ODB_Init(odb_data_t *data, odb_stats_t *stats) {
 
     if(W25Q_Init(&w25q) == 0) {
         system_states |= FLAG_FLASH_OK;
-        Config_Init();
+        if(Config_Init() != CONFIG_VALID_OK) {
+        	error++;
+        	DEBUG_PRINTF("WARNING : Init Config\n");
+        }
         if(Logger_Init() != LOGGER_SUCCESS) {
         	error++;
         	DEBUG_PRINTF("ERROR : Init Logger\n");
@@ -239,6 +243,12 @@ odb_state_t ODB_Init(odb_data_t *data, odb_stats_t *stats) {
         system_states |= FLAG_IMU_OK;
         /* DEBUG */
         //InertialNav_Init(&imu_nav, bno055.acc_vertical);
+        /*
+        if((current_config.calib_states & FLAG_IMU_6FACES_OK) != 0 || (current_config.calib_states & FLAG_IMU_TEMP_OK) != 0) {
+			warning++;
+			DEBUG_PRINTF("WARNING : BNO055 doesn't have valid calibrations.\n");
+		}
+		*/
     } else {
         error++;
         DEBUG_PRINTF("ERROR : Init BNO055\n");
@@ -255,6 +265,10 @@ odb_state_t ODB_Init(odb_data_t *data, odb_stats_t *stats) {
         system_states |= FLAG_HIGHG_OK;
         /* DEBUG */
         //InertialNav_Init(&highg_nav, adxl382.acc_vertical);
+        if((current_config.calib_states & FLAG_HIGHG_6FACES_OK) != 0 || (current_config.calib_states & FLAG_HIGHG_TEMP_OK) != 0) {
+        	warning++;
+        	DEBUG_PRINTF("WARNING : ADXL382 doesn't have valid calibrations.\n");
+        }
     } else {
         error++;
         DEBUG_PRINTF("ERROR : Init ADXL382\n");

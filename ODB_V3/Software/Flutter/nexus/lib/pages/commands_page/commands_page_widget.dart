@@ -10,6 +10,7 @@ import 'package:nexus/services/bluetooth_service.dart';
 import 'package:nexus/services/data_service.dart';
 import 'package:nexus/services/console_service.dart';
 import 'package:nexus/widgets/status_bluetooth_card.dart';
+import 'package:nexus/widgets/acc_calibration_dialog.dart';
 
 class CommandsPageWidget extends StatefulWidget {
   const CommandsPageWidget({super.key});
@@ -425,6 +426,28 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                             await data.testFlightFlash();
                           } : null,
                         ),
+                        _buildActionRow(
+                          context,
+                          title: 'Lancement du log de données en CSV pour debug',
+                          description: 'Exécution du log de données en CSV pour debug sur la SD',
+                          buttonText: 'Lancer',
+                          buttonColor: connected ? FlutterFlowTheme.of(context).primary : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected ? () async {
+                            ConsoleService().log('Lancement du log des données en CSV pour debug lancé');
+                            await data.commandStartLogDataCSV();
+                          } : null,
+                        ),
+                        _buildActionRow(
+                          context,
+                          title: 'Arrêt du log de données en CSV pour debug',
+                          description: 'Arrêt du log de données en CSV pour debug sur la SD',
+                          buttonText: 'Arrêt',
+                          buttonColor: connected ? FlutterFlowTheme.of(context).primary : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected ? () async {
+                            ConsoleService().log('Arrêt du log des données en CSV pour debug lancé');
+                            await data.commandStopLogDataCSV();
+                          } : null,
+                        ),
                       ].divide(const SizedBox(height: 12.0)),
                     ),
                   ),
@@ -436,24 +459,39 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                       children: [
                         _buildActionRow(
                           context,
-                          title: 'Calibration Accéléromètre',
-                          description: 'Calibrer les axes X, Y, Z',
+                          title: 'Calibration Accéléromètres',
+                          description: 'Calibrer automatiquement les axes X, Y, Z des accéléromètres en 6 positions',
                           buttonText: 'Calibrer',
                           buttonColor: connected ? FlutterFlowTheme.of(context).error : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () {
-                            ConsoleService().log('Calibration Accéléromètre demandé (Pas encore implémenté)');
-                            //bt.send('CALIB1\r\n');
+                          onPressed: connected ? () async {
+                            ConsoleService().log('Ouverture de l\'assistant de calibration 6-faces');
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (context) => const AccCalibrationDialog(),
+                            );
+                          } : null,
+                        ),
+                        _buildActionRow(
+                          context,
+                          title: 'Réglage automatique du profile d\'axe',
+                          description: 'Régler automatiquement l\'axe de montée principal pointant vers le ciel des accéléromètres',
+                          buttonText: 'Régler',
+                          buttonColor: connected ? FlutterFlowTheme.of(context).error : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected ? () async {
+                            ConsoleService().log('Régalge du profile d\'axes demandé');
+                            await data.commandAutoAxisProfile();
                           } : null,
                         ),
                         _buildActionRow(
                           context,
                           title: 'Calibration Baromètre',
-                          description: 'Réglage altitude de référence',
+                          description: 'Réglage de l\'altitude de référence',
                           buttonText: 'Calibrer',
                           buttonColor: connected ? FlutterFlowTheme.of(context).error : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () {
-                            ConsoleService().log('Calibration Baromètre demandé (Pas encore implémenté)');
-                            //bt.send('CALIB2\r\n');
+                          onPressed: connected ? () async {
+                            ConsoleService().log('Calibration baromètre demandée (Pas encore implémenté)');
+                            await data.commandCalibBaro();
                           } : null,
                         ),
                       ].divide(const SizedBox(height: 12.0)),

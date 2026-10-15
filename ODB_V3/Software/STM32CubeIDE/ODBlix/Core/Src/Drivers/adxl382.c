@@ -95,6 +95,9 @@ static int8_t ADXL382_SetRange(adxl382_t *dev, adxl382_range_t range) {
 }
 
 static void ADXL382_RemapAxes(float *x, float *y, float *z, acc_axis_profile_t profile) {
+	// Raw axis for calibration
+	if(profile == ACC_AXIS_PROFILE_CALIB) return;
+
     float bno_x = -(*y);
     float bno_y = *x;
     float bno_z = *z;
@@ -210,6 +213,51 @@ static int8_t ADXL382_SetFilterConfig(adxl382_t *dev, adxl382_filters_t filters)
     return ADXL382_WriteReg(dev->hi2c, ADXL382_REG_FILTER, filter_val);
 }
 
+static bool ADXL382_ExtractAndCompensate(adxl382_t *dev, float out_accel[3]) {
+    if(!dev) return false;
+
+    int16_t x = (int16_t)(((uint16_t)dev->raw_buffer[0] << 8) | dev->raw_buffer[1]);
+    int16_t y = (int16_t)(((uint16_t)dev->raw_buffer[2] << 8) | dev->raw_buffer[3]);
+    int16_t z = (int16_t)(((uint16_t)dev->raw_buffer[4] << 8) | dev->raw_buffer[5]);
+
+    int16_t t_brut = (int16_t)(((uint16_t)dev->raw_buffer[6] << 8) | dev->raw_buffer[7]);
+    t_brut >>= 4; // 16 bits -> 12 bits adc
+
+    dev->temperature = 25.0f + ((float)t_brut - 550.0f) * 0.098039215f;
+
+    float t = dev->temperature;
+    float delta_t = t - 25.0f;
+
+    float scale_factor_25c = 2000.0f;
+    if(dev->range == ADXL382_RANGE_30G) {
+        scale_factor_25c = 1000.0f;
+    } else if(dev->range == ADXL382_RANGE_60G) {
+        scale_factor_25c = 500.0f;
+    }
+
+    // Datasheet Compensation (+0.02%/C)
+    float current_scale_factor = 1.0f / (scale_factor_25c * (1.0f + (0.0002f * delta_t)));
+    float acc_x_raw = (float)x * current_scale_factor;
+    float acc_y_raw = (float)y * current_scale_factor;
+    float acc_z_raw = (float)z * current_scale_factor;
+
+    // Chip Thermal Compensation
+    float temp_offset_x = 0.0f;
+    float temp_offset_y = 0.0f;
+    float temp_offset_z = 0.0f;
+    if((current_config.calib_states & FLAG_HIGHG_TEMP_OK) != 0) {
+    	temp_offset_x = Thermal_ComputeOffset(dev->x_axis_temp_offset, t);
+    	temp_offset_y = Thermal_ComputeOffset(dev->y_axis_temp_offset, t);
+    	temp_offset_z = Thermal_ComputeOffset(dev->z_axis_temp_offset, t);
+    }
+
+    out_accel[0] = (acc_x_raw - temp_offset_x) * GRAVITY_MS2;
+    out_accel[1] = (acc_y_raw - temp_offset_y) * GRAVITY_MS2;
+    out_accel[2] = (acc_z_raw - temp_offset_z) * GRAVITY_MS2;
+
+    return true;
+}
+
 
 int8_t ADXL382_SetMode(adxl382_t *dev, adxl382_mode_t mode) {
     uint8_t op_mode_reg = 0;
@@ -230,7 +278,16 @@ int8_t ADXL382_SetMode(adxl382_t *dev, adxl382_mode_t mode) {
 
     dev->mode = mode;
 
+    dev->faces_offset = current_config.highg_calib_6faces;
+	//dev->x_axis_temp_offset = current_config.highg_x_calib_temp;
+	//dev->y_axis_temp_offset = current_config.highg_y_calib_temp;
+	//dev->z_axis_temp_offset = current_config.highg_z_calib_temp;
+
     return 0; // success
+}
+
+void ADXL382_SetAxisProfile(adxl382_t *dev, acc_axis_profile_t profile) {
+	dev->axis_profile = profile;
 }
 
 adxl382_error_t ADXL382_Init(adxl382_t *dev) {
@@ -292,51 +349,64 @@ adxl382_error_t ADXL382_ReadData(adxl382_t *dev) {
     return ADXL382_OK;
 }
 
+/*
+ * Ensure the thermal compensation polynomial (c_0, c_1, c_2, c_3)
+ * exclusively represents the bias variation relative to 25°C (forcing c_0 = 0)
+ * (c_0 = 0) at 25°C), while calib_bias handles the initial static bias at room temperature.
+ */
 void ADXL382_Compute(adxl382_t *dev, const float current_quat[4]) {
     if(!dev) return;
 
-    int16_t x = (int16_t)(((uint16_t)dev->raw_buffer[0] << 8) | dev->raw_buffer[1]);
-    int16_t y = (int16_t)(((uint16_t)dev->raw_buffer[2] << 8) | dev->raw_buffer[3]);
-    int16_t z = (int16_t)(((uint16_t)dev->raw_buffer[4] << 8) | dev->raw_buffer[5]);
+    float accel[3];
+    if(!ADXL382_ExtractAndCompensate(dev, accel)) return;
 
-    int16_t t_brut = (int16_t)(((uint16_t)dev->raw_buffer[6] << 8) | dev->raw_buffer[7]);
-    t_brut >>= 4; // 16 bits -> 12 bits adc
-
-    dev->temperature = 25.0f + ((float)t_brut - 550.0f) * 0.098039215f;
-
-    float t = dev->temperature;
-    float delta_t = dev->temperature - 25.0f;
-
-    float scale_factor_25c = 2000.0f;
-    if (dev->range == ADXL382_RANGE_30G) {
-        scale_factor_25c = 1000.0f;
-    } else if (dev->range == ADXL382_RANGE_60G) {
-        scale_factor_25c = 500.0f;
+    // Only apply ACC_AXIS_PROFILE_CALIB if calibrating
+    if(dev->axis_profile != ACC_AXIS_PROFILE_CALIB && (current_config.calib_states & FLAG_HIGHG_6FACES_OK) != 0) {
+        Math_Compute6FacesCalibration(accel, &dev->faces_offset);
     }
 
-    // Datasheet Compensation (+0.02%/C)
-    float current_scale_factor =  1.0f / (scale_factor_25c * (1.0f + (0.0002f * delta_t)));
-    float acc_x_raw = (float)x * current_scale_factor;
-    float acc_y_raw = (float)y * current_scale_factor;
-    float acc_z_raw = (float)z * current_scale_factor;
+    ADXL382_RemapAxes(&accel[0], &accel[1], &accel[2], dev->axis_profile);
 
-    // Chip Thermal Compensation
-    float offset_x = Thermal_ComputeOffset(dev->x_axis_offset, t);
-    float offset_y = Thermal_ComputeOffset(dev->y_axis_offset, t);
-    float offset_z = Thermal_ComputeOffset(dev->z_axis_offset, t);
-
-    float accel[3];
-	accel[0] = (acc_x_raw - offset_x) * GRAVITY_MS2;
-	accel[1] = (acc_y_raw - offset_y) * GRAVITY_MS2;
-	accel[2] = (acc_z_raw - offset_z) * GRAVITY_MS2;
-
-	Math_6FacesCalibration(accel, &dev->faces_offset);
-
-	ADXL382_RemapAxes(&accel[0], &accel[1], &accel[2], dev->axis_profile);
-
-	dev->acc_x = accel[0];
-	dev->acc_y = accel[1];
-	dev->acc_z = accel[2];
+    dev->acc_x = accel[0];
+    dev->acc_y = accel[1];
+    dev->acc_z = accel[2];
 
     dev->acc_vertical = Math_ComputeWorldVerticalAcc(accel, current_quat, true);
+}
+
+bool ADXL382_CaptureFaceSample(adxl382_t *dev, float out_face[3], uint16_t sample_count) {
+    if(!dev || sample_count == 0) return false;
+
+    float sum_x = 0.0f;
+    float sum_y = 0.0f;
+    float sum_z = 0.0f;
+    uint16_t success_count = 0;
+
+    for(uint16_t i = 0; i < sample_count; i++) {
+        uint32_t start_tick = HAL_GetTick();
+        while(!ADXL382_IsDataReady(dev)) {
+            if((HAL_GetTick() - start_tick) > 100) {
+                break;
+            }
+            HAL_Delay(1); // Blocking delay
+        }
+
+        if(ADXL382_ReadData(dev) == ADXL382_OK) {
+            float sample_accel[3];
+            if(ADXL382_ExtractAndCompensate(dev, sample_accel)) {
+                sum_x += sample_accel[0];
+                sum_y += sample_accel[1];
+                sum_z += sample_accel[2];
+                success_count++;
+            }
+        }
+    }
+
+    if(success_count == 0) return false;
+
+    out_face[0] = sum_x / (float)success_count;
+    out_face[1] = sum_y / (float)success_count;
+    out_face[2] = sum_z / (float)success_count;
+
+    return true;
 }

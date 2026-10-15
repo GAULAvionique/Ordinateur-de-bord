@@ -24,6 +24,7 @@ void Task_RebootManager(void);
 void Task_ExecuteFsm(void);
 void Task_DataUpdate(void);
 void Task_Logger(void);
+void Task_SdCsvLogger(void);
 void Task_Telemetry(void);
 void Task_Idefix(void);
 void Task_BluetoothAppRx(void);

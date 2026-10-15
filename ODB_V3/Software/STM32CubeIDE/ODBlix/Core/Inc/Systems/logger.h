@@ -77,5 +77,11 @@ void Logger_ExportToSD(const odb_stats_t *stats);
 
 bool Logger_Erase(void);
 
+/* DEBUG */
+bool Logger_StartSdCsv(void);
+bool Logger_StopSdCsv(void);
+bool Logger_IsSdCsvLogging(void);
+void Logger_WriteSdCsv(const odb_data_t *data);
+
 
 #endif /* INC_SYSTEMS_LOGGER_H_ */

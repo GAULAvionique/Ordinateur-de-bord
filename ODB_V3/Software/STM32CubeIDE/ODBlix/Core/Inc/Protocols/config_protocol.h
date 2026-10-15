@@ -10,10 +10,18 @@
 
 #include <stdint.h>
 #include "Protocols/protocol_constants.h"
+#include "Utils/utils.h"
 
 /* === Protocol Versioning === */
-#define CONFIG_PROTOCOL_VERSION_MAJOR 1
+#define CONFIG_PROTOCOL_VERSION_MAJOR 2
 #define CONFIG_PROTOCOL_VERSION_MINOR 3
+
+/* === CALIBRATION STATES === */
+#define FLAG_IMU_TEMP_OK  		(1 << 3)
+#define FLAG_IMU_6FACES_OK		(1 << 2)
+#define FLAG_HIGHG_TEMP_OK   	(1 << 1)
+#define FLAG_HIGHG_6FACES_OK	(1 << 0)
+#define FLAG_CALIB_RESET		0x000
 
 enum {
     CONFIG_ODB_NAME_SIZE = 32,
@@ -55,6 +63,7 @@ typedef enum {
     ACC_AXIS_PROFILE_P5,     // Vertical, pitched +90° (Front face forward)
     ACC_AXIS_PROFILE_P6,     // Vertical, rolled -90° (Left side up)
     ACC_AXIS_PROFILE_P7,     // Vertical, pitched -90° (Back face forward)
+	ACC_AXIS_PROFILE_CALIB,	 // Original mapping for calibration routine
     ACC_AXIS_PROFILE_MAX
 } acc_axis_profile_t;
 
@@ -84,6 +93,11 @@ typedef struct __attribute__((packed)) {
 
     // Sensors
     uint8_t			    axis_profile;
+    faces_calibration_t	highg_calib_6faces;
+    //faces_calibration_t imu_calib_6faces;
+    //coeff_poly3_t		highg_x_calib_temp, highg_y_calib_temp, highg_z_calib_temp,
+	//					imu_x_calib_temp, imu_y_calib_temp, imu_z_calib_temp;
+    uint8_t				calib_states;	// Current calibration (6faces/temp) states
 
     // Pyros
     uint32_t 			fire_attempt_delay_ms;
@@ -115,7 +129,7 @@ typedef struct __attribute__((packed)) {
     // Integrity
     uint32_t			crc32;
 
-    // TOTAL 99
+    // TOTAL 124
     // Empty data to reach ... bytes
 	//uint8_t padding[0];
 } odb_config_t;

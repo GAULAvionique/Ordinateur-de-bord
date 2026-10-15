@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#define M_PI 					3.14159265358979323846f
 #define GRAVITY_MS2 			9.80665f	// m/s2
 #define G_TO_MS2(g) 			((GRAVITY_MS2) * (g))
 #define PRESSURE_SEA_LEVEL_HPA	1013.25f    // hPa
@@ -32,18 +33,20 @@ typedef struct {
 } coeff_poly3_t;
 
 typedef struct {
-    float scale_matrix[3][3];
+    float scale_matrix[3]; // Only scale_matrix[0][0], [1][1], [2][2], all others are 0.0f
     float bias[3];
 } faces_calibration_t;
 
 float Thermal_ComputeOffset(coeff_poly3_t coeffs, float temp);
-float Math_ComputeWorldVerticalAcc(const float accel[3], const float quat[4], bool gravity_compensation);
-void Math_6FacesCalibration(float accel[3], const faces_calibration_t *calib);
+bool Math_Optimize6FacesCalibration(const float faces[6][3], float target_gravity, faces_calibration_t *out_calib);
+void Math_Compute6FacesCalibration(float accel[3], const faces_calibration_t *calib);
 /* =========== */
 
-/* === Altitude === */
+/* === Altitude & Acceleration === */
 float Math_ComputeAltitudeMSL(float current_pressure);
 float Math_ComputeAltitudeAGL(float current_pressure, float ground_elevation_msl);
+float Math_ComputeWorldVerticalAcc(const float accel[3], const float quat[4], bool gravity_compensation);
+float Math_GetLocalGravity(float current_lat, float current_alt);
 /* =========== */
 
 /* === CRC === */

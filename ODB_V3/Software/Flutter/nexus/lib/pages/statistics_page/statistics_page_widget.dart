@@ -136,6 +136,58 @@ class _StatisticsHeader extends StatelessWidget {
   }
 }
 
+class _SensorAndCalibrationIndicator extends StatelessWidget {
+  const _SensorAndCalibrationIndicator({
+    required this.connected,
+    required this.sensorOk,
+    required this.calibrationValid,
+  });
+
+  final bool connected;
+  final bool sensorOk;
+  final bool calibrationValid;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12.0,
+          height: 12.0,
+          decoration: BoxDecoration(
+            color: !connected
+                ? theme.secondaryText
+                : !calibrationValid
+                    ? theme.warning
+                    : sensorOk
+                        ? theme.success
+                        : theme.error,
+            shape: BoxShape.circle,
+          ),
+        ),
+        if (connected && !calibrationValid) ...[
+          const SizedBox(width: 8.0),
+          Text(
+            'Calibration requis',
+            style: theme.bodySmall.override(
+              font: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                fontStyle: theme.bodySmall.fontStyle,
+              ),
+              color: theme.warning,
+              letterSpacing: 0.0,
+              fontWeight: FontWeight.w600,
+              fontStyle: theme.bodySmall.fontStyle,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class _TopMetricsGrid extends StatelessWidget {
   const _TopMetricsGrid({required this.data, required this.connected});
 
@@ -926,17 +978,10 @@ class _ImuMetricsCard extends StatelessWidget {
                       color: FlutterFlowTheme.of(context).primary,
                       size: 24.0,
                     ),
-                    Container(
-                      width: 12.0,
-                      height: 12.0,
-                      decoration: BoxDecoration(
-                        color: connected
-                            ? (data.imuSensorState == SensorState.ok
-                                ? FlutterFlowTheme.of(context).success
-                                : FlutterFlowTheme.of(context).error)
-                            : FlutterFlowTheme.of(context).secondaryText,
-                        shape: BoxShape.circle,
-                      ),
+                    _SensorAndCalibrationIndicator(
+                      connected: connected,
+                      sensorOk: data.imuSensorState == SensorState.ok,
+                      calibrationValid: data.imuCalibrationValid,
                     ),
                   ],
                 ),
@@ -1563,17 +1608,10 @@ class _HighGMetricsCard extends StatelessWidget {
                       color: FlutterFlowTheme.of(context).primary,
                       size: 24.0,
                     ),
-                    Container(
-                      width: 12.0,
-                      height: 12.0,
-                      decoration: BoxDecoration(
-                        color: connected
-                            ? (data.accHighGSensorState == SensorState.ok
-                                ? FlutterFlowTheme.of(context).success
-                                : FlutterFlowTheme.of(context).error)
-                            : FlutterFlowTheme.of(context).secondaryText,
-                        shape: BoxShape.circle,
-                      ),
+                    _SensorAndCalibrationIndicator(
+                      connected: connected,
+                      sensorOk: data.accHighGSensorState == SensorState.ok,
+                      calibrationValid: data.highgCalibrationValid,
                     ),
                   ],
                 ),
@@ -2402,30 +2440,29 @@ class _BottomMetricsGrid extends StatelessWidget {
                                   .fontStyle,
                             ),
                       ),
-                          Text(
-                          connected &&
-                              data.barometerSensorState == SensorState.ok
+                      Text(
+                        connected && data.barometerSensorState == SensorState.ok
                             ? data.barometricTrendDisplay
                             : '—',
-                          style: FlutterFlowTheme.of(context).bodySmall.override(
+                        style: FlutterFlowTheme.of(context).bodySmall.override(
                               font: GoogleFonts.inter(
-                              fontWeight: FlutterFlowTheme.of(context)
-                                .bodySmall
-                                .fontWeight,
-                              fontStyle: FlutterFlowTheme.of(context)
-                                .bodySmall
-                                .fontStyle,
+                                fontWeight: FlutterFlowTheme.of(context)
+                                    .bodySmall
+                                    .fontWeight,
+                                fontStyle: FlutterFlowTheme.of(context)
+                                    .bodySmall
+                                    .fontStyle,
                               ),
                               color: FlutterFlowTheme.of(context).success,
                               letterSpacing: 0.0,
                               fontWeight: FlutterFlowTheme.of(context)
-                                .bodySmall
-                                .fontWeight,
+                                  .bodySmall
+                                  .fontWeight,
                               fontStyle: FlutterFlowTheme.of(context)
-                                .bodySmall
-                                .fontStyle,
+                                  .bodySmall
+                                  .fontStyle,
                             ),
-                          ),
+                      ),
                     ].divide(const SizedBox(height: 4.0)),
                   ),
                   Text(

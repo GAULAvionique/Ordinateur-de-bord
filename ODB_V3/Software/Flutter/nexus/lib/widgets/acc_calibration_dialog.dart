@@ -217,7 +217,7 @@ class _AccCalibrationDialogState extends State<AccCalibrationDialog> {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: success ? theme.secondary : theme.error,
+            backgroundColor: success ? theme.success : theme.error,
             content: Text(
               success
                   ? 'Calibration 6-faces calculée et sauvegardée en Flash !'
@@ -339,7 +339,7 @@ class _AccCalibrationDialogState extends State<AccCalibrationDialog> {
                         subtitle: Text(
                           odbSubtitle,
                           style: TextStyle(
-                            color: odbReady ? theme.secondary : theme.error,
+                            color: odbReady ? theme.success : theme.error,
                             fontSize: 12,
                           ),
                         ),
@@ -374,7 +374,7 @@ class _AccCalibrationDialogState extends State<AccCalibrationDialog> {
                           _phoneGpsStatusText,
                           style: TextStyle(
                             color: _isPhoneGpsReady
-                                ? theme.secondary
+                                ? theme.success
                                 : (_isCheckingPhoneGps
                                     ? theme.secondaryText
                                     : theme.error),
@@ -465,7 +465,7 @@ class _AccCalibrationDialogState extends State<AccCalibrationDialog> {
                               style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: theme.primary)),
-                          Icon(Icons.layers, size: 20, color: theme.secondary),
+                          Icon(Icons.layers, size: 20, color: theme.success),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -663,7 +663,7 @@ class _AccCalibrationDialogState extends State<AccCalibrationDialog> {
                       : Column(
                           children: [
                             Icon(Icons.check_circle_outline_rounded,
-                                color: theme.secondary, size: 48),
+                                color: theme.success, size: 48),
                             SizedBox(height: 12),
                             Text('6 faces capturées avec succès !',
                                 style: theme.titleMedium.override(
@@ -724,7 +724,7 @@ class _AccCalibrationDialogState extends State<AccCalibrationDialog> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor:
-                  isFaceValid ? theme.secondary : theme.secondaryText,
+                  isFaceValid ? theme.success : theme.secondaryText,
               foregroundColor: theme.primaryBackground,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),

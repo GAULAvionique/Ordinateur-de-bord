@@ -14,7 +14,7 @@
 
 /* === Protocol Versioning === */
 #define CONFIG_PROTOCOL_VERSION_MAJOR 2
-#define CONFIG_PROTOCOL_VERSION_MINOR 3
+#define CONFIG_PROTOCOL_VERSION_MINOR 5
 
 /* === CALIBRATION STATES === */
 #define FLAG_IMU_TEMP_OK  		(1 << 3)
@@ -100,6 +100,7 @@ typedef struct __attribute__((packed)) {
     uint8_t				calib_states;	// Current calibration (6faces/temp) states
 
     // Pyros
+    uint8_t				has_pyros_power_up;
     uint32_t 			fire_attempt_delay_ms;
     float	 			pyros_arming_min_altitude_m;
     uint8_t 			min_needed_pyro_nb;
@@ -107,9 +108,11 @@ typedef struct __attribute__((packed)) {
 
     // Phase
     uint8_t 			apogee_detection_mode; // 0 = AUTO, 1 = KALMAN, 2 = BAROMETRIC
+    uint8_t				has_descent_rate;
     float 				acc_z_launch_threshold;
     float 				boost_phase_v_threshold;
     float 				apogee_detect_v_threshold;
+    float				descent_v_threshold;
     float 				landing_detect_v_threshold;
     uint32_t 			landing_detect_threshold_ms;
     uint32_t 			apogee_failsafe_ms;
@@ -129,7 +132,7 @@ typedef struct __attribute__((packed)) {
     // Integrity
     uint32_t			crc32;
 
-    // TOTAL 124
+    // TOTAL 130
     // Empty data to reach ... bytes
 	//uint8_t padding[0];
 } odb_config_t;

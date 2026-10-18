@@ -217,7 +217,7 @@ void FSM_Update(void) {
 
                 case SUB_FAST:
                     // Wait for fast ascent detection
-                	// TODO: add pyros_arming_min_altitude_m & pyros_fire_max_tilt_angle_deg
+                	// TODO: add pyros_arming_min_altitude_m
 	                if(flight_data.kalman_v < current_config.boost_phase_v_threshold) {
 						flight_stats.mach_lock.activated = STATE_FALSE;
 						flight_stats.mach_lock.end_time_ms = HAL_GetTick() - flight_stats.flight_start_time_ms;

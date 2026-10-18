@@ -333,7 +333,7 @@ class OdbStats {
 }
 
 class OdbConfig {
-  static const int serializedSize = 124;
+  static const int serializedSize = 130;
   static const int magicNumberSize = 4;
   static const int flightPacketSize = magicNumberSize + serializedSize;
 
@@ -350,14 +350,17 @@ class OdbConfig {
   final FacesCalibration highgCalib6Faces;
   //final FacesCalibration imuCalib6Faces;
   final int calibStates;
+  final bool hasPyrosPowerOn;
   final int fireAttemptDelayMs;
   final double pyrosArmingMinAltitudeM;
   final int minNeededPyroNb;
   final List<int> pyroRoles;
   final int apogeeDetectionMode;
+  final bool hasDescentRate;
   final double accZLaunchThreshold;
   final double boostPhaseVThreshold;
   final double apogeeDetectVThreshold;
+  final double descentRateVThreshold;
   final double landingDetectVThreshold;
   final int landingDetectThresholdMs;
   final int apogeeFailsafeMs;
@@ -372,7 +375,7 @@ class OdbConfig {
   OdbConfig({
     this.magicNumber = 0x434F4E46,
     this.versionMajor = 2,
-    this.versionMinor = 3,
+    this.versionMinor = 5,
     this.payloadSize = serializedSize,
     required this.odbName,
     required this.stageRole,
@@ -382,14 +385,17 @@ class OdbConfig {
     FacesCalibration? highgCalib6Faces,
     //FacesCalibration? imuCalib6Faces,
     this.calibStates = 0x000,
+    required this.hasPyrosPowerOn,
     required this.fireAttemptDelayMs,
     required this.pyrosArmingMinAltitudeM,
     required this.minNeededPyroNb,
     required this.pyroRoles,
     required this.apogeeDetectionMode,
+    required this.hasDescentRate,
     required this.accZLaunchThreshold,
     required this.boostPhaseVThreshold,
     required this.apogeeDetectVThreshold,
+    required this.descentRateVThreshold,
     required this.landingDetectVThreshold,
     required this.landingDetectThresholdMs,
     required this.apogeeFailsafeMs,
@@ -400,9 +406,7 @@ class OdbConfig {
     required this.buzzerReportToneHz,
     required this.idefixFrequencyHz,
     this.crc32 = 0,
-  }) : highgCalib6Faces = highgCalib6Faces ??
-            FacesCalibration
-                .identity(); //, imuCalib6Faces = imuCalib6Faces ?? FacesCalibration.identity();
+  }) : highgCalib6Faces = highgCalib6Faces ?? FacesCalibration.identity(); //, imuCalib6Faces = imuCalib6Faces ?? FacesCalibration.identity();
 
   factory OdbConfig.fromBytes(Uint8List bytes) {
     final reader = ByteCursor(bytes);
@@ -419,14 +423,17 @@ class OdbConfig {
       highgCalib6Faces: FacesCalibration.fromBytes(reader),
       //imuCalib6Faces: FacesCalibration.fromBytes(reader),
       calibStates: reader.readUint8(),
+      hasPyrosPowerOn: reader.readUint8() == 1,
       fireAttemptDelayMs: reader.readUint32(),
       pyrosArmingMinAltitudeM: reader.readFloat32(),
       minNeededPyroNb: reader.readUint8(),
       pyroRoles: reader.readUint8Array(4),
       apogeeDetectionMode: reader.readUint8(),
+      hasDescentRate: reader.readUint8() == 1,
       accZLaunchThreshold: reader.readFloat32(),
       boostPhaseVThreshold: reader.readFloat32(),
       apogeeDetectVThreshold: reader.readFloat32(),
+      descentRateVThreshold: reader.readFloat32(),
       landingDetectVThreshold: reader.readFloat32(),
       landingDetectThresholdMs: reader.readUint32(),
       apogeeFailsafeMs: reader.readUint32(),
@@ -449,14 +456,17 @@ class OdbConfig {
     FacesCalibration? highgCalib6Faces,
     //FacesCalibration? imuCalib6Faces,
     int? calibStates,
+    bool? hasPyrosPowerOn,
     int? fireAttemptDelayMs,
     double? pyrosArmingMinAltitudeM,
     int? minNeededPyroNb,
     List<int>? pyroRoles,
     int? apogeeDetectionMode,
+    bool? hasDescentRate,
     double? accZLaunchThreshold,
     double? boostPhaseVThreshold,
     double? apogeeDetectVThreshold,
+    double? descentRateVThreshold,
     double? landingDetectVThreshold,
     int? landingDetectThresholdMs,
     int? apogeeFailsafeMs,
@@ -477,25 +487,22 @@ class OdbConfig {
       highgCalib6Faces: highgCalib6Faces ?? this.highgCalib6Faces,
       //imuCalib6Faces: imuCalib6Faces ?? this.imuCalib6Faces,
       calibStates: calibStates ?? this.calibStates,
+      hasPyrosPowerOn: hasPyrosPowerOn ?? this.hasPyrosPowerOn,
       fireAttemptDelayMs: fireAttemptDelayMs ?? this.fireAttemptDelayMs,
-      pyrosArmingMinAltitudeM:
-          pyrosArmingMinAltitudeM ?? this.pyrosArmingMinAltitudeM,
+      pyrosArmingMinAltitudeM: pyrosArmingMinAltitudeM ?? this.pyrosArmingMinAltitudeM,
       minNeededPyroNb: minNeededPyroNb ?? this.minNeededPyroNb,
       pyroRoles: pyroRoles ?? this.pyroRoles,
       apogeeDetectionMode: apogeeDetectionMode ?? this.apogeeDetectionMode,
+      hasDescentRate: hasDescentRate ?? this.hasDescentRate,
       accZLaunchThreshold: accZLaunchThreshold ?? this.accZLaunchThreshold,
       boostPhaseVThreshold: boostPhaseVThreshold ?? this.boostPhaseVThreshold,
-      apogeeDetectVThreshold:
-          apogeeDetectVThreshold ?? this.apogeeDetectVThreshold,
-      landingDetectVThreshold:
-          landingDetectVThreshold ?? this.landingDetectVThreshold,
-      landingDetectThresholdMs:
-          landingDetectThresholdMs ?? this.landingDetectThresholdMs,
+      apogeeDetectVThreshold: apogeeDetectVThreshold ?? this.apogeeDetectVThreshold,
+      descentRateVThreshold: descentRateVThreshold ?? this.descentRateVThreshold,
+      landingDetectVThreshold: landingDetectVThreshold ?? this.landingDetectVThreshold,
+      landingDetectThresholdMs: landingDetectThresholdMs ?? this.landingDetectThresholdMs,
       apogeeFailsafeMs: apogeeFailsafeMs ?? this.apogeeFailsafeMs,
-      mainDeployAltitudeThresholdM:
-          mainDeployAltitudeThresholdM ?? this.mainDeployAltitudeThresholdM,
-      drogueFireAttemptMaxNb:
-          drogueFireAttemptMaxNb ?? this.drogueFireAttemptMaxNb,
+      mainDeployAltitudeThresholdM: mainDeployAltitudeThresholdM ?? this.mainDeployAltitudeThresholdM,
+      drogueFireAttemptMaxNb: drogueFireAttemptMaxNb ?? this.drogueFireAttemptMaxNb,
       mainFireAttemptMaxNb: mainFireAttemptMaxNb ?? this.mainFireAttemptMaxNb,
       enableBuzzer: enableBuzzer ?? this.enableBuzzer,
       buzzerReportToneHz: buzzerReportToneHz ?? this.buzzerReportToneHz,
@@ -518,14 +525,17 @@ class OdbConfig {
     highgCalib6Faces.writeTo(writer);
     //imuCalib6Faces.writeTo(writer);
     writer.writeUint8(calibStates);
+    writer.writeUint8(hasPyrosPowerOn ? 1 : 0);
     writer.writeUint32(fireAttemptDelayMs);
     writer.writeFloat32(pyrosArmingMinAltitudeM);
     writer.writeUint8(minNeededPyroNb);
     writer.writeUint8Array(pyroRoles);
     writer.writeUint8(apogeeDetectionMode);
+    writer.writeUint8(hasDescentRate ? 1 : 0);
     writer.writeFloat32(accZLaunchThreshold);
     writer.writeFloat32(boostPhaseVThreshold);
     writer.writeFloat32(apogeeDetectVThreshold);
+    writer.writeFloat32(descentRateVThreshold);
     writer.writeFloat32(landingDetectVThreshold);
     writer.writeUint32(landingDetectThresholdMs);
     writer.writeUint32(apogeeFailsafeMs);
@@ -734,7 +744,7 @@ class DataServiceManager with ChangeNotifier {
   static const int eventFlagMachLockEnabled = 1 << 8;
 
   static const int expectedConfigMajor = 2;
-  static const int expectedConfigMinor = 3;
+  static const int expectedConfigMinor = 5;
   static const int expectedTelemetryMajor = 1;
   static const int expectedTelemetryMinor = 4;
 
@@ -857,6 +867,7 @@ class DataServiceManager with ChangeNotifier {
   bool get flightTestMode => config?.flightTestMode ?? false;
   int get axisProfile => config?.axisProfile ?? axisProfileP0;
   int get calibStates => config?.calibStates ?? 0;
+  bool get hasPyrosPowerOn => config?.hasPyrosPowerOn ?? false;
   bool get enableBuzzer => config?.enableBuzzer ?? false;
   int get minNeededPyroNb => config?.minNeededPyroNb ?? 0;
   int get drogueFireAttemptMaxNb => config?.drogueFireAttemptMaxNb ?? 0;
@@ -864,10 +875,10 @@ class DataServiceManager with ChangeNotifier {
   double get accZLaunchThreshold => config?.accZLaunchThreshold ?? 0.0;
   double get boostPhaseVThreshold => config?.boostPhaseVThreshold ?? 0.0;
   double get apogeeDetectVThreshold => config?.apogeeDetectVThreshold ?? 0.0;
-  int get apogeeDetectionMode =>
-      config?.apogeeDetectionMode ?? apogeeDetectionKalman;
-  double get mainDeployAltitudeThresholdM =>
-      config?.mainDeployAltitudeThresholdM ?? 0.0;
+  int get apogeeDetectionMode => config?.apogeeDetectionMode ?? apogeeDetectionKalman;
+  bool get hasDescentRate => config?.hasDescentRate ?? false;
+  double get mainDeployAltitudeThresholdM => config?.mainDeployAltitudeThresholdM ?? 0.0;
+  double get descentRateVThreshold => config?.descentRateVThreshold ?? 0.0;
   double get landingDetectVThreshold => config?.landingDetectVThreshold ?? 0.0;
   int get buzzerReportToneHz => config?.buzzerReportToneHz ?? 0;
   int get landingDetectThresholdMs => config?.landingDetectThresholdMs ?? 0;
@@ -904,6 +915,11 @@ class DataServiceManager with ChangeNotifier {
     _safeNotifyListeners();
   }
 
+  set hasPyrosPowerOn(bool value) {
+    config = config?.copyWith(hasPyrosPowerOn: value);
+    _safeNotifyListeners();
+  }
+
   set enableBuzzer(bool value) {
     config = config?.copyWith(enableBuzzer: value);
     _safeNotifyListeners();
@@ -924,6 +940,11 @@ class DataServiceManager with ChangeNotifier {
     _safeNotifyListeners();
   }
 
+  set hasDescentRate(bool value) {
+    config = config?.copyWith(hasDescentRate: value);
+    _safeNotifyListeners();
+  }
+
   set accZLaunchThreshold(double value) {
     config = config?.copyWith(accZLaunchThreshold: value);
     _safeNotifyListeners();
@@ -941,6 +962,11 @@ class DataServiceManager with ChangeNotifier {
 
   set mainDeployAltitudeThresholdM(double value) {
     config = config?.copyWith(mainDeployAltitudeThresholdM: value);
+    _safeNotifyListeners();
+  }
+
+  set descentRateVThreshold(double value) {
+    config = config?.copyWith(descentRateVThreshold: value);
     _safeNotifyListeners();
   }
 
@@ -1066,10 +1092,10 @@ class DataServiceManager with ChangeNotifier {
   String get pyrosSummary => pyros.map((p) => p ? '1' : '0').join(',');
   static const List<String> _pyroRoleNames = [
     'None',
-    'Main',
-    'Drogue',
+    'Main #1',
+    'Drogue #1',
     'Main #2',
-    'Drogue #1'
+    'Drogue #2'
   ];
 
   String pyroRoleLabel(int pyroIndex, {bool connected = true}) {

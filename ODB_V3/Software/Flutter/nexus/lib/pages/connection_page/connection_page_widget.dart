@@ -13,7 +13,6 @@ import 'package:provider/provider.dart';
 import 'package:nexus/services/bluetooth_service.dart';
 import 'package:nexus/services/data_service.dart';
 
-
 class ConnectionPageWidget extends StatefulWidget {
   const ConnectionPageWidget({super.key});
 
@@ -52,28 +51,55 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
   void _showBluetoothDisabledDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Bluetooth désactivé'),
-        content: const Text(
-          'Le Bluetooth est requis pour rechercher des appareils.\n'
-          'Veuillez l’activer dans les paramètres.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
+      builder: (context) {
+        final theme = FlutterFlowTheme.of(context);
+
+        return AlertDialog(
+          backgroundColor: theme.secondaryBackground,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              if (!kIsWeb && Platform.isAndroid) {
-                FlutterBluePlus.turnOn();
-              }
-            },
-            child: const Text('Activer'),
+          title: Text(
+            'Bluetooth désactivé',
+            style: theme.titleLarge.override(
+              color: theme.primaryText,
+            ),
           ),
-        ],
-      ),
+          content: Text(
+            'Le Bluetooth est requis pour rechercher des appareils.\n'
+            'Veuillez l’activer dans les paramètres.',
+            style: theme.bodyMedium.override(
+              color: theme.secondaryText,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.primary,
+              ),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                if (!kIsWeb && Platform.isAndroid) {
+                  FlutterBluePlus.turnOn();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.primary,
+                foregroundColor: theme.primaryBackground,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Activer'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -131,16 +157,14 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
               style: FlutterFlowTheme.of(context).displaySmall.override(
                     font: GoogleFonts.interTight(
                       fontWeight: FontWeight.bold,
-                      fontStyle: FlutterFlowTheme.of(context)
-                          .displaySmall
-                          .fontStyle,
+                      fontStyle:
+                          FlutterFlowTheme.of(context).displaySmall.fontStyle,
                     ),
                     fontSize: 28,
                     letterSpacing: 0.0,
                     fontWeight: FontWeight.bold,
-                    fontStyle: FlutterFlowTheme.of(context)
-                        .displaySmall
-                        .fontStyle,
+                    fontStyle:
+                        FlutterFlowTheme.of(context).displaySmall.fontStyle,
                   ),
             ),
             Text(
@@ -154,8 +178,10 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
                     ),
                     color: FlutterFlowTheme.of(context).secondaryText,
                     letterSpacing: 0.0,
-                    fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
-                    fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                    fontWeight:
+                        FlutterFlowTheme.of(context).bodyMedium.fontWeight,
+                    fontStyle:
+                        FlutterFlowTheme.of(context).bodyMedium.fontStyle,
                   ),
             ),
           ],
@@ -180,14 +206,18 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
 
     return ListTile(
       leading: const Icon(Icons.bluetooth),
-      title: Text(device.platformName.isNotEmpty ? device.platformName : 'Appareil inconnu'),
+      title: Text(device.platformName.isNotEmpty
+          ? device.platformName
+          : 'Appareil inconnu'),
       subtitle: Text('${device.remoteId.str}  |  RSSI: ${result.rssi} dBm'),
       trailing: FFButtonWidget(
         onPressed: connected
             ? null
             : () async {
                 try {
-                  await context.read<BluetoothServiceManager>().connect(device, dataService);
+                  await context
+                      .read<BluetoothServiceManager>()
+                      .connect(device, dataService);
                 } catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -200,10 +230,13 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
         options: FFButtonOptions(
           height: 36,
           padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 12, 0),
-          color: connected ? FlutterFlowTheme.of(context).secondaryText : FlutterFlowTheme.of(context).primary,
+          color: connected
+              ? FlutterFlowTheme.of(context).secondaryText
+              : FlutterFlowTheme.of(context).primary,
           textStyle: FlutterFlowTheme.of(context).titleSmall.override(
                 font: GoogleFonts.interTight(
-                  fontWeight: FlutterFlowTheme.of(context).titleSmall.fontWeight,
+                  fontWeight:
+                      FlutterFlowTheme.of(context).titleSmall.fontWeight,
                   fontStyle: FlutterFlowTheme.of(context).titleSmall.fontStyle,
                 ),
                 color: Colors.white,
@@ -257,17 +290,22 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
                 Row(
                   mainAxisSize: MainAxisSize.max,
                   children: [
-                    Icon(Icons.bluetooth_searching, color: FlutterFlowTheme.of(context).primary, size: 24),
+                    Icon(Icons.bluetooth_searching,
+                        color: FlutterFlowTheme.of(context).primary, size: 24),
                     Text(
                       'Recherche Bluetooth',
                       style: FlutterFlowTheme.of(context).titleMedium.override(
                             font: GoogleFonts.interTight(
                               fontWeight: FontWeight.w600,
-                              fontStyle: FlutterFlowTheme.of(context).titleMedium.fontStyle,
+                              fontStyle: FlutterFlowTheme.of(context)
+                                  .titleMedium
+                                  .fontStyle,
                             ),
                             letterSpacing: 0.0,
                             fontWeight: FontWeight.w600,
-                            fontStyle: FlutterFlowTheme.of(context).titleMedium.fontStyle,
+                            fontStyle: FlutterFlowTheme.of(context)
+                                .titleMedium
+                                .fontStyle,
                           ),
                     ),
                   ].divide(const SizedBox(width: 8)),
@@ -276,7 +314,9 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
                   onPressed: canUseScanButton
                       ? () async {
                           if (bt.isScanning) {
-                            await context.read<BluetoothServiceManager>().stopScan();
+                            await context
+                                .read<BluetoothServiceManager>()
+                                .stopScan();
                             return;
                           }
 
@@ -284,7 +324,8 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Déconnectez l\'appareil avant de lancer un scan.'),
+                                  content: Text(
+                                      'Déconnectez l\'appareil avant de lancer un scan.'),
                                 ),
                               );
                             }
@@ -292,13 +333,17 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
                           }
 
                           try {
-                            final state = await FlutterBluePlus.adapterState.first;
+                            final state =
+                                await FlutterBluePlus.adapterState.first;
                             debugPrint('Bluetooth state: $state');
                             if (state != BluetoothAdapterState.on) {
                               _showBluetoothDisabledDialog();
                             } else {
-                              if(context.mounted) {
-                                await context.read<BluetoothServiceManager>().refreshScan(timeout: const Duration(seconds: 15));
+                              if (context.mounted) {
+                                await context
+                                    .read<BluetoothServiceManager>()
+                                    .refreshScan(
+                                        timeout: const Duration(seconds: 15));
                               }
                             }
                           } catch (e) {
@@ -324,18 +369,26 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
                   options: FFButtonOptions(
                     height: 40,
                     padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 0),
-                    iconPadding: const EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
+                    iconPadding:
+                        const EdgeInsetsDirectional.fromSTEB(0, 0, 0, 0),
                     iconColor: FlutterFlowTheme.of(context).primary,
                     color: const Color(0x00EF3939),
                     textStyle: FlutterFlowTheme.of(context).titleSmall.override(
                           font: GoogleFonts.interTight(
-                            fontWeight: FlutterFlowTheme.of(context).titleSmall.fontWeight,
-                            fontStyle: FlutterFlowTheme.of(context).titleSmall.fontStyle,
+                            fontWeight: FlutterFlowTheme.of(context)
+                                .titleSmall
+                                .fontWeight,
+                            fontStyle: FlutterFlowTheme.of(context)
+                                .titleSmall
+                                .fontStyle,
                           ),
                           color: Colors.white,
                           letterSpacing: 0.0,
-                          fontWeight: FlutterFlowTheme.of(context).titleSmall.fontWeight,
-                          fontStyle: FlutterFlowTheme.of(context).titleSmall.fontStyle,
+                          fontWeight: FlutterFlowTheme.of(context)
+                              .titleSmall
+                              .fontWeight,
+                          fontStyle:
+                              FlutterFlowTheme.of(context).titleSmall.fontStyle,
                         ),
                     elevation: 0,
                     borderRadius: BorderRadius.circular(8),
@@ -347,22 +400,29 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
             Text(
               bt.isScanning
                   ? 'Recherche d\'appareils en cours...'
-                : hasConnectedDevice
-                  ? 'Scan désactivé: un appareil est déjà connecté.'
-                  : (bt.scanResults.isEmpty ? 'Aucun appareil trouvé (BLE)' : 'Recherche Bluetooth arrêtée'),
+                  : hasConnectedDevice
+                      ? 'Scan désactivé: un appareil est déjà connecté.'
+                      : (bt.scanResults.isEmpty
+                          ? 'Aucun appareil trouvé (BLE)'
+                          : 'Recherche Bluetooth arrêtée'),
               textAlign: TextAlign.center,
               style: FlutterFlowTheme.of(context).bodyMedium.override(
                     font: GoogleFonts.inter(
-                      fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
-                      fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                      fontWeight:
+                          FlutterFlowTheme.of(context).bodyMedium.fontWeight,
+                      fontStyle:
+                          FlutterFlowTheme.of(context).bodyMedium.fontStyle,
                     ),
                     color: FlutterFlowTheme.of(context).secondaryText,
                     letterSpacing: 0.0,
-                    fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
-                    fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                    fontWeight:
+                        FlutterFlowTheme.of(context).bodyMedium.fontWeight,
+                    fontStyle:
+                        FlutterFlowTheme.of(context).bodyMedium.fontStyle,
                   ),
             ),
-            Divider(thickness: 1, color: FlutterFlowTheme.of(context).alternate),
+            Divider(
+                thickness: 1, color: FlutterFlowTheme.of(context).alternate),
             TextFormField(
               controller: _model.textController,
               focusNode: _model.textFieldFocusNode,
@@ -372,41 +432,55 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
                 hintText: 'Rechercher par nom ou UUID',
                 hintStyle: FlutterFlowTheme.of(context).bodyMedium.override(
                       font: GoogleFonts.inter(
-                        fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
-                        fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                        fontWeight:
+                            FlutterFlowTheme.of(context).bodyMedium.fontWeight,
+                        fontStyle:
+                            FlutterFlowTheme.of(context).bodyMedium.fontStyle,
                       ),
                       letterSpacing: 0.0,
-                      fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
-                      fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                      fontWeight:
+                          FlutterFlowTheme.of(context).bodyMedium.fontWeight,
+                      fontStyle:
+                          FlutterFlowTheme.of(context).bodyMedium.fontStyle,
                     ),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: FlutterFlowTheme.of(context).alternate, width: 1),
+                  borderSide: BorderSide(
+                      color: FlutterFlowTheme.of(context).alternate, width: 1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: FlutterFlowTheme.of(context).primary, width: 1),
+                  borderSide: BorderSide(
+                      color: FlutterFlowTheme.of(context).primary, width: 1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 errorBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Color(0x00000000), width: 1),
+                  borderSide:
+                      const BorderSide(color: Color(0x00000000), width: 1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Color(0x00000000), width: 1),
+                  borderSide:
+                      const BorderSide(color: Color(0x00000000), width: 1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 filled: true,
                 fillColor: FlutterFlowTheme.of(context).secondaryBackground,
-                prefixIcon: Icon(Icons.search, color: FlutterFlowTheme.of(context).secondaryText, size: 20),
+                prefixIcon: Icon(Icons.search,
+                    color: FlutterFlowTheme.of(context).secondaryText,
+                    size: 20),
               ),
               style: FlutterFlowTheme.of(context).bodyMedium.override(
                     font: GoogleFonts.inter(
-                      fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
-                      fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                      fontWeight:
+                          FlutterFlowTheme.of(context).bodyMedium.fontWeight,
+                      fontStyle:
+                          FlutterFlowTheme.of(context).bodyMedium.fontStyle,
                     ),
                     letterSpacing: 0.0,
-                    fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
-                    fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                    fontWeight:
+                        FlutterFlowTheme.of(context).bodyMedium.fontWeight,
+                    fontStyle:
+                        FlutterFlowTheme.of(context).bodyMedium.fontStyle,
                   ),
               cursorColor: FlutterFlowTheme.of(context).primaryText,
               validator: _model.textControllerValidator.asValidator(context),
@@ -414,16 +488,19 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
             Expanded(
               child: ListView(
                 children: [
-                  ...filteredResults.map((result) => _buildDeviceTile(context, result, dataService, bt)),
+                  ...filteredResults.map((result) =>
+                      _buildDeviceTile(context, result, dataService, bt)),
                   if (otherResults.isNotEmpty)
                     Material(
                       color: Colors.transparent,
                       child: ExpansionTile(
                         initiallyExpanded: false,
                         leading: const Icon(Icons.devices_other),
-                        title: Text('Autres appareils détectés (${otherResults.length})'),
+                        title: Text(
+                            'Autres appareils détectés (${otherResults.length})'),
                         children: otherResults
-                            .map((result) => _buildDeviceTile(context, result, dataService, bt))
+                            .map((result) => _buildDeviceTile(
+                                context, result, dataService, bt))
                             .toList(),
                       ),
                     ),
@@ -435,16 +512,24 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
                 padding: const EdgeInsets.only(top: 12.0),
                 child: ListTile(
                   leading: const Icon(Icons.bluetooth_connected),
-                  title: Text(bt.connectedDevice?.platformName ?? bt.connectedDevice?.remoteId.str ?? 'Connecté'),
+                  title: Text(bt.connectedDevice?.platformName ??
+                      bt.connectedDevice?.remoteId.str ??
+                      'Connecté'),
                   subtitle: const Text('Appareil connecté via service'),
                   trailing: FFButtonWidget(
-                    onPressed: () => context.read<BluetoothServiceManager>().disconnect(),
+                    onPressed: () =>
+                        context.read<BluetoothServiceManager>().disconnect(),
                     text: 'Déconnecter',
                     options: FFButtonOptions(
                       height: 36,
-                      padding: const EdgeInsetsDirectional.fromSTEB(12, 0, 12, 0),
+                      padding:
+                          const EdgeInsetsDirectional.fromSTEB(12, 0, 12, 0),
                       color: FlutterFlowTheme.of(context).error,
-                      textStyle: FlutterFlowTheme.of(context).bodySmall.override(color: FlutterFlowTheme.of(context).primaryBackground),
+                      textStyle: FlutterFlowTheme.of(context)
+                          .bodySmall
+                          .override(
+                              color: FlutterFlowTheme.of(context)
+                                  .primaryBackground),
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
@@ -503,7 +588,8 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
     );
   }
 
-  Widget _buildConnectionHistoryCard(BuildContext context, BluetoothServiceManager bt) {
+  Widget _buildConnectionHistoryCard(
+      BuildContext context, BluetoothServiceManager bt) {
     String formatDate(DateTime date) {
       String twoDigits(int value) => value.toString().padLeft(2, '0');
       return '${twoDigits(date.day)}/${twoDigits(date.month)}/${date.year} ${twoDigits(date.hour)}:${twoDigits(date.minute)}';
@@ -530,12 +616,14 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
           children: [
             Row(
               children: [
-                Icon(Icons.history, color: FlutterFlowTheme.of(context).primary, size: 24),
+                Icon(Icons.history,
+                    color: FlutterFlowTheme.of(context).primary, size: 24),
                 const SizedBox(width: 8),
                 Text(
                   'Historique des appareils',
                   style: FlutterFlowTheme.of(context).titleMedium.override(
-                        font: GoogleFonts.interTight(fontWeight: FontWeight.w600),
+                        font:
+                            GoogleFonts.interTight(fontWeight: FontWeight.w600),
                       ),
                 ),
                 const Spacer(),
@@ -562,7 +650,8 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
               ...bt.connectedDeviceHistory.map(
                 (record) => ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.bluetooth, color: FlutterFlowTheme.of(context).primary),
+                  leading: Icon(Icons.bluetooth,
+                      color: FlutterFlowTheme.of(context).primary),
                   title: Text(record.name),
                   subtitle: Text(
                     '${record.id}\nDernière connexion: ${formatDate(record.lastConnected)}',
@@ -602,7 +691,8 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildPageHeader(context),
-                  _buildScanCard(context, bt, dataService, filteredResults, otherResults),
+                  _buildScanCard(
+                      context, bt, dataService, filteredResults, otherResults),
                   _buildConnectionHistoryCard(context, bt),
                   _buildLogsCard(context, bt),
                 ]

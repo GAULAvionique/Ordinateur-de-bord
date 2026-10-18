@@ -63,6 +63,7 @@ const odb_config_t default_config = {
 	.calib_states = FLAG_CALIB_RESET,
 
     // Pyros
+	.has_pyros_power_up = STATE_TRUE,
     .fire_attempt_delay_ms = 250,
     .pyros_arming_min_altitude_m = 450,
     .min_needed_pyro_nb = 2,
@@ -75,9 +76,11 @@ const odb_config_t default_config = {
 
     // Phase
 	.apogee_detection_mode = APOGEE_DETECTION_KALMAN,	// Kalman
+	.has_descent_rate = STATE_FALSE,
     .acc_z_launch_threshold = 29.42f, 					// m/s2 (3.0G)
     .boost_phase_v_threshold = 100.0f,					// m/s
     .apogee_detect_v_threshold = -5.0f,					// m/s
+	.descent_v_threshold = -150.0f,						// m/s
     .landing_detect_v_threshold = 5.0f,					// m/s
     .landing_detect_threshold_ms = 10000,				// ms
     .apogee_failsafe_ms = 60000,						// ms

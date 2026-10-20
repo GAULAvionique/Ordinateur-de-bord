@@ -80,6 +80,7 @@ void main() {
       debugMode: false,
       flightTestMode: false,
       axisProfile: DataServiceManager.axisProfileP0,
+      hasPyrosPowerOn = false,
       fireAttemptDelayMs: 100,
       pyrosArmingMinAltitudeM: 200,
       minNeededPyroNb: 1,

@@ -775,6 +775,86 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
     );
   }
 
+  Widget _buildSubsectionHeader(
+    BuildContext context,
+    String title, {
+    IconData? icon,
+  }) {
+    final theme = FlutterFlowTheme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 2),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 18, color: theme.primary),
+            const SizedBox(width: 8),
+          ],
+          Expanded(
+            child: Text(
+              title,
+              style: theme.bodyMedium.override(
+                font: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                color: theme.primary,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Expanded(child: Divider(color: theme.alternate, height: 1)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryHeader(
+    BuildContext context,
+    String title,
+    String description,
+  ) {
+    final theme = FlutterFlowTheme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 4,
+            height: 38,
+            decoration: BoxDecoration(
+              color: theme.primary,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.titleMedium.override(
+                    font: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: theme.bodySmall.override(
+                    font: GoogleFonts.inter(),
+                    color: theme.secondaryText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBooleanSetting(
     BuildContext context, {
     required String title,
@@ -914,7 +994,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                   0.0,
                   0.0,
                 ),
-                child: Text('Profile', style: headerStyle),
+                child: Text('Profil', style: headerStyle),
               ),
             ],
           ),
@@ -965,7 +1045,11 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           expanded: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildSubsectionHeader(context, 'Identité de l’ordinateur de bord',
+                  icon: Icons.badge_outlined),
               _buildStageRoleDropdown(context, data: data, enabled: enabled),
+              _buildSubsectionHeader(context, 'Modes de fonctionnement',
+                  icon: Icons.tune),
               _buildBooleanSetting(
                 context,
                 title: 'Mode Debug',
@@ -1027,6 +1111,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           expanded: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildSubsectionHeader(context, 'Affectation des sorties',
+                  icon: Icons.alt_route),
               ...List.generate(
                 4,
                 (index) => _buildPyroRoleDropdown(
@@ -1040,6 +1126,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                 context,
                 'Pour chaque sortie: NA = inutilisée; M1 = parachute principal; D1 = drogue; M2 et D2 = sorties de secours correspondantes.',
               ),
+              _buildSubsectionHeader(context, 'Sécurité et armement',
+                  icon: Icons.shield_outlined),
               _buildLabeledSettingField(
                 context,
                 label: 'Délai essais allumage (ms)',
@@ -1132,8 +1220,12 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           expanded: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildSubsectionHeader(context, 'Orientation de la carte',
+                  icon: Icons.explore_outlined),
               _buildAxisProfileDropdown(context, data: data, enabled: enabled),
               _buildAxisVisualizer(context, _axisProfileValue),
+              _buildSubsectionHeader(context, 'État des capteurs',
+                  icon: Icons.fact_check_outlined),
               _buildCalibrationStatuses(context, data),
             ],
           ),
@@ -1244,6 +1336,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           expanded: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildSubsectionHeader(context, 'Détection des phases de vol',
+                  icon: Icons.rocket_launch_outlined),
               _buildApogeeDetectionModeDropdown(
                 context,
                 data: data,
@@ -1312,6 +1406,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                   data.hasDescentRate = value;
                 },
               ),
+              _buildSubsectionHeader(context, 'Détection de l’atterrissage',
+                  icon: Icons.flight_land),
               _buildLabeledSettingField(
                 context,
                 label: 'Seuil vitesse descente (m/s)',
@@ -1468,6 +1564,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           expanded: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildSubsectionHeader(context, 'Déploiement et tentatives',
+                  icon: Icons.paragliding),
               _buildLabeledSettingField(
                 context,
                 label: 'Fréquence Idefix (Hz)',
@@ -1517,6 +1615,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           expanded: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildSubsectionHeader(context, 'Communication Idefix',
+                  icon: Icons.wifi_tethering),
               _buildLabeledSettingField(
                 context,
                 label: 'Altitude déploiement main (m)',
@@ -1992,19 +2092,29 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
             );
 
     final sections = <Widget>[
+      _buildCategoryHeader(
+        context,
+        'Configuration générale',
+        'Identité, rôle et modes de fonctionnement de l’ordinateur de bord.',
+      ),
       _buildProfileSection(
         context,
         expandableHeaderStyle,
         data: data,
         enabled: connected,
       ),
-      _buildSensorsSection(
+      _buildStageSection(
         context,
         expandableHeaderStyle,
         data: data,
         enabled: connected,
       ),
-      _buildStageSection(
+      _buildCategoryHeader(
+        context,
+        'Séquence de vol',
+        'Capteurs, phases de vol, pyrotechnie et déploiement des parachutes.',
+      ),
+      _buildSensorsSection(
         context,
         expandableHeaderStyle,
         data: data,
@@ -2028,6 +2138,11 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         data: data,
         enabled: connected,
       ),
+      _buildCategoryHeader(
+        context,
+        'Communication et interface',
+        'Modules externes et retour audio de l’ordinateur de bord.',
+      ),
       _buildIdefixSection(
         context,
         expandableHeaderStyle,
@@ -2039,6 +2154,11 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         expandableHeaderStyle,
         data: data,
         enabled: connected,
+      ),
+      _buildCategoryHeader(
+        context,
+        'Maintenance',
+        'Actions sensibles et informations de version.',
       ),
       _buildResetSection(context, expandableHeaderStyle, data),
       _buildActionButtons(context, data),
@@ -2076,7 +2196,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Settings',
+                    'Réglages',
                     style: FlutterFlowTheme.of(context).displaySmall.override(
                           font: GoogleFonts.interTight(
                             fontWeight: FontWeight.bold,

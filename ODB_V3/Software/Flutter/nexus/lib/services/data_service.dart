@@ -564,6 +564,32 @@ class OdbConfig {
   }
 }
 
+class OdbConfigHistoryEntry {
+  final DateTime savedAt;
+  final OdbConfig config;
+
+  const OdbConfigHistoryEntry({
+    required this.savedAt,
+    required this.config,
+  });
+
+  factory OdbConfigHistoryEntry.fromJson(Map<String, dynamic> json) {
+    final savedAt = DateTime.parse(json['savedAt'] as String);
+    final encodedConfig = json['config'] as String;
+    return OdbConfigHistoryEntry(
+      savedAt: savedAt,
+      config: OdbConfig.fromBytes(
+        Uint8List.fromList(base64Decode(encodedConfig)),
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'savedAt': savedAt.toIso8601String(),
+        'config': base64Encode(config.toBytes()),
+      };
+}
+
 enum CalibrationState { unknown, valid, dirty }
 
 class OdbTelemetry {
@@ -663,6 +689,7 @@ class FlightDataSample {
 // ============================================================================
 
 class DataServiceManager with ChangeNotifier {
+  static const String _configHistoryKey = 'saved_odb_config_history';
   // Constantes de communication
   static const int chunkHeaderSize = 4;
   static const int chunkMinimumSize = chunkHeaderSize + 1;
@@ -751,6 +778,7 @@ class DataServiceManager with ChangeNotifier {
   final BluetoothServiceManager btService;
   DataServiceManager(this.btService) {
     _loadSavedFlightStats();
+    _loadConfigHistory();
   }
   bool _isDisposed = false;
 
@@ -769,6 +797,7 @@ class DataServiceManager with ChangeNotifier {
   final List<OdbStats> flightStats = [];
   final List<OdbStats> savedFlightStats = [];
   final Map<int, OdbConfig> flightConfigs = {};
+  final List<OdbConfigHistoryEntry> configHistory = [];
   final Map<int, List<FlightDataSample>> savedFlightData = {};
   final Map<int, Map<int, List<int>>> _flightDataChunks = {};
   OdbStats? _pendingFlightSave;
@@ -1406,6 +1435,20 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
+    if (newConfig.versionMajor != expectedConfigMajor ||
+        newConfig.versionMinor != expectedConfigMinor) {
+      hasVersionMismatch = true;
+      versionMismatchMessage =
+          'Configuration incompatible.\n'
+          'Configuration : v${newConfig.versionMajor}.${newConfig.versionMinor} | '
+          'Application (Attendue) : v$expectedConfigMajor.$expectedConfigMinor';
+      ConsoleService().log(
+        'Envoi bloqué : configuration v${newConfig.versionMajor}.'
+        '${newConfig.versionMinor} non supportée.',
+      );
+      _safeNotifyListeners();
+      return;
+    }
     if (hasVersionMismatch) {
       ConsoleService().log('Envoi bloqué : Conflit de version détecté.');
       return;
@@ -1419,6 +1462,65 @@ class DataServiceManager with ChangeNotifier {
     await btService.sendBinary(cmdTypeAction, [actionSaveConfig]);
     ConsoleService()
         .log('Demande de sauvegarde Flash et de redémarrage envoyée.');
+    await saveConfigHistory(newConfig);
+  }
+
+  Future<void> _loadConfigHistory() async {
+    final preferences = await SharedPreferences.getInstance();
+    final records = preferences.getStringList(_configHistoryKey) ?? [];
+    for (final record in records) {
+      try {
+        configHistory.add(
+          OdbConfigHistoryEntry.fromJson(
+            jsonDecode(record) as Map<String, dynamic>,
+          ),
+        );
+      } catch (_) {
+        ConsoleService().log('Une configuration historique est invalide.');
+      }
+    }
+    configHistory.sort(
+      (first, second) => second.savedAt.compareTo(first.savedAt),
+    );
+    _safeNotifyListeners();
+  }
+
+  Future<void> saveConfigHistory(OdbConfig savedConfig) async {
+    final savedConfigBytes = savedConfig.toBytes();
+    final alreadyInHistory = configHistory.any(
+      (entry) => listEquals(entry.config.toBytes(), savedConfigBytes),
+    );
+    if (alreadyInHistory) {
+      ConsoleService().log(
+        'Configuration déjà présente dans l\'historique; aucune nouvelle entrée ajoutée.',
+      );
+      return;
+    }
+
+    configHistory.insert(
+      0,
+      OdbConfigHistoryEntry(savedAt: DateTime.now(), config: savedConfig),
+    );
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setStringList(
+      _configHistoryKey,
+      configHistory.map((entry) => jsonEncode(entry.toJson())).toList(),
+    );
+    _safeNotifyListeners();
+  }
+
+  void loadConfigHistoryEntry(OdbConfigHistoryEntry entry) {
+    config = entry.config.copyWith(
+      pyroRoles: List<int>.from(entry.config.pyroRoles),
+    );
+    _safeNotifyListeners();
+  }
+
+  Future<void> clearConfigHistory() async {
+    configHistory.clear();
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.remove(_configHistoryKey);
+    _safeNotifyListeners();
   }
 
   Future<void> resetOdbSettingsToDefault() async {

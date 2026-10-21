@@ -32,12 +32,15 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
   final TextEditingController _apogeeVController = TextEditingController();
   final TextEditingController _landingVController = TextEditingController();
   final TextEditingController _landingDelayController = TextEditingController();
-  final TextEditingController _apogeeFailsafeController = TextEditingController();
+  final TextEditingController _apogeeFailsafeController =
+      TextEditingController();
   final TextEditingController _descentRateVController = TextEditingController();
-  final TextEditingController _deployAltitudeController = TextEditingController();
+  final TextEditingController _deployAltitudeController =
+      TextEditingController();
   final TextEditingController _maxDrogueController = TextEditingController();
   final TextEditingController _maxMainController = TextEditingController();
-  final TextEditingController _idefixFrequencyController = TextEditingController();
+  final TextEditingController _idefixFrequencyController =
+      TextEditingController();
   bool _debugMode = false;
   bool _flightTestMode = false;
   int _axisProfileValue = DataServiceManager.axisProfileP0;
@@ -53,6 +56,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
   String _buildNumber = '';
   String _lastHydratedConfigSignature = '';
   bool _hasPendingTextEdits = false;
+  OdbConfigHistoryEntry? _selectedHistoryEntry;
 
   @override
   void initState() {
@@ -149,6 +153,13 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
       data.idefixFrequencyHz,
       data.pyroRoles.join(','),
     ].join('|');
+  }
+
+  String _formatConfigHistoryDate(DateTime date) {
+    final localDate = date.toLocal();
+    String twoDigits(int value) => value.toString().padLeft(2, '0');
+    return '${twoDigits(localDate.day)}/${twoDigits(localDate.month)}/${localDate.year} '
+        '${twoDigits(localDate.hour)}:${twoDigits(localDate.minute)}:${twoDigits(localDate.second)}';
   }
 
   int _parseInt(String value, int fallback) =>
@@ -278,23 +289,28 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
             : _buzzerToneHz;
         _pyroDelayController.text = data.fireAttemptDelayMs.toString();
         _pyroFailsafeController.text =
-          data.pyrosArmingMinAltitudeM.toStringAsFixed(2);
+            data.pyrosArmingMinAltitudeM.toStringAsFixed(2);
         _minPyrosController.text = data.minNeededPyroNb.toString();
         _accLaunchController.text = data.accZLaunchThreshold.toStringAsFixed(2);
         _boostVController.text = data.boostPhaseVThreshold.toStringAsFixed(2);
-        _apogeeVController.text = data.apogeeDetectVThreshold.toStringAsFixed(2);
-        _descentRateVController.text = data.descentRateVThreshold.toStringAsFixed(2);
+        _apogeeVController.text =
+            data.apogeeDetectVThreshold.toStringAsFixed(2);
+        _descentRateVController.text =
+            data.descentRateVThreshold.toStringAsFixed(2);
         _apogeeDetectionMode = data.apogeeDetectionMode;
         _hasDescentRate = data.hasDescentRate;
-        _landingVController.text = data.landingDetectVThreshold.toStringAsFixed(2);
+        _landingVController.text =
+            data.landingDetectVThreshold.toStringAsFixed(2);
         _landingDelayController.text = data.landingDetectThresholdMs.toString();
         _apogeeFailsafeController.text = data.apogeeFailsafeMs.toString();
-        _deployAltitudeController.text = data.mainDeployAltitudeThresholdM.toStringAsFixed(2);
+        _deployAltitudeController.text =
+            data.mainDeployAltitudeThresholdM.toStringAsFixed(2);
         _maxDrogueController.text = data.drogueFireAttemptMaxNb.toString();
         _maxMainController.text = data.mainFireAttemptMaxNb.toString();
         _idefixFrequencyController.text = data.idefixFrequencyHz.toString();
         for (var i = 0; i < _pyroRoleValues.length; i++) {
-          _pyroRoleValues[i] = i < data.pyroRoles.length ? data.pyroRoles[i] : 0;
+          _pyroRoleValues[i] =
+              i < data.pyroRoles.length ? data.pyroRoles[i] : 0;
         }
       });
     });
@@ -311,50 +327,51 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-        SizedBox(
-          width: 180,
-          child: Text(
-            'Rôle de stage',
-            style: FlutterFlowTheme.of(context).bodyMedium.override(
-                  font: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+            SizedBox(
+              width: 180,
+              child: Text(
+                'Rôle de stage',
+                style: FlutterFlowTheme.of(context).bodyMedium.override(
+                      font: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        fontStyle:
+                            FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                      ),
+                      fontSize: 14.0,
+                      letterSpacing: 0.0,
+                      fontWeight: FontWeight.w600,
+                      fontStyle:
+                          FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                    ),
+              ),
+            ),
+            Expanded(
+              child: _buildStyledDropdown<int>(
+                context: context,
+                value: _stageRoleValue == DataServiceManager.stageRoleBooster
+                    ? DataServiceManager.stageRoleBooster
+                    : DataServiceManager.stageRoleSustainer,
+                onChanged: enabled
+                    ? (value) {
+                        if (value == null) return;
+                        safeSetState(() {
+                          _stageRoleValue = value;
+                        });
+                        data.stageRole = value;
+                      }
+                    : null,
+                items: const [
+                  DropdownMenuItem<int>(
+                    value: DataServiceManager.stageRoleBooster,
+                    child: Text('Booster'),
                   ),
-                  fontSize: 14.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
-                ),
-          ),
-        ),
-        Expanded(
-          child: _buildStyledDropdown<int>(
-            context: context,
-            value: _stageRoleValue == DataServiceManager.stageRoleBooster
-                ? DataServiceManager.stageRoleBooster
-                : DataServiceManager.stageRoleSustainer,
-            onChanged: enabled
-                ? (value) {
-                    if (value == null) return;
-                    safeSetState(() {
-                      _stageRoleValue = value;
-                    });
-                    data.stageRole = value;
-                  }
-                : null,
-            items: const [
-              DropdownMenuItem<int>(
-                value: DataServiceManager.stageRoleBooster,
-                child: Text('Booster'),
+                  DropdownMenuItem<int>(
+                    value: DataServiceManager.stageRoleSustainer,
+                    child: Text('Sustainer'),
+                  ),
+                ],
               ),
-              DropdownMenuItem<int>(
-                value: DataServiceManager.stageRoleSustainer,
-                child: Text('Sustainer'),
-              ),
-            ],
-          ),
-        ),
+            ),
           ],
         ),
         _buildParameterDescription(
@@ -388,45 +405,46 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-        SizedBox(
-          width: 180,
-          child: Text(
-            'Profil axe',
-            style: FlutterFlowTheme.of(context).bodyMedium.override(
-                  font: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).bodyMedium.fontStyle,
-                  ),
-                  fontSize: 14.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
-                ),
-          ),
-        ),
-        Expanded(
-          child: _buildStyledDropdown<int>(
-            context: context,
-            value: _axisProfileValue,
-            onChanged: enabled
-                ? (value) {
-                    if (value == null) return;
-                    safeSetState(() {
-                      _axisProfileValue = value;
-                    });
-                    data.axisProfile = value;
-                  }
-                : null,
-            items: List.generate(
-              axisProfileLabels.length,
-              (index) => DropdownMenuItem<int>(
-                value: index,
-                child: Text(axisProfileLabels[index]),
+            SizedBox(
+              width: 180,
+              child: Text(
+                'Profil axe',
+                style: FlutterFlowTheme.of(context).bodyMedium.override(
+                      font: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        fontStyle:
+                            FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                      ),
+                      fontSize: 14.0,
+                      letterSpacing: 0.0,
+                      fontWeight: FontWeight.w600,
+                      fontStyle:
+                          FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                    ),
               ),
             ),
-          ),
-        ),
+            Expanded(
+              child: _buildStyledDropdown<int>(
+                context: context,
+                value: _axisProfileValue,
+                onChanged: enabled
+                    ? (value) {
+                        if (value == null) return;
+                        safeSetState(() {
+                          _axisProfileValue = value;
+                        });
+                        data.axisProfile = value;
+                      }
+                    : null,
+                items: List.generate(
+                  axisProfileLabels.length,
+                  (index) => DropdownMenuItem<int>(
+                    value: index,
+                    child: Text(axisProfileLabels[index]),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ],
@@ -451,31 +469,36 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         break;
       case 4:
         noseAxis = 'Axe +Y (P4)';
-        description = 'La carte est fixée verticalement. Le module Bluetooth pointe vers le nez de la fusée.';
+        description =
+            'La carte est fixée verticalement. Le module Bluetooth pointe vers le nez de la fusée.';
         visualIcon = Icons.arrow_upward_rounded;
         iconColor = FlutterFlowTheme.of(context).warning;
         break;
       case 5:
         noseAxis = 'Axe -X (P5)';
-        description = 'La carte est fixée horizontalement. Le module Bluetooth pointe vers la droite de la fusée.';
+        description =
+            'La carte est fixée horizontalement. Le module Bluetooth pointe vers la droite de la fusée.';
         visualIcon = Icons.arrow_downward_rounded;
         iconColor = FlutterFlowTheme.of(context).error;
         break;
       case 6:
         noseAxis = 'Axe -Y (P6)';
-        description = 'La carte est fixée verticalement. Le module Bluetooth pointe vers le sol.';
+        description =
+            'La carte est fixée verticalement. Le module Bluetooth pointe vers le sol.';
         visualIcon = Icons.arrow_downward_rounded;
         iconColor = FlutterFlowTheme.of(context).error;
         break;
       case 7:
         noseAxis = 'Axe +X (P7)';
-        description = 'La carte est fixée horizontalement. Le module Bluetooth pointe vers la gauche de la fusée.';
+        description =
+            'La carte est fixée horizontalement. Le module Bluetooth pointe vers la gauche de la fusée.';
         visualIcon = Icons.arrow_upward_rounded;
         iconColor = FlutterFlowTheme.of(context).warning;
         break;
       case 8:
         noseAxis = 'Calibration';
-        description = 'La carte est configuré dans ses axes originels, prêt pour une calibration';
+        description =
+            'La carte est configuré dans ses axes originels, prêt pour une calibration';
         visualIcon = Icons.compass_calibration_rounded;
         iconColor = FlutterFlowTheme.of(context).warning;
       default:
@@ -579,86 +602,86 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-          SizedBox(
-            width: 180,
-            child: Text(
-              'Pyro ${pyroIndex + 1}',
-              style: FlutterFlowTheme.of(context).bodyMedium.override(
-                    font: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                      fontStyle:
-                          FlutterFlowTheme.of(context).bodyMedium.fontStyle,
-                    ),
-                    fontSize: 14.0,
-                    letterSpacing: 0.0,
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).bodyMedium.fontStyle,
-                  ),
-            ),
-          ),
-          Expanded(
-            child: InputDecorator(
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                filled: true,
-                fillColor: FlutterFlowTheme.of(context).secondaryBackground,
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: FlutterFlowTheme.of(context).alternate,
-                    width: 1,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: FlutterFlowTheme.of(context).primary,
-                    width: 1,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                disabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                    color: FlutterFlowTheme.of(context).alternate,
-                    width: 1,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
+              SizedBox(
+                width: 180,
+                child: Text(
+                  'Pyro ${pyroIndex + 1}',
+                  style: FlutterFlowTheme.of(context).bodyMedium.override(
+                        font: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          fontStyle:
+                              FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                        ),
+                        fontSize: 14.0,
+                        letterSpacing: 0.0,
+                        fontWeight: FontWeight.w600,
+                        fontStyle:
+                            FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                      ),
                 ),
               ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<int>(
-                  value: currentValue,
-                  isDense: true,
-                  isExpanded: true,
-                  iconSize: 20,
-                  padding: EdgeInsets.zero,
-                  menuMaxHeight: 280,
-                  borderRadius: BorderRadius.circular(12),
-                  dropdownColor:
-                      FlutterFlowTheme.of(context).secondaryBackground,
-                  onChanged: enabled
-                      ? (value) {
-                          if (value == null) return;
-                          safeSetState(() {
-                            _pyroRoleValues[pyroIndex] = value;
-                            data.pyroRoles[pyroIndex] = value;
-                          });
-                        }
-                      : null,
-                  items: List.generate(
-                    _pyroRoleLabels.length,
-                    (index) => DropdownMenuItem<int>(
-                      value: index,
-                      child: Text(_pyroRoleLabels[index]),
+              Expanded(
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    filled: true,
+                    fillColor: FlutterFlowTheme.of(context).secondaryBackground,
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: FlutterFlowTheme.of(context).alternate,
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: FlutterFlowTheme.of(context).primary,
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    disabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(
+                        color: FlutterFlowTheme.of(context).alternate,
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int>(
+                      value: currentValue,
+                      isDense: true,
+                      isExpanded: true,
+                      iconSize: 20,
+                      padding: EdgeInsets.zero,
+                      menuMaxHeight: 280,
+                      borderRadius: BorderRadius.circular(12),
+                      dropdownColor:
+                          FlutterFlowTheme.of(context).secondaryBackground,
+                      onChanged: enabled
+                          ? (value) {
+                              if (value == null) return;
+                              safeSetState(() {
+                                _pyroRoleValues[pyroIndex] = value;
+                                data.pyroRoles[pyroIndex] = value;
+                              });
+                            }
+                          : null,
+                      items: List.generate(
+                        _pyroRoleLabels.length,
+                        (index) => DropdownMenuItem<int>(
+                          value: index,
+                          child: Text(_pyroRoleLabels[index]),
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
             ],
           ),
         ],
@@ -912,33 +935,34 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-        SizedBox(
-          width: 180,
-          child: Text(
-            '$label: ${value.round()}',
-            style: FlutterFlowTheme.of(context).bodyMedium.override(
-                  font: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    fontStyle:
-                        FlutterFlowTheme.of(context).bodyMedium.fontStyle,
-                  ),
-                  fontSize: 14.0,
-                  letterSpacing: 0.0,
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
-                ),
-          ),
-        ),
-        Expanded(
-          child: Slider(
-            value: value.clamp(min, max),
-            min: min,
-            max: max,
-            divisions: 260,
-            activeColor: FlutterFlowTheme.of(context).primary,
-            onChanged: enabled ? onChanged : null,
-          ),
-        ),
+            SizedBox(
+              width: 180,
+              child: Text(
+                '$label: ${value.round()}',
+                style: FlutterFlowTheme.of(context).bodyMedium.override(
+                      font: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        fontStyle:
+                            FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                      ),
+                      fontSize: 14.0,
+                      letterSpacing: 0.0,
+                      fontWeight: FontWeight.w600,
+                      fontStyle:
+                          FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                    ),
+              ),
+            ),
+            Expanded(
+              child: Slider(
+                value: value.clamp(min, max),
+                min: min,
+                max: max,
+                divisions: 260,
+                activeColor: FlutterFlowTheme.of(context).primary,
+                onChanged: enabled ? onChanged : null,
+              ),
+            ),
           ],
         ),
         _buildParameterDescription(context, description),
@@ -1045,7 +1069,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           expanded: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSubsectionHeader(context, 'Identité de l’ordinateur de bord',
+              _buildSubsectionHeader(
+                  context, 'Identité de l’ordinateur de bord',
                   icon: Icons.badge_outlined),
               _buildStageRoleDropdown(context, data: data, enabled: enabled),
               _buildSubsectionHeader(context, 'Modes de fonctionnement',
@@ -1053,7 +1078,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildBooleanSetting(
                 context,
                 title: 'Mode Debug',
-                subtitle: 'Activé: fonctions et diagnostics de debug; désactivé: fonctionnement normal.',
+                subtitle:
+                    'Activé: fonctions et diagnostics de debug; désactivé: fonctionnement normal.',
                 value: _debugMode,
                 enabled: enabled,
                 onChanged: (value) {
@@ -1066,7 +1092,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildBooleanSetting(
                 context,
                 title: 'Mode Test Flight',
-                subtitle: 'Activé: simulation de vol sans déclenchement réel; désactivé: séquence de vol normale.',
+                subtitle:
+                    'Activé: simulation de vol sans déclenchement réel; désactivé: séquence de vol normale.',
                 value: _flightTestMode,
                 enabled: enabled,
                 onChanged: (value) {
@@ -1131,7 +1158,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildLabeledSettingField(
                 context,
                 label: 'Délai essais allumage (ms)',
-                description: 'Temps entre deux tentatives d\'allumage d\'un même pyro.',
+                description:
+                    'Temps entre deux tentatives d\'allumage d\'un même pyro.',
                 hintText: '',
                 keyboardType: TextInputType.number,
                 controller: _pyroDelayController,
@@ -1145,7 +1173,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildLabeledSettingField(
                 context,
                 label: 'Altitude minimale armement pyros (m)',
-                description: 'Altitude minimale avant d\'autoriser l\'armement des pyros.',
+                description:
+                    'Altitude minimale avant d\'autoriser l\'armement des pyros.',
                 hintText: '',
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -1161,7 +1190,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildLabeledSettingField(
                 context,
                 label: 'Nombre minimal de pyros lancement',
-                description: 'Nombre de pyros connectés requis pour autoriser le lancement.',
+                description:
+                    'Nombre de pyros connectés requis pour autoriser le lancement.',
                 hintText: '',
                 keyboardType: TextInputType.number,
                 controller: _minPyrosController,
@@ -1175,7 +1205,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildBooleanSetting(
                 context,
                 title: 'Pyros armés au lancement',
-                subtitle: 'Activé: lignes pyrotechniques armées au lancement; désactivé: coupé et armées dynamiquement pendant le vol.',
+                subtitle:
+                    'Activé: lignes pyrotechniques armées au lancement; désactivé: coupé et armées dynamiquement pendant le vol.',
                 value: _hasPyrosPowerOn,
                 enabled: enabled,
                 onChanged: (value) {
@@ -1272,8 +1303,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                   ),
                   letterSpacing: 0.0,
                   fontWeight: FontWeight.w600,
-                  fontStyle:
-                      FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                  fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
                 ),
           ),
           const SizedBox(height: 8.0),
@@ -1346,7 +1376,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildLabeledSettingField(
                 context,
                 label: 'Seuil accélération verticale lancement (m/s²)',
-                description: 'Accélération verticale minimale qui valide le décollage.',
+                description:
+                    'Accélération verticale minimale qui valide le décollage.',
                 hintText: '',
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -1362,7 +1393,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildLabeledSettingField(
                 context,
                 label: 'Seuil vitesse boost (m/s)',
-                description: 'Vitesse verticale à partir de laquelle la phase boost est terminée.',
+                description:
+                    'Vitesse verticale à partir de laquelle la phase boost est terminée.',
                 hintText: '',
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -1378,15 +1410,16 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildLabeledSettingField(
                 context,
                 label: 'Seuil vitesse détection apogée (m/s)',
-                description: 'Vitesse verticale utilisée par les modes Auto et Kalman pour détecter l’apogée.',
+                description:
+                    'Vitesse verticale utilisée par les modes Auto et Kalman pour détecter l’apogée.',
                 hintText: '',
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
                 controller: _apogeeVController,
                 enabled: enabled &&
-                  _apogeeDetectionMode !=
-                    DataServiceManager.apogeeDetectionBarometric,
+                    _apogeeDetectionMode !=
+                        DataServiceManager.apogeeDetectionBarometric,
                 onChanged: (_) {
                   safeSetState(() {
                     _hasPendingTextEdits = true;
@@ -1396,7 +1429,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildBooleanSetting(
                 context,
                 title: 'Taux de descente actif',
-                subtitle: 'Active l\'utilisation du taux de descente pour la logique de vol.',
+                subtitle:
+                    'Active l\'utilisation du taux de descente pour la logique de vol.',
                 value: _hasDescentRate,
                 enabled: enabled,
                 onChanged: (value) {
@@ -1411,11 +1445,13 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildLabeledSettingField(
                 context,
                 label: 'Seuil vitesse descente (m/s)',
-                description: 'Seuil de vitesse verticale utilisé pour détecter une phase de descente trop rapide. Amène le déploiement des parachutes si la vitesse est dépassée.',
+                description:
+                    'Seuil de vitesse verticale utilisé pour détecter une phase de descente trop rapide. Amène le déploiement des parachutes si la vitesse est dépassée.',
                 hintText: '',
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 controller: _descentRateVController,
-                enabled: enabled,
+                enabled: enabled && _hasDescentRate,
                 onChanged: (_) {
                   safeSetState(() {
                     _hasPendingTextEdits = true;
@@ -1425,7 +1461,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildLabeledSettingField(
                 context,
                 label: 'Seuil vitesse détection atterrissage (m/s)',
-                description: 'Vitesse verticale maximale à maintenir pendant la durée de confirmation d\'atterrissage.',
+                description:
+                    'Vitesse verticale maximale à maintenir pendant la durée de confirmation d\'atterrissage.',
                 hintText: '',
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -1441,7 +1478,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildLabeledSettingField(
                 context,
                 label: 'Délai détection atterrissage (ms)',
-                description: 'Durée pendant laquelle la vitesse doit rester sous le seuil avant de déclarer l\'atterrissage.',
+                description:
+                    'Durée pendant laquelle la vitesse doit rester sous le seuil avant de déclarer l\'atterrissage.',
                 hintText: '',
                 keyboardType: TextInputType.number,
                 controller: _landingDelayController,
@@ -1455,7 +1493,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildLabeledSettingField(
                 context,
                 label: 'Délai failsafe apogée (ms)',
-                description: 'Délai maximal avant de forcer le passage à la phase drogue si l\'apogée n\'est pas détectée.',
+                description:
+                    'Délai maximal avant de forcer le passage à la phase drogue si l\'apogée n\'est pas détectée.',
                 hintText: '',
                 keyboardType: TextInputType.number,
                 controller: _apogeeFailsafeController,
@@ -1484,48 +1523,48 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-        Expanded(
-          flex: 2,
-          child: Text(
-            'Mode détection apogée',
-            softWrap: true,
-            style: FlutterFlowTheme.of(context).bodyMedium.override(
-                  font: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                  fontSize: 14.0,
-                ),
-          ),
-        ),
-        Expanded(
-          flex: 3,
-          child: _buildStyledDropdown<int>(
-            context: context,
-            value: _apogeeDetectionMode,
-            onChanged: enabled
-                ? (value) {
-                    if (value == null) return;
-                    safeSetState(() {
-                      _apogeeDetectionMode = value;
-                      _hasPendingTextEdits = true;
-                    });
-                    data.apogeeDetectionMode = value;
-                  }
-                : null,
-            items: const [
-              DropdownMenuItem<int>(
-                value: DataServiceManager.apogeeDetectionAuto,
-                child: Text('Auto'),
+            Expanded(
+              flex: 2,
+              child: Text(
+                'Mode détection apogée',
+                softWrap: true,
+                style: FlutterFlowTheme.of(context).bodyMedium.override(
+                      font: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                      fontSize: 14.0,
+                    ),
               ),
-              DropdownMenuItem<int>(
-                value: DataServiceManager.apogeeDetectionKalman,
-                child: Text('Kalman'),
+            ),
+            Expanded(
+              flex: 3,
+              child: _buildStyledDropdown<int>(
+                context: context,
+                value: _apogeeDetectionMode,
+                onChanged: enabled
+                    ? (value) {
+                        if (value == null) return;
+                        safeSetState(() {
+                          _apogeeDetectionMode = value;
+                          _hasPendingTextEdits = true;
+                        });
+                        data.apogeeDetectionMode = value;
+                      }
+                    : null,
+                items: const [
+                  DropdownMenuItem<int>(
+                    value: DataServiceManager.apogeeDetectionAuto,
+                    child: Text('Auto'),
+                  ),
+                  DropdownMenuItem<int>(
+                    value: DataServiceManager.apogeeDetectionKalman,
+                    child: Text('Kalman'),
+                  ),
+                  DropdownMenuItem<int>(
+                    value: DataServiceManager.apogeeDetectionBarometric,
+                    child: Text('Barométrique'),
+                  ),
+                ],
               ),
-              DropdownMenuItem<int>(
-                value: DataServiceManager.apogeeDetectionBarometric,
-                child: Text('Barométrique'),
-              ),
-            ],
-          ),
-        ),
+            ),
           ],
         ),
         _buildParameterDescription(
@@ -1569,7 +1608,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildLabeledSettingField(
                 context,
                 label: 'Fréquence Idefix (Hz)',
-                description: 'Fréquence radio utilisée par le module Idefix pour communiquer avec le beacon.',
+                description:
+                    'Fréquence radio utilisée par le module Idefix pour communiquer avec le beacon.',
                 hintText: '',
                 keyboardType: TextInputType.number,
                 controller: _idefixFrequencyController,
@@ -1620,7 +1660,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildLabeledSettingField(
                 context,
                 label: 'Altitude déploiement main (m)',
-                description: 'Altitude à laquelle l\'ODB quitte la phase drogue et commande le parachute principal.',
+                description:
+                    'Altitude à laquelle l\'ODB quitte la phase drogue et commande le parachute principal.',
                 hintText: '',
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -1636,7 +1677,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildLabeledSettingField(
                 context,
                 label: 'Nombre max essais drogue',
-                description: 'Nombre maximal de tentatives pour déclencher le parachute drogue.',
+                description:
+                    'Nombre maximal de tentatives pour déclencher le parachute drogue.',
                 hintText: '',
                 keyboardType: TextInputType.number,
                 controller: _maxDrogueController,
@@ -1650,7 +1692,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildLabeledSettingField(
                 context,
                 label: 'Nombre max essais main',
-                description: 'Nombre maximal de tentatives pour déclencher le parachute principal.',
+                description:
+                    'Nombre maximal de tentatives pour déclencher le parachute principal.',
                 hintText: '',
                 keyboardType: TextInputType.number,
                 controller: _maxMainController,
@@ -1699,7 +1742,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildBooleanSetting(
                 context,
                 title: 'Buzzer',
-                subtitle: 'Activé: rapports sonores de l\'ODB; désactivé: aucun rapport sonore.',
+                subtitle:
+                    'Activé: rapports sonores de l\'ODB; désactivé: aucun rapport sonore.',
                 value: _enableBuzzer,
                 enabled: enabled,
                 onChanged: (value) {
@@ -1712,7 +1756,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildSliderSetting(
                 context,
                 label: 'Tonalité buzzer (Hz)',
-                description: 'Fréquence sonore du buzzer lorsque les rapports audio sont activés.',
+                description:
+                    'Fréquence sonore du buzzer lorsque les rapports audio sont activés.',
                 value: _buzzerToneHz,
                 min: 100.0,
                 max: 2700.0,
@@ -1809,6 +1854,11 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
     TextStyle headerStyle,
     DataServiceManager data,
   ) {
+    final selectedHistoryEntry =
+        data.configHistory.contains(_selectedHistoryEntry)
+            ? _selectedHistoryEntry
+            : null;
+
     return _buildSectionCard(
       context,
       ExpandableNotifier(
@@ -1831,6 +1881,105 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           expanded: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildSubsectionHeader(
+                context,
+                'Historique des configurations',
+                icon: Icons.history,
+              ),
+              Text(
+                'Chargez une configuration précédemment appliquée.',
+                style: FlutterFlowTheme.of(context).bodySmall,
+              ),
+              _buildStyledDropdown<OdbConfigHistoryEntry?>(
+                context: context,
+                value: selectedHistoryEntry,
+                onChanged: data.configHistory.isEmpty
+                    ? null
+                    : (value) {
+                        safeSetState(() {
+                          _selectedHistoryEntry = value;
+                        });
+                      },
+                items: [
+                  const DropdownMenuItem<OdbConfigHistoryEntry?>(
+                    value: null,
+                    child: Text('Sélectionner une configuration'),
+                  ),
+                  ...data.configHistory.map(
+                    (entry) => DropdownMenuItem<OdbConfigHistoryEntry?>(
+                      value: entry,
+                      child: Text(
+                        '${_formatConfigHistoryDate(entry.savedAt)} — '
+                        '${entry.config.odbName.isEmpty ? 'Sans nom' : entry.config.odbName}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: selectedHistoryEntry == null
+                          ? null
+                          : () {
+                              data.loadConfigHistoryEntry(selectedHistoryEntry);
+                              safeSetState(() {
+                                _hasPendingTextEdits = false;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Configuration historique chargée dans les paramètres',
+                                  ),
+                                ),
+                              );
+                            },
+                      icon: const Icon(Icons.file_download_outlined),
+                      label: const Text('Charger'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: FlutterFlowTheme.of(context).primary,
+                        foregroundColor:
+                            FlutterFlowTheme.of(context).primaryBackground,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: data.configHistory.isEmpty
+                          ? null
+                          : () async {
+                              await data.clearConfigHistory();
+                              if (!context.mounted) return;
+                              safeSetState(() {
+                                _selectedHistoryEntry = null;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Historique des configurations supprimé',
+                                  ),
+                                ),
+                              );
+                            },
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('Vider'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: FlutterFlowTheme.of(context).error,
+                        foregroundColor:
+                            FlutterFlowTheme.of(context).primaryBackground,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              _buildSubsectionHeader(
+                context,
+                'Réinitialisation de l\'ODB',
+                icon: Icons.restart_alt_rounded,
+              ),
               Text(
                 'Attention : ces actions réinitialisent la configuration ou la mémoire complète de l\'ODB.',
                 textAlign: TextAlign.center,
@@ -1977,11 +2126,10 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                           axisProfile: data.axisProfile,
                           hasPyrosPowerOn: data.hasPyrosPowerOn,
                           fireAttemptDelayMs: data.fireAttemptDelayMs,
-                            pyrosArmingMinAltitudeM:
-                              data.pyrosArmingMinAltitudeM,
+                          pyrosArmingMinAltitudeM: data.pyrosArmingMinAltitudeM,
                           minNeededPyroNb: data.minNeededPyroNb,
                           pyroRoles: data.pyroRoles,
-                            apogeeDetectionMode: data.apogeeDetectionMode,
+                          apogeeDetectionMode: data.apogeeDetectionMode,
                           hasDescentRate: data.hasDescentRate,
                           accZLaunchThreshold: data.accZLaunchThreshold,
                           boostPhaseVThreshold: data.boostPhaseVThreshold,
@@ -2017,14 +2165,12 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                       accZLaunchThreshold: _parseDouble(
                           _accLaunchController.text, data.accZLaunchThreshold),
                       boostPhaseVThreshold: _parseDouble(
-                          _boostVController.text,
-                          data.boostPhaseVThreshold),
+                          _boostVController.text, data.boostPhaseVThreshold),
                       apogeeDetectVThreshold: _parseDouble(
-                          _apogeeVController.text,
-                          data.apogeeDetectVThreshold),
+                          _apogeeVController.text, data.apogeeDetectVThreshold),
                       descentRateVThreshold: _parseDouble(
-                        _descentRateVController.text, 
-                        data.descentRateVThreshold),
+                          _descentRateVController.text,
+                          data.descentRateVThreshold),
                       apogeeDetectionMode: _apogeeDetectionMode,
                       hasDescentRate: _hasDescentRate,
                       mainDeployAltitudeThresholdM: _parseDouble(

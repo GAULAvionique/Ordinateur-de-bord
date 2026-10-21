@@ -571,6 +571,9 @@ void AppComm_ProcessRx(hm11_t *hm11_dev) {
 							ADXL382_SetAxisProfile(&adxl382, current_config.axis_profile);
 							AppComm_SendAck(hm11_dev, CMD_REQ_ACC_CALIB, 0);
 						}
+					} else if(cmd == CMD_FORCE_REBOOT) {
+						AppComm_SendAck(hm11_dev, CMD_FORCE_REBOOT, 1);
+						RebootManager_RequestReboot();
 					}
                 }
                 CriticalLED_SetColor(&critical_led, NONE);

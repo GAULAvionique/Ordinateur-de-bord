@@ -41,7 +41,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
       TextEditingController();
   bool _debugMode = false;
   bool _flightTestMode = false;
-  int _axisProfileValue = DataServiceManager.axisProfileP0;
+  int _axisProfileValue = DataServiceManager.axisProfileAuto;
   bool _armedPyrosPowerUp = false;
   bool _enableEarlyDeployment = false;
   bool _enableBuzzer = false;
@@ -237,7 +237,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           _apogeeDetectionMode = DataServiceManager.apogeeDetectionKalman;
           _debugMode = false;
           _flightTestMode = false;
-          _axisProfileValue = DataServiceManager.axisProfileP0;
+          _axisProfileValue = DataServiceManager.axisProfileAuto;
           _buzzerLandingOutput = DataServiceManager.buzzerLandingOutputDisabled;
           _armedPyrosPowerUp = false;
           _enableEarlyDeployment = false;
@@ -391,6 +391,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
     required bool enabled,
   }) {
     final axisProfileLabels = <String>[
+      'Auto',
       'Z+',
       'Z+90°',
       'Z+180°',
@@ -462,43 +463,49 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
 
     switch (profile) {
       case 0:
+        noseAxis = 'Auto';
+        description = 'La carte détecte automatiquement l\'orientation de l\'axe Z pour déterminer la direction du nez au démarrage.';
+        visualIcon = Icons.rotate_90_degrees_ccw_rounded;
+        iconColor = FlutterFlowTheme.of(context).success;
+        break;
       case 1:
       case 2:
       case 3:
+      case 4:
         noseAxis = 'Axe +Z (P0-P3)';
         description = 'La carte est fixée à plat. L\'axe Z pointe vers le nez.';
         visualIcon = Icons.layers;
         iconColor = FlutterFlowTheme.of(context).secondary;
         break;
-      case 4:
+      case 5:
         noseAxis = 'Axe +Y (P4)';
         description =
             'La carte est fixée verticalement. Le module Bluetooth pointe vers le nez de la fusée.';
         visualIcon = Icons.arrow_upward_rounded;
         iconColor = FlutterFlowTheme.of(context).warning;
         break;
-      case 5:
+      case 6:
         noseAxis = 'Axe -X (P5)';
         description =
             'La carte est fixée horizontalement. Le module Bluetooth pointe vers la droite de la fusée.';
         visualIcon = Icons.arrow_downward_rounded;
         iconColor = FlutterFlowTheme.of(context).error;
         break;
-      case 6:
+      case 7:
         noseAxis = 'Axe -Y (P6)';
         description =
             'La carte est fixée verticalement. Le module Bluetooth pointe vers le sol.';
         visualIcon = Icons.arrow_downward_rounded;
         iconColor = FlutterFlowTheme.of(context).error;
         break;
-      case 7:
+      case 8:
         noseAxis = 'Axe +X (P7)';
         description =
             'La carte est fixée horizontalement. Le module Bluetooth pointe vers la gauche de la fusée.';
         visualIcon = Icons.arrow_upward_rounded;
         iconColor = FlutterFlowTheme.of(context).warning;
         break;
-      case 8:
+      case 9:
         noseAxis = 'Calibration';
         description =
             'La carte est configuré dans ses axes originels, prêt pour une calibration';

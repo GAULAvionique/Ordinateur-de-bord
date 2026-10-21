@@ -14,7 +14,7 @@
 
 /* === Protocol Versioning === */
 #define CONFIG_PROTOCOL_VERSION_MAJOR 2
-#define CONFIG_PROTOCOL_VERSION_MINOR 8
+#define CONFIG_PROTOCOL_VERSION_MINOR 9
 
 /* === CALIBRATION STATES === */
 #define FLAG_IMU_TEMP_OK  		(1 << 3)
@@ -55,15 +55,16 @@ static const char* const PYRO_ROLES_LOOKUP[] = {
 
 /* === Sensors === */
 typedef enum {
-    ACC_AXIS_PROFILE_P0 = 0, // Default: X forward, Y left, Z up
-    ACC_AXIS_PROFILE_P1,     // Horizontal, rotated 90° clockwise (Z up)
-    ACC_AXIS_PROFILE_P2,     // Horizontal, rotated 180° (Z up)
-    ACC_AXIS_PROFILE_P3,     // Horizontal, rotated 270° clockwise (Z up)
-    ACC_AXIS_PROFILE_P4,     // Vertical, rolled +90° (Right side up)
-    ACC_AXIS_PROFILE_P5,     // Vertical, pitched +90° (Front face forward)
-    ACC_AXIS_PROFILE_P6,     // Vertical, rolled -90° (Left side up)
-    ACC_AXIS_PROFILE_P7,     // Vertical, pitched -90° (Back face forward)
-	ACC_AXIS_PROFILE_CALIB,	 // Original mapping for calibration routine
+	ACC_AXIS_PROFILE_AUTO = 0, 	// Auto remap axis at startup
+    ACC_AXIS_PROFILE_P0, 	 	// Default: X forward, Y left, Z up
+    ACC_AXIS_PROFILE_P1,		// Horizontal, rotated 90° clockwise (Z up)
+    ACC_AXIS_PROFILE_P2,     	// Horizontal, rotated 180° (Z up)
+    ACC_AXIS_PROFILE_P3,     	// Horizontal, rotated 270° clockwise (Z up)
+    ACC_AXIS_PROFILE_P4,     	// Vertical, rolled +90° (Right side up)
+    ACC_AXIS_PROFILE_P5,     	// Vertical, pitched +90° (Front face forward)
+    ACC_AXIS_PROFILE_P6,     	// Vertical, rolled -90° (Left side up)
+    ACC_AXIS_PROFILE_P7,     	// Vertical, pitched -90° (Back face forward)
+	ACC_AXIS_PROFILE_CALIB,	 	// Original mapping for calibration routine
     ACC_AXIS_PROFILE_MAX
 } acc_axis_profile_t;
 

@@ -40,7 +40,7 @@ const odb_config_t default_config = {
 	.flight_test_mode = STATE_FALSE,
 
 	// Sensors
-	.axis_profile = ACC_AXIS_PROFILE_P0,
+	.axis_profile = ACC_AXIS_PROFILE_AUTO,
 	.highg_calib_6faces = {
 		.scale_matrix = {0.0f, 0.0f, 0.0f},
 		.bias = {0.0f, 0.0f, 0.0f}
@@ -66,7 +66,7 @@ const odb_config_t default_config = {
     },
 
     // Phase
-	.apogee_detection_mode = APOGEE_DETECTION_KALMAN,	// Kalman
+	.apogee_detection_mode = APOGEE_DETECTION_AUTO,		// Kalman
 	.enable_early_deployment = STATE_TRUE,
     .z_launch_threshold_acc = 29.42f, 					// m/s2 (3.0G)
     .boost_phase_threshold_v = 100.0f,					// m/s
@@ -114,7 +114,7 @@ static config_error_t Config_ValidateFields(const odb_config_t* new_config) {
 		}
 
 		/* Validate Profile Axis */
-		if(new_config->axis_profile < ACC_AXIS_PROFILE_P0 || new_config->axis_profile >= ACC_AXIS_PROFILE_MAX) {
+		if(new_config->axis_profile < ACC_AXIS_PROFILE_AUTO || new_config->axis_profile >= ACC_AXIS_PROFILE_MAX) {
 			return CONFIG_ERR_PROFILE_AXIS;
 		}
 

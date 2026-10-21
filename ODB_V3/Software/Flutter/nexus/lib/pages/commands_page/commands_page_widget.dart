@@ -474,17 +474,6 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                         ),
                         _buildActionRow(
                           context,
-                          title: 'Réglage automatique du profile d\'axe',
-                          description: 'Régler automatiquement l\'axe de montée principal pointant vers le ciel des accéléromètres',
-                          buttonText: 'Régler',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).error : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            ConsoleService().log('Régalge du profile d\'axes demandé');
-                            await data.commandAutoAxisProfile();
-                          } : null,
-                        ),
-                        _buildActionRow(
-                          context,
                           title: 'Calibration Baromètre',
                           description: 'Réglage de l\'altitude de référence',
                           buttonText: 'Calibrer',
@@ -582,6 +571,26 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                           buttonColor: connected ? FlutterFlowTheme.of(context).tertiary : FlutterFlowTheme.of(context).secondaryText,
                           onPressed: connected ? () async {
                             await data.setSubLanded();
+                          } : null,
+                        ),
+                      ].divide(const SizedBox(height: 12.0)),
+                    ),
+                  ),
+                  _buildSectionTitle(context, 'Débogage'),
+                  _buildSectionCard(
+                    context,
+                    Column(
+                      mainAxisSize: MainAxisSize.max,
+                      children: [
+                        _buildActionRow(
+                          context,
+                          title: 'Redémarrage forcé',
+                          description: 'Redémarrage forcé de l\'ODB',
+                          buttonText: 'Exécuter',
+                          buttonColor: connected ? FlutterFlowTheme.of(context).error : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected ? () async {
+                            ConsoleService().log('Redémarrage forcé demandé');
+                            await data.commandForceReboot();
                           } : null,
                         ),
                       ].divide(const SizedBox(height: 12.0)),

@@ -60,7 +60,7 @@ typedef enum {
 	CMD_STOP_SD_LOG				= 0x1A,
 	CMD_REQ_ACC_CALIB			= 0x1B,
 	CMD_REQ_BARO_CALIB			= 0x1C,
-	CMD_REQ_AUTO_AXIS_PROFILE	= 0x1D,
+	CMD_FORCE_REBOOT			= 0x1D,
 } app_cmd_id_t;
 
 void AppComm_SendTelemetry(hm11_t *hm11_dev, const odb_data_t *data);

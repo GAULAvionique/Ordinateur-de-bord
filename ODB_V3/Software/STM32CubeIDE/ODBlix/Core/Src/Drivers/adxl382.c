@@ -8,6 +8,7 @@
 
 #include "Drivers/adxl382.h"
 #include "Systems/config.h"
+#include <math.h>
 
 
 #define ADXL382_DEVID_AD_VAL      0xAD
@@ -94,15 +95,30 @@ static int8_t ADXL382_SetRange(adxl382_t *dev, adxl382_range_t range) {
     return 0; // success
 }
 
-static void ADXL382_RemapAxes(float *x, float *y, float *z, acc_axis_profile_t profile) {
+static void ADXL382_RemapAxes(float *x, float *y, float *z, acc_axis_profile_t *profile) {
 	// Raw axis for calibration
-	if(profile == ACC_AXIS_PROFILE_CALIB) return;
+	if(*profile == ACC_AXIS_PROFILE_CALIB) return;
 
     float bno_x = -(*y);
     float bno_y = *x;
     float bno_z = *z;
 
-    switch (profile) {
+    // Auto
+    if(*profile == ACC_AXIS_PROFILE_AUTO) {
+		float abs_x = fabsf(bno_x);
+		float abs_y = fabsf(bno_y);
+		float abs_z = fabsf(bno_z);
+
+		if (abs_z > abs_x && abs_z > abs_y) {
+			*profile = (bno_z > 0.0f) ? ACC_AXIS_PROFILE_P0 : ACC_AXIS_PROFILE_P2;
+		} else if (abs_x > abs_y && abs_x > abs_z) {
+			*profile = (bno_x > 0.0f) ? ACC_AXIS_PROFILE_P7 : ACC_AXIS_PROFILE_P5;
+		} else {
+			*profile = (bno_y > 0.0f) ? ACC_AXIS_PROFILE_P4 : ACC_AXIS_PROFILE_P6;
+		}
+	}
+
+    switch (*profile) {
         case ACC_AXIS_PROFILE_P0:
             *x = bno_x;
             *y = bno_y;
@@ -154,7 +170,7 @@ static void ADXL382_RemapAxes(float *x, float *y, float *z, acc_axis_profile_t p
         default:
             // Fallback
             *x = bno_x;
-            *y = bno_z;
+            *y = bno_y;
             *z = bno_z;
             break;
     }
@@ -365,7 +381,7 @@ void ADXL382_Compute(adxl382_t *dev, const float current_quat[4]) {
         Math_Compute6FacesCalibration(accel, &dev->faces_offset);
     }
 
-    ADXL382_RemapAxes(&accel[0], &accel[1], &accel[2], dev->axis_profile);
+    ADXL382_RemapAxes(&accel[0], &accel[1], &accel[2], &dev->axis_profile);
 
     dev->acc_x = accel[0];
     dev->acc_y = accel[1];

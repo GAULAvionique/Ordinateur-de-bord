@@ -374,7 +374,7 @@ class OdbConfig {
   OdbConfig({
     this.magicNumber = 0x434F4E46,
     this.versionMajor = 2,
-    this.versionMinor = 8,
+    this.versionMinor = 9,
     this.payloadSize = serializedSize,
     required this.odbName,
     required this.stageRole,
@@ -737,7 +737,7 @@ class DataServiceManager with ChangeNotifier {
   static const int actionStopLogDataCSV = 0x1A;
   static const int actionCalibAcc = 0x1B;
   static const int actionCalibBaro = 0x1C;
-  static const int actionAutoAxisProfile = 0x1D;
+  static const int actionForceReboot = 0x1D;
 
   static const int configMagicNumber = 0x434F4E46;
   static const int stageRoleBooster = 2;
@@ -749,15 +749,16 @@ class DataServiceManager with ChangeNotifier {
   static const int buzzerLandingOutputAltitude = 1;
   static const int buzzerLandingOutputBips = 2;
   static const int buzzerLandingOutputMusic = 3;
-  static const int axisProfileP0 = 0;
-  static const int axisProfileP1 = 1;
-  static const int axisProfileP2 = 2;
-  static const int axisProfileP3 = 3;
-  static const int axisProfileP4 = 4;
-  static const int axisProfileP5 = 5;
-  static const int axisProfileP6 = 6;
-  static const int axisProfileP7 = 7;
-  static const int axisProfileCalib = 8;
+  static const int axisProfileAuto = 0;
+  static const int axisProfileP0 = 1;
+  static const int axisProfileP1 = 2;
+  static const int axisProfileP2 = 3;
+  static const int axisProfileP3 = 4;
+  static const int axisProfileP4 = 5;
+  static const int axisProfileP5 = 6;
+  static const int axisProfileP6 = 7;
+  static const int axisProfileP7 = 8;
+  static const int axisProfileCalib = 9;
   static const int flagImuTempOk = 1 << 3;
   static const int flagImu6FacesOk = 1 << 2;
   static const int flagHighgTempOk = 1 << 1;
@@ -774,7 +775,7 @@ class DataServiceManager with ChangeNotifier {
   static const int eventFlagMachLockEnabled = 1 << 8;
 
   static const int expectedConfigMajor = 2;
-  static const int expectedConfigMinor = 8;
+  static const int expectedConfigMinor = 9;
   static const int expectedTelemetryMajor = 1;
   static const int expectedTelemetryMinor = 4;
 
@@ -897,7 +898,7 @@ class DataServiceManager with ChangeNotifier {
   int get stageRole => config?.stageRole ?? stageRoleSustainer;
   bool get debugMode => config?.debugMode ?? false;
   bool get flightTestMode => config?.flightTestMode ?? false;
-  int get axisProfile => config?.axisProfile ?? axisProfileP0;
+  int get axisProfile => config?.axisProfile ?? axisProfileAuto;
   int get calibStates => config?.calibStates ?? 0;
   bool get armedPyrosPowerUp => config?.armedPyrosPowerUp ?? false;
   bool get enableBuzzer => config?.enableBuzzer ?? false;
@@ -1831,15 +1832,13 @@ class DataServiceManager with ChangeNotifier {
     ConsoleService().log('Demande de calibration du baromètre envoyée.');
   }
 
-  Future<void> commandAutoAxisProfile() async {
+  Future<void> commandForceReboot() async {
     if (!hasConnection) {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    if (!await btService.sendBinary(cmdTypeAction, [actionAutoAxisProfile])) {
-      return;
-    }
-    ConsoleService().log('Demande de calibration du baromètre envoyée.');
+    if (!await btService.sendBinary(cmdTypeAction, [actionForceReboot])) return;
+    ConsoleService().log('Demande de redémarrage forcé envoyée.');
   }
 
   // ---------- PARSER ----------

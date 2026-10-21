@@ -20,14 +20,16 @@ void main() {
     return data.buffer.asUint8List();
   }
 
-  testWidgets('parses binary telemetry and updates shared consumers', (tester) async {
+  testWidgets('parses binary telemetry and updates shared consumers',
+      (tester) async {
     final bluetoothService = BluetoothServiceManager();
     final dataService = DataServiceManager(bluetoothService);
 
     await tester.pumpWidget(
       MultiProvider(
         providers: [
-          ChangeNotifierProvider<BluetoothServiceManager>.value(value: bluetoothService),
+          ChangeNotifierProvider<BluetoothServiceManager>.value(
+              value: bluetoothService),
           ChangeNotifierProvider<DataServiceManager>.value(value: dataService),
         ],
         child: MaterialApp(
@@ -73,7 +75,6 @@ void main() {
     );
   });
 
-  
   test('configuration round-trip preserves pyro roles', () {
     final config = OdbConfig(
       odbName: 'test',
@@ -81,24 +82,23 @@ void main() {
       debugMode: false,
       flightTestMode: false,
       axisProfile: DataServiceManager.axisProfileP0,
-      hasPyrosPowerOn: false,
-      hasDescentRate: false,
-      descentRateVThreshold: 0,
+      armedPyrosPowerUp: false,
+      enableEarlyDeployment: false,
+      earlyDeploymentThresholdV: 0,
       fireAttemptDelayMs: 100,
       pyrosArmingMinAltitudeM: 200,
-      minNeededPyroNb: 1,
+      neededPyroNb: 1,
       pyroRoles: [0, 1, 2, 3],
       apogeeDetectionMode: DataServiceManager.apogeeDetectionKalman,
-      accZLaunchThreshold: 1,
-      boostPhaseVThreshold: 2,
-      apogeeDetectVThreshold: 3,
-      landingDetectVThreshold: 4,
-      landingDetectThresholdMs: 500,
+      zLaunchThresholdAcc: 1,
+      boostPhaseThresholdV: 2,
+      apogeeDetectThresholdV: 3,
       apogeeFailsafeMs: 600,
       mainDeployAltitudeThresholdM: 700,
-      drogueFireAttemptMaxNb: 2,
-      mainFireAttemptMaxNb: 2,
+      drogueFireAttemptNb: 2,
+      mainFireAttemptNb: 2,
       enableBuzzer: true,
+      buzzerLandingOutput: DataServiceManager.buzzerLandingOutputDisabled,
       buzzerReportToneHz: 1000,
       idefixFrequencyHz: 2000000,
     );
@@ -117,5 +117,63 @@ void main() {
     );
 
     expect(dataService.pyroRoles, equals(<int>[0, 0, 0, 0]));
+  });
+
+  test('Bluetooth frame codec reassembles fragmented and concatenated frames',
+      () {
+    final first = BluetoothFrameCodec.encode(1, [10, 20]);
+    final second = BluetoothFrameCodec.encode(2, [30]);
+    final buffer = <int>[99, ...first.sublist(0, 3)];
+
+    expect(BluetoothFrameCodec.extractFrames(buffer), isEmpty);
+
+    buffer.addAll([...first.sublist(3), ...second]);
+    final frames = BluetoothFrameCodec.extractFrames(buffer);
+
+    expect(frames, equals([first, second]));
+    expect(buffer, isEmpty);
+  });
+
+  test('Bluetooth frame codec skips invalid checksum and oversized frames', () {
+    final valid = BluetoothFrameCodec.encode(3, [1, 2, 3]);
+    final invalid = [...valid];
+    invalid[valid.length - 1] = invalid[valid.length - 1] ^ 0xFF;
+    final oversized = [0xAB, 0xCD, 4, 201, ...List<int>.filled(201, 0)];
+    final buffer = <int>[...invalid, ...oversized, ...valid];
+
+    final frames = BluetoothFrameCodec.extractFrames(buffer);
+
+    expect(frames, equals([valid]));
+    expect(buffer, isEmpty);
+  });
+
+  test(
+      'binary transmission reports failure when no write characteristic exists',
+      () async {
+    final bluetoothService = BluetoothServiceManager();
+
+    expect(
+      await bluetoothService.sendBinary(1, [2, 3]),
+      isFalse,
+    );
+
+    bluetoothService.dispose();
+  });
+
+  test('telemetry version mismatch is reported and rejected', () async {
+    final bluetoothService = BluetoothServiceManager();
+    final dataService = DataServiceManager(bluetoothService);
+    final telemetry = telemetryBytes()..[0] = 9;
+
+    await dataService.parseBinaryMessage(
+      DataServiceManager.msgTypeTelemetry,
+      telemetry,
+    );
+
+    expect(dataService.hasVersionMismatch, isTrue);
+    expect(dataService.telemetry, isNotNull);
+
+    dataService.dispose();
+    bluetoothService.dispose();
   });
 }

@@ -309,7 +309,7 @@ odb_state_t ODB_Init(odb_data_t *data, odb_stats_t *stats) {
 			sum += samples[i];
 		}
 
-		// Kalman use AGL instead of MSL
+		// Kalman use AGL instead of MSL -> Averaging altitude to set the AGL
         ground_elevation_msl_m = sum / KALMAN_NAV_SAMPLE_NB;
 		for(int i = 0; i < KALMAN_NAV_SAMPLE_NB; i++) {
             samples[i] -= ground_elevation_msl_m;
@@ -318,10 +318,8 @@ odb_state_t ODB_Init(odb_data_t *data, odb_stats_t *stats) {
 		KalmanNav_Init(&kalman_filter, 0.0f, samples, KALMAN_NAV_SAMPLE_NB);
 	}
 
-    // Barometric option
-    if(current_config.apogee_detection_mode == APOGEE_DETECTION_BAROMETRIC) {
-    	AltitudeTrend_Init(&altitude_trend);
-    }
+    // Barometric Trend
+    AltitudeTrend_Init(&altitude_trend);
 
     if(Idefix_Init(&idefix) == IDEFIX_OK) {
         system_states |= FLAG_IDEFIX_OK;
@@ -434,7 +432,7 @@ void ODB_Update(odb_data_t *data, odb_stats_t *stats) {
     MS5611_Update(&ms5611);
     if(MS5611_Compute(&ms5611, &temperature, &pressure) == MS5611_OK) {
     	data->pressure_pa = pressure;
-    	data->altitude_agl_m = Math_ComputeAltitudeMSL(pressure) - ground_elevation_msl_m;
+    	data->altitude_agl_m = Math_ComputeAltitudeAGL(pressure, ground_elevation_msl_m);
 		data->system_states |= FLAG_BARO_OK;
     } else {
         data->system_states &= ~FLAG_BARO_OK;
@@ -509,7 +507,7 @@ void ODB_Update(odb_data_t *data, odb_stats_t *stats) {
     // Kalman filter update with dynamic R_alt
     //Profiler_StartTask(PROFILE_TASK_KALMAN);
     float raw_accel_z = data->highg_acc_vertical;
-    if(fabs(raw_accel_z + GRAVITY_MS2) < current_config.acc_z_launch_threshold) {
+    if(fabs(raw_accel_z + GRAVITY_MS2) < ACC_MAX_SWITCH_G) {
         raw_accel_z = data->imu_acc_vertical;
     }
     KalmanNav_Predict(&kalman_filter, raw_accel_z);

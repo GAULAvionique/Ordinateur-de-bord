@@ -227,7 +227,7 @@ class _RSSIPageWidgetState extends State<RSSIPageWidget> {
                         ),
                   ),
                   Text(
-                    'La précision est variable selon l’environnement (10 ~ 30 m), sans indication directionnelle.',
+                    'La précision est variable selon l\'environnement (10 ~ 30 m), sans indication directionnelle.',
                     style: FlutterFlowTheme.of(context).bodySmall.override(
                           font: GoogleFonts.inter(
                             fontWeight: FlutterFlowTheme.of(context).bodySmall.fontWeight,

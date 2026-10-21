@@ -333,7 +333,7 @@ class OdbStats {
 }
 
 class OdbConfig {
-  static const int serializedSize = 130;
+  static const int serializedSize = 123;
   static const int magicNumberSize = 4;
   static const int flightPacketSize = magicNumberSize + serializedSize;
 
@@ -350,24 +350,23 @@ class OdbConfig {
   final FacesCalibration highgCalib6Faces;
   //final FacesCalibration imuCalib6Faces;
   final int calibStates;
-  final bool hasPyrosPowerOn;
+  final bool armedPyrosPowerUp;
   final int fireAttemptDelayMs;
   final double pyrosArmingMinAltitudeM;
-  final int minNeededPyroNb;
+  final int neededPyroNb;
   final List<int> pyroRoles;
   final int apogeeDetectionMode;
-  final bool hasDescentRate;
-  final double accZLaunchThreshold;
-  final double boostPhaseVThreshold;
-  final double apogeeDetectVThreshold;
-  final double descentRateVThreshold;
-  final double landingDetectVThreshold;
-  final int landingDetectThresholdMs;
+  final bool enableEarlyDeployment;
+  final double zLaunchThresholdAcc;
+  final double boostPhaseThresholdV;
+  final double apogeeDetectThresholdV;
+  final double earlyDeploymentThresholdV;
   final int apogeeFailsafeMs;
   final double mainDeployAltitudeThresholdM;
-  final int drogueFireAttemptMaxNb;
-  final int mainFireAttemptMaxNb;
+  final int drogueFireAttemptNb;
+  final int mainFireAttemptNb;
   final bool enableBuzzer;
+  final int buzzerLandingOutput;
   final int buzzerReportToneHz;
   final int idefixFrequencyHz;
   final int crc32;
@@ -375,7 +374,7 @@ class OdbConfig {
   OdbConfig({
     this.magicNumber = 0x434F4E46,
     this.versionMajor = 2,
-    this.versionMinor = 5,
+    this.versionMinor = 8,
     this.payloadSize = serializedSize,
     required this.odbName,
     required this.stageRole,
@@ -385,24 +384,23 @@ class OdbConfig {
     FacesCalibration? highgCalib6Faces,
     //FacesCalibration? imuCalib6Faces,
     this.calibStates = 0x000,
-    required this.hasPyrosPowerOn,
+    required this.armedPyrosPowerUp,
     required this.fireAttemptDelayMs,
     required this.pyrosArmingMinAltitudeM,
-    required this.minNeededPyroNb,
+    required this.neededPyroNb,
     required this.pyroRoles,
     required this.apogeeDetectionMode,
-    required this.hasDescentRate,
-    required this.accZLaunchThreshold,
-    required this.boostPhaseVThreshold,
-    required this.apogeeDetectVThreshold,
-    required this.descentRateVThreshold,
-    required this.landingDetectVThreshold,
-    required this.landingDetectThresholdMs,
+    required this.enableEarlyDeployment,
+    required this.zLaunchThresholdAcc,
+    required this.boostPhaseThresholdV,
+    required this.apogeeDetectThresholdV,
+    required this.earlyDeploymentThresholdV,
     required this.apogeeFailsafeMs,
     required this.mainDeployAltitudeThresholdM,
-    required this.drogueFireAttemptMaxNb,
-    required this.mainFireAttemptMaxNb,
+    required this.drogueFireAttemptNb,
+    required this.mainFireAttemptNb,
     required this.enableBuzzer,
+    required this.buzzerLandingOutput,
     required this.buzzerReportToneHz,
     required this.idefixFrequencyHz,
     this.crc32 = 0,
@@ -423,24 +421,23 @@ class OdbConfig {
       highgCalib6Faces: FacesCalibration.fromBytes(reader),
       //imuCalib6Faces: FacesCalibration.fromBytes(reader),
       calibStates: reader.readUint8(),
-      hasPyrosPowerOn: reader.readUint8() == 1,
+      armedPyrosPowerUp: reader.readUint8() == 1,
       fireAttemptDelayMs: reader.readUint32(),
       pyrosArmingMinAltitudeM: reader.readFloat32(),
-      minNeededPyroNb: reader.readUint8(),
+      neededPyroNb: reader.readUint8(),
       pyroRoles: reader.readUint8Array(4),
       apogeeDetectionMode: reader.readUint8(),
-      hasDescentRate: reader.readUint8() == 1,
-      accZLaunchThreshold: reader.readFloat32(),
-      boostPhaseVThreshold: reader.readFloat32(),
-      apogeeDetectVThreshold: reader.readFloat32(),
-      descentRateVThreshold: reader.readFloat32(),
-      landingDetectVThreshold: reader.readFloat32(),
-      landingDetectThresholdMs: reader.readUint32(),
+      enableEarlyDeployment: reader.readUint8() == 1,
+      zLaunchThresholdAcc: reader.readFloat32(),
+      boostPhaseThresholdV: reader.readFloat32(),
+      apogeeDetectThresholdV: reader.readFloat32(),
+      earlyDeploymentThresholdV: reader.readFloat32(),
       apogeeFailsafeMs: reader.readUint32(),
       mainDeployAltitudeThresholdM: reader.readFloat32(),
-      drogueFireAttemptMaxNb: reader.readUint8(),
-      mainFireAttemptMaxNb: reader.readUint8(),
+      drogueFireAttemptNb: reader.readUint8(),
+      mainFireAttemptNb: reader.readUint8(),
       enableBuzzer: reader.readUint8() == 1,
+      buzzerLandingOutput: reader.readUint8(),
       buzzerReportToneHz: reader.readUint16(),
       idefixFrequencyHz: reader.readUint32(),
       crc32: reader.readUint32(),
@@ -456,24 +453,23 @@ class OdbConfig {
     FacesCalibration? highgCalib6Faces,
     //FacesCalibration? imuCalib6Faces,
     int? calibStates,
-    bool? hasPyrosPowerOn,
+    bool? armedPyrosPowerUp,
     int? fireAttemptDelayMs,
     double? pyrosArmingMinAltitudeM,
-    int? minNeededPyroNb,
+    int? neededPyroNb,
     List<int>? pyroRoles,
     int? apogeeDetectionMode,
-    bool? hasDescentRate,
-    double? accZLaunchThreshold,
-    double? boostPhaseVThreshold,
-    double? apogeeDetectVThreshold,
-    double? descentRateVThreshold,
-    double? landingDetectVThreshold,
-    int? landingDetectThresholdMs,
+    bool? enableEarlyDeployment,
+    double? zLaunchThresholdAcc,
+    double? boostPhaseThresholdV,
+    double? apogeeDetectThresholdV,
+    double? earlyDeploymentThresholdV,
     int? apogeeFailsafeMs,
     double? mainDeployAltitudeThresholdM,
-    int? drogueFireAttemptMaxNb,
-    int? mainFireAttemptMaxNb,
+    int? drogueFireAttemptNb,
+    int? mainFireAttemptNb,
     bool? enableBuzzer,
+    int? buzzerLandingOutput,
     int? buzzerReportToneHz,
     int? idefixFrequencyHz,
     int? crc32,
@@ -487,24 +483,28 @@ class OdbConfig {
       highgCalib6Faces: highgCalib6Faces ?? this.highgCalib6Faces,
       //imuCalib6Faces: imuCalib6Faces ?? this.imuCalib6Faces,
       calibStates: calibStates ?? this.calibStates,
-      hasPyrosPowerOn: hasPyrosPowerOn ?? this.hasPyrosPowerOn,
+      armedPyrosPowerUp: armedPyrosPowerUp ?? this.armedPyrosPowerUp,
       fireAttemptDelayMs: fireAttemptDelayMs ?? this.fireAttemptDelayMs,
-      pyrosArmingMinAltitudeM: pyrosArmingMinAltitudeM ?? this.pyrosArmingMinAltitudeM,
-      minNeededPyroNb: minNeededPyroNb ?? this.minNeededPyroNb,
+      pyrosArmingMinAltitudeM:
+          pyrosArmingMinAltitudeM ?? this.pyrosArmingMinAltitudeM,
+      neededPyroNb: neededPyroNb ?? this.neededPyroNb,
       pyroRoles: pyroRoles ?? this.pyroRoles,
       apogeeDetectionMode: apogeeDetectionMode ?? this.apogeeDetectionMode,
-      hasDescentRate: hasDescentRate ?? this.hasDescentRate,
-      accZLaunchThreshold: accZLaunchThreshold ?? this.accZLaunchThreshold,
-      boostPhaseVThreshold: boostPhaseVThreshold ?? this.boostPhaseVThreshold,
-      apogeeDetectVThreshold: apogeeDetectVThreshold ?? this.apogeeDetectVThreshold,
-      descentRateVThreshold: descentRateVThreshold ?? this.descentRateVThreshold,
-      landingDetectVThreshold: landingDetectVThreshold ?? this.landingDetectVThreshold,
-      landingDetectThresholdMs: landingDetectThresholdMs ?? this.landingDetectThresholdMs,
+      enableEarlyDeployment: enableEarlyDeployment ?? this.enableEarlyDeployment,
+      zLaunchThresholdAcc: zLaunchThresholdAcc ?? this.zLaunchThresholdAcc,
+      boostPhaseThresholdV: boostPhaseThresholdV ?? this.boostPhaseThresholdV,
+      apogeeDetectThresholdV:
+          apogeeDetectThresholdV ?? this.apogeeDetectThresholdV,
+      earlyDeploymentThresholdV:
+          earlyDeploymentThresholdV ?? this.earlyDeploymentThresholdV,
       apogeeFailsafeMs: apogeeFailsafeMs ?? this.apogeeFailsafeMs,
-      mainDeployAltitudeThresholdM: mainDeployAltitudeThresholdM ?? this.mainDeployAltitudeThresholdM,
-      drogueFireAttemptMaxNb: drogueFireAttemptMaxNb ?? this.drogueFireAttemptMaxNb,
-      mainFireAttemptMaxNb: mainFireAttemptMaxNb ?? this.mainFireAttemptMaxNb,
+      mainDeployAltitudeThresholdM:
+          mainDeployAltitudeThresholdM ?? this.mainDeployAltitudeThresholdM,
+      drogueFireAttemptNb:
+          drogueFireAttemptNb ?? this.drogueFireAttemptNb,
+      mainFireAttemptNb: mainFireAttemptNb ?? this.mainFireAttemptNb,
       enableBuzzer: enableBuzzer ?? this.enableBuzzer,
+      buzzerLandingOutput: buzzerLandingOutput ?? this.buzzerLandingOutput,
       buzzerReportToneHz: buzzerReportToneHz ?? this.buzzerReportToneHz,
       idefixFrequencyHz: idefixFrequencyHz ?? this.idefixFrequencyHz,
       crc32: crc32 ?? this.crc32,
@@ -525,24 +525,23 @@ class OdbConfig {
     highgCalib6Faces.writeTo(writer);
     //imuCalib6Faces.writeTo(writer);
     writer.writeUint8(calibStates);
-    writer.writeUint8(hasPyrosPowerOn ? 1 : 0);
+    writer.writeUint8(armedPyrosPowerUp ? 1 : 0);
     writer.writeUint32(fireAttemptDelayMs);
     writer.writeFloat32(pyrosArmingMinAltitudeM);
-    writer.writeUint8(minNeededPyroNb);
+    writer.writeUint8(neededPyroNb);
     writer.writeUint8Array(pyroRoles);
     writer.writeUint8(apogeeDetectionMode);
-    writer.writeUint8(hasDescentRate ? 1 : 0);
-    writer.writeFloat32(accZLaunchThreshold);
-    writer.writeFloat32(boostPhaseVThreshold);
-    writer.writeFloat32(apogeeDetectVThreshold);
-    writer.writeFloat32(descentRateVThreshold);
-    writer.writeFloat32(landingDetectVThreshold);
-    writer.writeUint32(landingDetectThresholdMs);
+    writer.writeUint8(enableEarlyDeployment ? 1 : 0);
+    writer.writeFloat32(zLaunchThresholdAcc);
+    writer.writeFloat32(boostPhaseThresholdV);
+    writer.writeFloat32(apogeeDetectThresholdV);
+    writer.writeFloat32(earlyDeploymentThresholdV);
     writer.writeUint32(apogeeFailsafeMs);
     writer.writeFloat32(mainDeployAltitudeThresholdM);
-    writer.writeUint8(drogueFireAttemptMaxNb);
-    writer.writeUint8(mainFireAttemptMaxNb);
+    writer.writeUint8(drogueFireAttemptNb);
+    writer.writeUint8(mainFireAttemptNb);
     writer.writeUint8(enableBuzzer ? 1 : 0);
+    writer.writeUint8(buzzerLandingOutput);
     writer.writeUint16(buzzerReportToneHz);
     writer.writeUint32(idefixFrequencyHz);
     final bytes = writer.toBytes();
@@ -746,6 +745,10 @@ class DataServiceManager with ChangeNotifier {
   static const int apogeeDetectionAuto = 0;
   static const int apogeeDetectionKalman = 1;
   static const int apogeeDetectionBarometric = 2;
+  static const int buzzerLandingOutputDisabled = 0;
+  static const int buzzerLandingOutputAltitude = 1;
+  static const int buzzerLandingOutputBips = 2;
+  static const int buzzerLandingOutputMusic = 3;
   static const int axisProfileP0 = 0;
   static const int axisProfileP1 = 1;
   static const int axisProfileP2 = 2;
@@ -771,7 +774,7 @@ class DataServiceManager with ChangeNotifier {
   static const int eventFlagMachLockEnabled = 1 << 8;
 
   static const int expectedConfigMajor = 2;
-  static const int expectedConfigMinor = 5;
+  static const int expectedConfigMinor = 8;
   static const int expectedTelemetryMajor = 1;
   static const int expectedTelemetryMinor = 4;
 
@@ -896,21 +899,22 @@ class DataServiceManager with ChangeNotifier {
   bool get flightTestMode => config?.flightTestMode ?? false;
   int get axisProfile => config?.axisProfile ?? axisProfileP0;
   int get calibStates => config?.calibStates ?? 0;
-  bool get hasPyrosPowerOn => config?.hasPyrosPowerOn ?? false;
+  bool get armedPyrosPowerUp => config?.armedPyrosPowerUp ?? false;
   bool get enableBuzzer => config?.enableBuzzer ?? false;
-  int get minNeededPyroNb => config?.minNeededPyroNb ?? 0;
-  int get drogueFireAttemptMaxNb => config?.drogueFireAttemptMaxNb ?? 0;
-  int get mainFireAttemptMaxNb => config?.mainFireAttemptMaxNb ?? 0;
-  double get accZLaunchThreshold => config?.accZLaunchThreshold ?? 0.0;
-  double get boostPhaseVThreshold => config?.boostPhaseVThreshold ?? 0.0;
-  double get apogeeDetectVThreshold => config?.apogeeDetectVThreshold ?? 0.0;
-  int get apogeeDetectionMode => config?.apogeeDetectionMode ?? apogeeDetectionKalman;
-  bool get hasDescentRate => config?.hasDescentRate ?? false;
-  double get mainDeployAltitudeThresholdM => config?.mainDeployAltitudeThresholdM ?? 0.0;
-  double get descentRateVThreshold => config?.descentRateVThreshold ?? 0.0;
-  double get landingDetectVThreshold => config?.landingDetectVThreshold ?? 0.0;
+  int get buzzerLandingOutput => config?.buzzerLandingOutput ?? buzzerLandingOutputDisabled;
+  int get neededPyroNb => config?.neededPyroNb ?? 0;
+  int get drogueFireAttemptNb => config?.drogueFireAttemptNb ?? 0;
+  int get mainFireAttemptNb => config?.mainFireAttemptNb ?? 0;
+  double get zLaunchThresholdAcc => config?.zLaunchThresholdAcc ?? 0.0;
+  double get boostPhaseThresholdV => config?.boostPhaseThresholdV ?? 0.0;
+  double get apogeeDetectThresholdV => config?.apogeeDetectThresholdV ?? 0.0;
+  int get apogeeDetectionMode =>
+      config?.apogeeDetectionMode ?? apogeeDetectionKalman;
+  bool get enableEarlyDeployment => config?.enableEarlyDeployment ?? false;
+  double get mainDeployAltitudeThresholdM =>
+      config?.mainDeployAltitudeThresholdM ?? 0.0;
+  double get earlyDeploymentThresholdV => config?.earlyDeploymentThresholdV ?? 0.0;
   int get buzzerReportToneHz => config?.buzzerReportToneHz ?? 0;
-  int get landingDetectThresholdMs => config?.landingDetectThresholdMs ?? 0;
   int get fireAttemptDelayMs => config?.fireAttemptDelayMs ?? 0;
   double get pyrosArmingMinAltitudeM => config?.pyrosArmingMinAltitudeM ?? 0.0;
   int get apogeeFailsafeMs => config?.apogeeFailsafeMs ?? 0;
@@ -944,8 +948,8 @@ class DataServiceManager with ChangeNotifier {
     _safeNotifyListeners();
   }
 
-  set hasPyrosPowerOn(bool value) {
-    config = config?.copyWith(hasPyrosPowerOn: value);
+  set armedPyrosPowerUp(bool value) {
+    config = config?.copyWith(armedPyrosPowerUp: value);
     _safeNotifyListeners();
   }
 
@@ -954,38 +958,38 @@ class DataServiceManager with ChangeNotifier {
     _safeNotifyListeners();
   }
 
-  set minNeededPyroNb(int value) {
-    config = config?.copyWith(minNeededPyroNb: value);
+  set neededPyroNb(int value) {
+    config = config?.copyWith(neededPyroNb: value);
     _safeNotifyListeners();
   }
 
-  set drogueFireAttemptMaxNb(int value) {
-    config = config?.copyWith(drogueFireAttemptMaxNb: value);
+  set drogueFireAttemptNb(int value) {
+    config = config?.copyWith(drogueFireAttemptNb: value);
     _safeNotifyListeners();
   }
 
-  set mainFireAttemptMaxNb(int value) {
-    config = config?.copyWith(mainFireAttemptMaxNb: value);
+  set mainFireAttemptNb(int value) {
+    config = config?.copyWith(mainFireAttemptNb: value);
     _safeNotifyListeners();
   }
 
-  set hasDescentRate(bool value) {
-    config = config?.copyWith(hasDescentRate: value);
+  set enableEarlyDeployment(bool value) {
+    config = config?.copyWith(enableEarlyDeployment: value);
     _safeNotifyListeners();
   }
 
-  set accZLaunchThreshold(double value) {
-    config = config?.copyWith(accZLaunchThreshold: value);
+  set zLaunchThresholdAcc(double value) {
+    config = config?.copyWith(zLaunchThresholdAcc: value);
     _safeNotifyListeners();
   }
 
-  set boostPhaseVThreshold(double value) {
-    config = config?.copyWith(boostPhaseVThreshold: value);
+  set boostPhaseThresholdV(double value) {
+    config = config?.copyWith(boostPhaseThresholdV: value);
     _safeNotifyListeners();
   }
 
-  set apogeeDetectVThreshold(double value) {
-    config = config?.copyWith(apogeeDetectVThreshold: value);
+  set apogeeDetectThresholdV(double value) {
+    config = config?.copyWith(apogeeDetectThresholdV: value);
     _safeNotifyListeners();
   }
 
@@ -994,23 +998,13 @@ class DataServiceManager with ChangeNotifier {
     _safeNotifyListeners();
   }
 
-  set descentRateVThreshold(double value) {
-    config = config?.copyWith(descentRateVThreshold: value);
-    _safeNotifyListeners();
-  }
-
-  set landingDetectVThreshold(double value) {
-    config = config?.copyWith(landingDetectVThreshold: value);
+  set earlyDeploymentThresholdV(double value) {
+    config = config?.copyWith(earlyDeploymentThresholdV: value);
     _safeNotifyListeners();
   }
 
   set buzzerReportToneHz(int value) {
     config = config?.copyWith(buzzerReportToneHz: value);
-    _safeNotifyListeners();
-  }
-
-  set landingDetectThresholdMs(int value) {
-    config = config?.copyWith(landingDetectThresholdMs: value);
     _safeNotifyListeners();
   }
 
@@ -1026,6 +1020,11 @@ class DataServiceManager with ChangeNotifier {
 
   set apogeeDetectionMode(int value) {
     config = config?.copyWith(apogeeDetectionMode: value);
+    _safeNotifyListeners();
+  }
+  
+  set buzzerLandingOutput(int value) {
+    config = config?.copyWith(buzzerLandingOutput: value);
     _safeNotifyListeners();
   }
 
@@ -1085,19 +1084,30 @@ class DataServiceManager with ChangeNotifier {
 
   CalibrationState get highg6FacesCalibrationState {
     if (config == null) return CalibrationState.unknown;
-    return (calibStates & flagHighg6FacesOk) != 0 ? CalibrationState.valid : CalibrationState.dirty;
+    return (calibStates & flagHighg6FacesOk) != 0
+        ? CalibrationState.valid
+        : CalibrationState.dirty;
   }
+
   CalibrationState get highgTempCalibrationState {
     if (config == null) return CalibrationState.unknown;
-    return (calibStates & flagHighgTempOk) != 0 ? CalibrationState.valid : CalibrationState.dirty;
+    return (calibStates & flagHighgTempOk) != 0
+        ? CalibrationState.valid
+        : CalibrationState.dirty;
   }
+
   CalibrationState get imu6FacesCalibrationState {
     if (config == null) return CalibrationState.unknown;
-    return (calibStates & flagImu6FacesOk) != 0 ? CalibrationState.valid : CalibrationState.dirty;
+    return (calibStates & flagImu6FacesOk) != 0
+        ? CalibrationState.valid
+        : CalibrationState.dirty;
   }
+
   CalibrationState get imuTempCalibrationState {
     if (config == null) return CalibrationState.unknown;
-    return (calibStates & flagImuTempOk) != 0 ? CalibrationState.valid : CalibrationState.dirty;
+    return (calibStates & flagImuTempOk) != 0
+        ? CalibrationState.valid
+        : CalibrationState.dirty;
   }
 
   bool get imuCalibrationValid =>
@@ -1242,7 +1252,7 @@ class DataServiceManager with ChangeNotifier {
 
     if (_isDrainingCanceledFlightData) {
       ConsoleService()
-          .log('Le téléchargement précédent est encore en cours d’arrêt.');
+          .log('Le téléchargement précédent est encore en cours d\'arrêt.');
       return;
     }
 
@@ -1271,7 +1281,13 @@ class DataServiceManager with ChangeNotifier {
       (id >> 24) & 0xFF,
     ];
 
-    await btService.sendBinary(cmdTypeAction, payload);
+    if (!await btService.sendBinary(cmdTypeAction, payload)) {
+      isLoadingFlightData = false;
+      _pendingFlightSave = null;
+      flightDataFlightId = null;
+      _safeNotifyListeners();
+      return;
+    }
     ConsoleService().log(
         'Demande de téléchargement des données du vol #${stats.flightId} envoyée.');
   }
@@ -1300,7 +1316,13 @@ class DataServiceManager with ChangeNotifier {
       return;
     }
 
-    await btService.sendBinary(cmdTypeAction, [actionCancelFlightData]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionCancelFlightData])) {
+      _isDrainingCanceledFlightData = false;
+      _pendingFlightSave = null;
+      flightDataFlightId = null;
+      _safeNotifyListeners();
+      return;
+    }
 
     Future<void>.delayed(const Duration(seconds: 5), () {
       if (!_isDrainingCanceledFlightData ||
@@ -1311,7 +1333,7 @@ class DataServiceManager with ChangeNotifier {
       flightDataFlightId = null;
       _isDrainingCanceledFlightData = false;
       ConsoleService()
-          .log('Délai d’arrêt dépassé; nouveau téléchargement autorisé.');
+          .log('Délai d\'arrêt dépassé; nouveau téléchargement autorisé.');
       _safeNotifyListeners();
     });
   }
@@ -1394,7 +1416,9 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionRefresh]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionRefresh])) {
+      ConsoleService().log('Échec de la demande de rafraîchissement ODB.');
+    }
   }
 
   Future<void> commandPing() async {
@@ -1402,7 +1426,9 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionPing]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionPing])) {
+      ConsoleService().log('Échec de la commande ping.');
+    }
   }
 
   Future<void> commandPlayMelody() async {
@@ -1410,7 +1436,7 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionPlayMelody]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionPlayMelody])) return;
     ConsoleService().log('Demande de lecture de la mélodie envoyée.');
   }
 
@@ -1419,7 +1445,9 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionArm, arm ? 1 : 0]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionArm, arm ? 1 : 0])) {
+      return;
+    }
   }
 
   Future<void> commandFire(int pyroIndex) async {
@@ -1427,7 +1455,9 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionFire, pyroIndex]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionFire, pyroIndex])) {
+      return;
+    }
   }
 
   Future<void> applyOdbSettings(OdbConfig newConfig) async {
@@ -1438,8 +1468,7 @@ class DataServiceManager with ChangeNotifier {
     if (newConfig.versionMajor != expectedConfigMajor ||
         newConfig.versionMinor != expectedConfigMinor) {
       hasVersionMismatch = true;
-      versionMismatchMessage =
-          'Configuration incompatible.\n'
+      versionMismatchMessage = 'Configuration incompatible.\n'
           'Configuration : v${newConfig.versionMajor}.${newConfig.versionMinor} | '
           'Application (Attendue) : v$expectedConfigMajor.$expectedConfigMinor';
       ConsoleService().log(
@@ -1454,12 +1483,12 @@ class DataServiceManager with ChangeNotifier {
       return;
     }
 
-    await btService.sendBinary(cmdTypeConfig, newConfig.toBytes());
+    if (!await btService.sendBinary(cmdTypeConfig, newConfig.toBytes())) return;
     ConsoleService().log('Envoi de la nouvelle configuration ...');
 
     await Future.delayed(const Duration(milliseconds: 200));
 
-    await btService.sendBinary(cmdTypeAction, [actionSaveConfig]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionSaveConfig])) return;
     ConsoleService()
         .log('Demande de sauvegarde Flash et de redémarrage envoyée.');
     await saveConfigHistory(newConfig);
@@ -1528,7 +1557,7 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionResetConfig]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionResetConfig])) return;
     ConsoleService()
         .log('Demande de réinitialisation de la configuration envoyée.');
   }
@@ -1538,7 +1567,9 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionResetFlights]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionResetFlights])) {
+      return;
+    }
     ConsoleService()
         .log('Demande de réinitialisation des données de vol envoyée.');
   }
@@ -1548,7 +1579,7 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionResetMemory]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionResetMemory])) return;
     ConsoleService().log('Demande de réinitialisation usine envoyée.');
   }
 
@@ -1566,14 +1597,20 @@ class DataServiceManager with ChangeNotifier {
     final requestId = ++_flightStatsRequestId;
     _safeNotifyListeners();
     ConsoleService().log('Demande des événements de tous les vols...');
-    await btService.sendBinary(cmdTypeAction, [actionRequestFlightStats]);
+    if (!await btService
+        .sendBinary(cmdTypeAction, [actionRequestFlightStats])) {
+      isLoadingFlightStats = false;
+      flightStatsError = 'Échec de l\'envoi de la demande de statistiques.';
+      _safeNotifyListeners();
+      return;
+    }
     Future<void>.delayed(const Duration(seconds: 300), () {
       if (isLoadingFlightStats && requestId == _flightStatsRequestId) {
         isLoadingFlightStats = false;
         flightStatsError =
             'Le délai de récupération des statistiques est dépassé.';
         ConsoleService()
-            .log('Échec: aucun retour de l’ODB pour les statistiques.');
+            .log('Échec: aucun retour de l\'ODB pour les statistiques.');
         _safeNotifyListeners();
       }
     });
@@ -1594,7 +1631,7 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionSetReady]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionSetReady])) return;
     ConsoleService().log('Demande de mise en départ envoyée.');
   }
 
@@ -1603,7 +1640,9 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionTestArmingModule]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionTestArmingModule])) {
+      return;
+    }
     ConsoleService().log('Demande de test du module d\'armement envoyée.');
   }
 
@@ -1612,7 +1651,10 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionTestPyrosContinuity]);
+    if (!await btService
+        .sendBinary(cmdTypeAction, [actionTestPyrosContinuity])) {
+      return;
+    }
     ConsoleService().log('Demande de test de la continuité des pyros envoyée.');
   }
 
@@ -1621,7 +1663,7 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionSetSubArmed]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionSetSubArmed])) return;
     ConsoleService().log('Demande de mise en sub armed envoyée.');
   }
 
@@ -1630,7 +1672,7 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionSetSubBoost]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionSetSubBoost])) return;
     ConsoleService().log('Demande de mise en sub boost envoyée.');
   }
 
@@ -1639,7 +1681,7 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionSetSubFast]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionSetSubFast])) return;
     ConsoleService().log('Demande de mise en sub fast envoyée.');
   }
 
@@ -1648,7 +1690,7 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionSetSubCoast]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionSetSubCoast])) return;
     ConsoleService().log('Demande de mise en sub coast envoyée.');
   }
 
@@ -1657,7 +1699,9 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionSetSubDrogue]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionSetSubDrogue])) {
+      return;
+    }
     ConsoleService().log('Demande de mise en sub drogue envoyée.');
   }
 
@@ -1666,7 +1710,7 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionSetSubMain]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionSetSubMain])) return;
     ConsoleService().log('Demande de mise en sub main envoyée.');
   }
 
@@ -1675,7 +1719,9 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionSetSubLanded]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionSetSubLanded])) {
+      return;
+    }
     ConsoleService().log('Demande de mise en sub landed envoyée.');
   }
 
@@ -1684,7 +1730,9 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionTestMachLock]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionTestMachLock])) {
+      return;
+    }
     ConsoleService().log('Demande de test mach lock envoyée.');
   }
 
@@ -1693,7 +1741,9 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionTestFlightFlash]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionTestFlightFlash])) {
+      return;
+    }
     ConsoleService().log('Demande de test du flash de vol envoyée.');
   }
 
@@ -1702,7 +1752,9 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionStartLogDataCSV]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionStartLogDataCSV])) {
+      return;
+    }
     ConsoleService().log('Demande de log CSV pour debug envoyée.');
   }
 
@@ -1711,7 +1763,9 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionStopLogDataCSV]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionStopLogDataCSV])) {
+      return;
+    }
     ConsoleService().log('Demande de log CSV pour debug envoyée.');
   }
 
@@ -1721,7 +1775,7 @@ class DataServiceManager with ChangeNotifier {
     isAccCalibBusy = false;
     accCalibFinishedSuccess = null;
     _safeNotifyListeners();
-    await btService.sendBinary(cmdTypeAction, [actionCalibAcc, 0]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionCalibAcc, 0])) return;
     ConsoleService().log('Session de calibration 6-faces démarrée.');
   }
 
@@ -1729,7 +1783,7 @@ class DataServiceManager with ChangeNotifier {
     if (!hasConnection) return;
     isAccCalibBusy = false;
     _safeNotifyListeners();
-    await btService.sendBinary(cmdTypeAction, [actionCalibAcc, 1]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionCalibAcc, 1])) return;
     ConsoleService().log('Capture de la face courante demandée.');
   }
 
@@ -1745,11 +1799,15 @@ class DataServiceManager with ChangeNotifier {
       builder.writeUint8(2);
       builder.writeFloat32(latitude);
       builder.writeFloat32(altitude);
-      await btService.sendBinary(cmdTypeAction, builder.toBytes());
+      if (!await btService.sendBinary(cmdTypeAction, builder.toBytes())) {
+        return;
+      }
     } else {
-      await btService.sendBinary(cmdTypeAction, [actionCalibAcc, 2]);
+      if (!await btService.sendBinary(cmdTypeAction, [actionCalibAcc, 2])) {
+        return;
+      }
     }
-    ConsoleService().log('Finalisation et calcul de l’optimisation demandés.');
+    ConsoleService().log('Finalisation et calcul de l\'optimisation demandés.');
   }
 
   Future<void> cancelAccCalibSession() async {
@@ -1758,7 +1816,9 @@ class DataServiceManager with ChangeNotifier {
     accCalibCapturedFaces = 0;
     accCalibFinishedSuccess = null;
     _safeNotifyListeners();
-    await btService.sendBinary(cmdTypeAction, [actionCalibAcc, 3]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionCalibAcc, 3])) {
+      return;
+    }
     ConsoleService().log('Session de calibration annulée.');
   }
 
@@ -1767,7 +1827,7 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionCalibBaro]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionCalibBaro])) return;
     ConsoleService().log('Demande de calibration du baromètre envoyée.');
   }
 
@@ -1776,7 +1836,9 @@ class DataServiceManager with ChangeNotifier {
       ConsoleService().log('Aucune connexion Bluetooth avec l\'ODB');
       return;
     }
-    await btService.sendBinary(cmdTypeAction, [actionAutoAxisProfile]);
+    if (!await btService.sendBinary(cmdTypeAction, [actionAutoAxisProfile])) {
+      return;
+    }
     ConsoleService().log('Demande de calibration du baromètre envoyée.');
   }
 
@@ -1897,7 +1959,7 @@ class DataServiceManager with ChangeNotifier {
         _safeNotifyListeners();
       }
     } else {
-      flightStatsError = 'Réponse de l’ODB invalide ($payloadLength octets).';
+      flightStatsError = 'Réponse de l\'ODB invalide ($payloadLength octets).';
       ConsoleService().log(
           'Erreur: Magic Number inconnu ou taille invalide ($payloadLength octets).');
       _safeNotifyListeners();
@@ -1912,7 +1974,7 @@ class DataServiceManager with ChangeNotifier {
       isLoadingFlightStats = false;
       if (status != 1 && flightStatsError == null) {
         flightStatsError =
-            'L’ODB n’a pas pu récupérer les statistiques en mémoire.';
+            'L\'ODB n\'a pas pu récupérer les statistiques en mémoire.';
       } else if (status == 1 && flightStats.isEmpty) {
         flightStatsError = null;
       }
@@ -1976,7 +2038,8 @@ class DataServiceManager with ChangeNotifier {
       isAccCalibBusy = false;
       if (bytes.length >= 3 && status == 1) {
         accCalibCapturedFaces = bytes[2];
-        ConsoleService().log('Face $accCalibCapturedFaces/6 capturée par l\'ODB.');
+        ConsoleService()
+            .log('Face $accCalibCapturedFaces/6 capturée par l\'ODB.');
       } else if (bytes.length == 2 && accCalibCapturedFaces == 6) {
         accCalibFinishedSuccess = (status == 1);
         accCalibCapturedFaces = 0;
@@ -2262,12 +2325,7 @@ extension DataServiceDisplay on DataServiceManager {
   String get altitudeMslDisplay =>
       hasConnection ? altitudeMslM.toStringAsFixed(2) : '—';
   String get barometricTrendDisplay {
-    final usesBarometricTrend =
-        apogeeDetectionMode == DataServiceManager.apogeeDetectionBarometric ||
-            (apogeeDetectionMode == DataServiceManager.apogeeDetectionAuto &&
-                stageRole == DataServiceManager.stageRoleBooster);
-    if (!usesBarometricTrend) return 'Indisponible';
-    if (!hasConnection || barometerSensorState != SensorState.ok) return '—';
+    if (!hasConnection || barometerSensorState != SensorState.ok) return 'Indisponible';
     switch (barometricTrend) {
       case 1:
         return 'Ascendante';

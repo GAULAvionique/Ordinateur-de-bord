@@ -26,27 +26,26 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
   final TextEditingController _odbNameController = TextEditingController();
   final TextEditingController _pyroDelayController = TextEditingController();
   final TextEditingController _pyroFailsafeController = TextEditingController();
-  final TextEditingController _minPyrosController = TextEditingController();
-  final TextEditingController _accLaunchController = TextEditingController();
+  final TextEditingController _neededPyroController = TextEditingController();
+  final TextEditingController _zLaunchAccController = TextEditingController();
   final TextEditingController _boostVController = TextEditingController();
   final TextEditingController _apogeeVController = TextEditingController();
-  final TextEditingController _landingVController = TextEditingController();
-  final TextEditingController _landingDelayController = TextEditingController();
   final TextEditingController _apogeeFailsafeController =
       TextEditingController();
-  final TextEditingController _descentRateVController = TextEditingController();
-  final TextEditingController _deployAltitudeController =
+  final TextEditingController _earlyDeploymentVController = TextEditingController();
+  final TextEditingController _mainDeployAltitudeController =
       TextEditingController();
-  final TextEditingController _maxDrogueController = TextEditingController();
-  final TextEditingController _maxMainController = TextEditingController();
+  final TextEditingController _drogueAttemptsController = TextEditingController();
+  final TextEditingController _mainAttemptsController = TextEditingController();
   final TextEditingController _idefixFrequencyController =
       TextEditingController();
   bool _debugMode = false;
   bool _flightTestMode = false;
   int _axisProfileValue = DataServiceManager.axisProfileP0;
-  bool _hasPyrosPowerOn = false;
-  bool _hasDescentRate = false;
+  bool _armedPyrosPowerUp = false;
+  bool _enableEarlyDeployment = false;
   bool _enableBuzzer = false;
+  int _buzzerLandingOutput = DataServiceManager.buzzerLandingOutputDisabled;
   double _buzzerToneHz = 100.0;
   int _stageRoleValue = DataServiceManager.stageRoleSustainer;
   int _apogeeDetectionMode = DataServiceManager.apogeeDetectionKalman;
@@ -108,17 +107,15 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
     _odbNameController.dispose();
     _pyroDelayController.dispose();
     _pyroFailsafeController.dispose();
-    _minPyrosController.dispose();
-    _accLaunchController.dispose();
+    _neededPyroController.dispose();
+    _zLaunchAccController.dispose();
     _boostVController.dispose();
     _apogeeVController.dispose();
-    _landingVController.dispose();
-    _landingDelayController.dispose();
     _apogeeFailsafeController.dispose();
-    _descentRateVController.dispose();
-    _deployAltitudeController.dispose();
-    _maxDrogueController.dispose();
-    _maxMainController.dispose();
+    _earlyDeploymentVController.dispose();
+    _mainDeployAltitudeController.dispose();
+    _drogueAttemptsController.dispose();
+    _mainAttemptsController.dispose();
     _idefixFrequencyController.dispose();
     _model.dispose();
 
@@ -132,24 +129,23 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
       data.debugMode,
       data.flightTestMode,
       data.axisProfile,
-      data.hasPyrosPowerOn,
+      data.armedPyrosPowerUp,
       data.enableBuzzer,
-      data.minNeededPyroNb,
-      data.drogueFireAttemptMaxNb,
-      data.mainFireAttemptMaxNb,
-      data.hasDescentRate,
-      data.accZLaunchThreshold,
-      data.boostPhaseVThreshold,
-      data.apogeeDetectVThreshold,
+      data.neededPyroNb,
+      data.drogueFireAttemptNb,
+      data.mainFireAttemptNb,
+      data.enableEarlyDeployment,
+      data.zLaunchThresholdAcc,
+      data.boostPhaseThresholdV,
+      data.apogeeDetectThresholdV,
       data.apogeeDetectionMode,
-      data.descentRateVThreshold,
+      data.earlyDeploymentThresholdV,
       data.mainDeployAltitudeThresholdM,
-      data.landingDetectVThreshold,
       data.buzzerReportToneHz,
-      data.landingDetectThresholdMs,
       data.fireAttemptDelayMs,
       data.pyrosArmingMinAltitudeM,
       data.apogeeFailsafeMs,
+      data.buzzerLandingOutput,
       data.idefixFrequencyHz,
       data.pyroRoles.join(','),
     ].join('|');
@@ -166,6 +162,15 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
       int.tryParse(value.trim()) ?? fallback;
   double _parseDouble(String value, double fallback) =>
       double.tryParse(value.trim().replaceAll(',', '.')) ?? fallback;
+
+  TextStyle _dropdownTextStyle(BuildContext context) {
+    final theme = FlutterFlowTheme.of(context);
+    return theme.bodyMedium.override(
+      font: GoogleFonts.inter(),
+      fontSize: 12.0,
+      letterSpacing: 0.0,
+    );
+  }
 
   Widget _buildStyledDropdown<T>({
     required BuildContext context,
@@ -199,6 +204,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<T>(
           value: value,
+          style: _dropdownTextStyle(context),
           isDense: true,
           isExpanded: true,
           iconSize: 20,
@@ -232,23 +238,22 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           _debugMode = false;
           _flightTestMode = false;
           _axisProfileValue = DataServiceManager.axisProfileP0;
-          _hasPyrosPowerOn = false;
-          _hasDescentRate = false;
+          _buzzerLandingOutput = DataServiceManager.buzzerLandingOutputDisabled;
+          _armedPyrosPowerUp = false;
+          _enableEarlyDeployment = false;
           _enableBuzzer = false;
           _buzzerToneHz = 100.0;
           _pyroDelayController.clear();
           _pyroFailsafeController.clear();
-          _minPyrosController.clear();
-          _accLaunchController.clear();
+          _neededPyroController.clear();
+          _zLaunchAccController.clear();
           _boostVController.clear();
           _apogeeVController.clear();
-          _landingVController.clear();
-          _landingDelayController.clear();
           _apogeeFailsafeController.clear();
-          _descentRateVController.clear();
-          _deployAltitudeController.clear();
-          _maxDrogueController.clear();
-          _maxMainController.clear();
+          _earlyDeploymentVController.clear();
+          _mainDeployAltitudeController.clear();
+          _drogueAttemptsController.clear();
+          _mainAttemptsController.clear();
           _idefixFrequencyController.clear();
           for (var i = 0; i < _pyroRoleValues.length; i++) {
             _pyroRoleValues[i] = 0;
@@ -282,31 +287,29 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         _debugMode = data.debugMode;
         _flightTestMode = data.flightTestMode;
         _axisProfileValue = data.axisProfile;
-        _hasPyrosPowerOn = data.hasPyrosPowerOn;
+        _armedPyrosPowerUp = data.armedPyrosPowerUp;
         _enableBuzzer = data.enableBuzzer;
+        _buzzerLandingOutput = data.buzzerLandingOutput;
         _buzzerToneHz = data.buzzerReportToneHz > 0
             ? data.buzzerReportToneHz.toDouble()
             : _buzzerToneHz;
         _pyroDelayController.text = data.fireAttemptDelayMs.toString();
         _pyroFailsafeController.text =
             data.pyrosArmingMinAltitudeM.toStringAsFixed(2);
-        _minPyrosController.text = data.minNeededPyroNb.toString();
-        _accLaunchController.text = data.accZLaunchThreshold.toStringAsFixed(2);
-        _boostVController.text = data.boostPhaseVThreshold.toStringAsFixed(2);
+        _neededPyroController.text = data.neededPyroNb.toString();
+        _zLaunchAccController.text = data.zLaunchThresholdAcc.toStringAsFixed(2);
+        _boostVController.text = data.boostPhaseThresholdV.toStringAsFixed(2);
         _apogeeVController.text =
-            data.apogeeDetectVThreshold.toStringAsFixed(2);
-        _descentRateVController.text =
-            data.descentRateVThreshold.toStringAsFixed(2);
+            data.apogeeDetectThresholdV.toStringAsFixed(2);
+        _earlyDeploymentVController.text =
+            data.earlyDeploymentThresholdV.toStringAsFixed(2);
         _apogeeDetectionMode = data.apogeeDetectionMode;
-        _hasDescentRate = data.hasDescentRate;
-        _landingVController.text =
-            data.landingDetectVThreshold.toStringAsFixed(2);
-        _landingDelayController.text = data.landingDetectThresholdMs.toString();
+        _enableEarlyDeployment = data.enableEarlyDeployment;
         _apogeeFailsafeController.text = data.apogeeFailsafeMs.toString();
-        _deployAltitudeController.text =
+        _mainDeployAltitudeController.text =
             data.mainDeployAltitudeThresholdM.toStringAsFixed(2);
-        _maxDrogueController.text = data.drogueFireAttemptMaxNb.toString();
-        _maxMainController.text = data.mainFireAttemptMaxNb.toString();
+        _drogueAttemptsController.text = data.drogueFireAttemptNb.toString();
+        _mainAttemptsController.text = data.mainFireAttemptNb.toString();
         _idefixFrequencyController.text = data.idefixFrequencyHz.toString();
         for (var i = 0; i < _pyroRoleValues.length; i++) {
           _pyroRoleValues[i] =
@@ -376,7 +379,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         ),
         _buildParameterDescription(
           context,
-          'Booster: étage propulsif. Sustainer: étage qui poursuit le vol après séparation.',
+          'Booster: étage propulsif\nSustainer: étage qui poursuit le vol après séparation',
         ),
       ],
     );
@@ -654,6 +657,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<int>(
                       value: currentValue,
+                      style: _dropdownTextStyle(context),
                       isDense: true,
                       isExpanded: true,
                       iconSize: 20,
@@ -891,27 +895,24 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
       onChanged: enabled ? onChanged : null,
       title: Text(
         title,
-        style: FlutterFlowTheme.of(context).bodyLarge.override(
+        style: FlutterFlowTheme.of(context).bodyMedium.override(
               font: GoogleFonts.inter(
-                fontWeight: FlutterFlowTheme.of(context).bodyLarge.fontWeight,
-                fontStyle: FlutterFlowTheme.of(context).bodyLarge.fontStyle,
+                fontWeight: FontWeight.w600,
+                fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
               ),
+              fontSize: 14.0,
               letterSpacing: 0.0,
-              fontWeight: FlutterFlowTheme.of(context).bodyLarge.fontWeight,
-              fontStyle: FlutterFlowTheme.of(context).bodyLarge.fontStyle,
+              fontWeight: FontWeight.w600,
+              fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
             ),
       ),
       subtitle: Text(
         subtitle,
         style: FlutterFlowTheme.of(context).bodySmall.override(
-              font: GoogleFonts.inter(
-                fontWeight: FlutterFlowTheme.of(context).bodySmall.fontWeight,
-                fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
-              ),
+              font: GoogleFonts.inter(),
               color: FlutterFlowTheme.of(context).secondaryText,
+              fontSize: 12.0,
               letterSpacing: 0.0,
-              fontWeight: FlutterFlowTheme.of(context).bodySmall.fontWeight,
-              fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
             ),
       ),
       activeThumbColor: FlutterFlowTheme.of(context).primary,
@@ -1070,7 +1071,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildSubsectionHeader(
-                  context, 'Identité de l’ordinateur de bord',
+                  context, 'Identité de l\nordinateur de bord',
                   icon: Icons.badge_outlined),
               _buildStageRoleDropdown(context, data: data, enabled: enabled),
               _buildSubsectionHeader(context, 'Modes de fonctionnement',
@@ -1079,7 +1080,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                 context,
                 title: 'Mode Debug',
                 subtitle:
-                    'Activé: fonctions et diagnostics de debug; désactivé: fonctionnement normal.',
+                    'Activé: fonctions et diagnostics de debug\nDésactivé: fonctionnement normal',
                 value: _debugMode,
                 enabled: enabled,
                 onChanged: (value) {
@@ -1093,7 +1094,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                 context,
                 title: 'Mode Test Flight',
                 subtitle:
-                    'Activé: simulation de vol sans déclenchement réel; désactivé: séquence de vol normale.',
+                    'Activé: simulation de vol sans déclenchement réel\nDésactivé: séquence de vol normale',
                 value: _flightTestMode,
                 enabled: enabled,
                 onChanged: (value) {
@@ -1151,7 +1152,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               ),
               _buildParameterDescription(
                 context,
-                'Pour chaque sortie: NA = inutilisée; M1 = parachute principal; D1 = drogue; M2 et D2 = sorties de secours correspondantes.',
+                'Pour chaque sortie:\nNA = inutilisée\nM1 = parachute principal\nD1 = drogue\nM2 et D2 = sorties de secours correspondantes',
               ),
               _buildSubsectionHeader(context, 'Sécurité et armement',
                   icon: Icons.shield_outlined),
@@ -1194,7 +1195,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                     'Nombre de pyros connectés requis pour autoriser le lancement.',
                 hintText: '',
                 keyboardType: TextInputType.number,
-                controller: _minPyrosController,
+                controller: _neededPyroController,
                 enabled: enabled,
                 onChanged: (_) {
                   safeSetState(() {
@@ -1206,14 +1207,14 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                 context,
                 title: 'Pyros armés au lancement',
                 subtitle:
-                    'Activé: lignes pyrotechniques armées au lancement; désactivé: coupé et armées dynamiquement pendant le vol.',
-                value: _hasPyrosPowerOn,
+                    'Activé: lignes pyrotechniques armées au lancement\nDésactivé: lignes pyrotechniques coupées et armées dynamiquement pendant le vol',
+                value: _armedPyrosPowerUp,
                 enabled: enabled,
                 onChanged: (value) {
                   safeSetState(() {
-                    _hasPyrosPowerOn = value;
+                    _armedPyrosPowerUp = value;
                   });
-                  data.hasPyrosPowerOn = value;
+                  data.armedPyrosPowerUp = value;
                 },
               ),
             ].divide(const SizedBox(height: 12.0)),
@@ -1377,12 +1378,12 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                 context,
                 label: 'Seuil accélération verticale lancement (m/s²)',
                 description:
-                    'Accélération verticale minimale qui valide le décollage.',
+                    'Accélération verticale minimale qui valide le décollage et amorce la phase de vol.',
                 hintText: '',
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                controller: _accLaunchController,
+                controller: _zLaunchAccController,
                 enabled: enabled,
                 onChanged: (_) {
                   safeSetState(() {
@@ -1411,7 +1412,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                 context,
                 label: 'Seuil vitesse détection apogée (m/s)',
                 description:
-                    'Vitesse verticale utilisée par les modes Auto et Kalman pour détecter l’apogée.',
+                    'Vitesse verticale utilisée par les modes Auto et Kalman pour détecter l\'apogée.',
                 hintText: '',
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -1428,19 +1429,19 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               ),
               _buildBooleanSetting(
                 context,
-                title: 'Taux de descente actif',
+                title: 'Deploiement précoce',
                 subtitle:
-                    'Active l\'utilisation du taux de descente pour la logique de vol.',
-                value: _hasDescentRate,
+                    'Déploiement des parachutes pendant la phase de descente si la vitesse est supérieure au seuil défini.',
+                value: _enableEarlyDeployment,
                 enabled: enabled,
                 onChanged: (value) {
                   safeSetState(() {
-                    _hasDescentRate = value;
+                    _enableEarlyDeployment = value;
                   });
-                  data.hasDescentRate = value;
+                  data.enableEarlyDeployment = value;
                 },
               ),
-              _buildSubsectionHeader(context, 'Détection de l’atterrissage',
+              _buildSubsectionHeader(context, 'Détection de l\'atterrissage',
                   icon: Icons.flight_land),
               _buildLabeledSettingField(
                 context,
@@ -1450,40 +1451,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                 hintText: '',
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
-                controller: _descentRateVController,
-                enabled: enabled && _hasDescentRate,
-                onChanged: (_) {
-                  safeSetState(() {
-                    _hasPendingTextEdits = true;
-                  });
-                },
-              ),
-              _buildLabeledSettingField(
-                context,
-                label: 'Seuil vitesse détection atterrissage (m/s)',
-                description:
-                    'Vitesse verticale maximale à maintenir pendant la durée de confirmation d\'atterrissage.',
-                hintText: '',
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                controller: _landingVController,
-                enabled: enabled,
-                onChanged: (_) {
-                  safeSetState(() {
-                    _hasPendingTextEdits = true;
-                  });
-                },
-              ),
-              _buildLabeledSettingField(
-                context,
-                label: 'Délai détection atterrissage (ms)',
-                description:
-                    'Durée pendant laquelle la vitesse doit rester sous le seuil avant de déclarer l\'atterrissage.',
-                hintText: '',
-                keyboardType: TextInputType.number,
-                controller: _landingDelayController,
-                enabled: enabled,
+                controller: _earlyDeploymentVController,
+                enabled: enabled && _enableEarlyDeployment,
                 onChanged: (_) {
                   safeSetState(() {
                     _hasPendingTextEdits = true;
@@ -1569,7 +1538,74 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         ),
         _buildParameterDescription(
           context,
-          'Auto: Kalman pour un sustainer et barométrique pour un booster; Kalman: vitesse filtrée; Barométrique: tendance d\'altitude descendante.',
+          'Auto: Kalman pour sustainer et barométrique pour booster\nKalman: vitesse filtrée [RECOMMANDÉE si altitude de l\'étage supérieure à 60 000 ft (18 288 m)]\nBarométrique: tendance d\'altitude descendante [RECOMMANDÉE si altitude de l\'étage inférieure à 60 000 ft (18288 m)]',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBuzzerLandingOutputDropdown(
+    BuildContext context, {
+    required DataServiceManager data,
+    required bool enabled,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              flex: 2,
+              child: Text(
+                'Sortie buzzer atterrissage',
+                softWrap: true,
+                style: FlutterFlowTheme.of(context).bodyMedium.override(
+                      font: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                      fontSize: 14.0,
+                    ),
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: _buildStyledDropdown<int>(
+                context: context,
+                value: _buzzerLandingOutput,
+                onChanged: enabled && _enableBuzzer
+                    ? (value) {
+                        if (value == null) return;
+                        safeSetState(() {
+                          _buzzerLandingOutput = value;
+                          _hasPendingTextEdits = true;
+                        });
+                        data.buzzerLandingOutput = value;
+                      }
+                    : null,
+                items: const [
+                  DropdownMenuItem<int>(
+                    value: DataServiceManager.buzzerLandingOutputDisabled,
+                    child: Text('Désactivée'),
+                  ),
+                  DropdownMenuItem<int>(
+                    value: DataServiceManager.buzzerLandingOutputAltitude,
+                    child: Text('Altitude'),
+                  ),
+                  DropdownMenuItem<int>(
+                    value: DataServiceManager.buzzerLandingOutputBips,
+                    child: Text('Bips'),
+                  ),
+                  DropdownMenuItem<int>(
+                    value: DataServiceManager.buzzerLandingOutputMusic,
+                    child: Text('Musique'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        _buildParameterDescription(
+          context,
+          'Désactivée: Aucune sortie de buzzer\nBips: Bips perdiodiques et continues\nAltitude: Bips basés sur l\'altitude maximale du vol\nMusique: Sortie musicale',
         ),
       ],
     );
@@ -1666,7 +1702,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                controller: _deployAltitudeController,
+                controller: _mainDeployAltitudeController,
                 enabled: enabled,
                 onChanged: (_) {
                   safeSetState(() {
@@ -1681,7 +1717,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                     'Nombre maximal de tentatives pour déclencher le parachute drogue.',
                 hintText: '',
                 keyboardType: TextInputType.number,
-                controller: _maxDrogueController,
+                controller: _drogueAttemptsController,
                 enabled: enabled,
                 onChanged: (_) {
                   safeSetState(() {
@@ -1696,7 +1732,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                     'Nombre maximal de tentatives pour déclencher le parachute principal.',
                 hintText: '',
                 keyboardType: TextInputType.number,
-                controller: _maxMainController,
+                controller: _mainAttemptsController,
                 enabled: enabled,
                 onChanged: (_) {
                   safeSetState(() {
@@ -1743,7 +1779,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                 context,
                 title: 'Buzzer',
                 subtitle:
-                    'Activé: rapports sonores de l\'ODB; désactivé: aucun rapport sonore.',
+                    'Activé: rétroactions sonores de l\'ODB\nDésactivé: aucune rétroaction sonore',
                 value: _enableBuzzer,
                 enabled: enabled,
                 onChanged: (value) {
@@ -1753,9 +1789,14 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                   data.enableBuzzer = value;
                 },
               ),
+              _buildBuzzerLandingOutputDropdown(
+                context,
+                data: data,
+                enabled: enabled,
+              ),
               _buildSliderSetting(
                 context,
-                label: 'Tonalité buzzer (Hz)',
+                label: 'Tonalité Repport (Hz)',
                 description:
                     'Fréquence sonore du buzzer lorsque les rapports audio sont activés.',
                 value: _buzzerToneHz,
@@ -2125,26 +2166,25 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                           debugMode: data.debugMode,
                           flightTestMode: data.flightTestMode,
                           axisProfile: data.axisProfile,
-                          hasPyrosPowerOn: data.hasPyrosPowerOn,
+                          armedPyrosPowerUp: data.armedPyrosPowerUp,
                           fireAttemptDelayMs: data.fireAttemptDelayMs,
                           pyrosArmingMinAltitudeM: data.pyrosArmingMinAltitudeM,
-                          minNeededPyroNb: data.minNeededPyroNb,
+                          neededPyroNb: data.neededPyroNb,
                           pyroRoles: data.pyroRoles,
                           apogeeDetectionMode: data.apogeeDetectionMode,
-                          hasDescentRate: data.hasDescentRate,
-                          accZLaunchThreshold: data.accZLaunchThreshold,
-                          boostPhaseVThreshold: data.boostPhaseVThreshold,
-                          apogeeDetectVThreshold: data.apogeeDetectVThreshold,
-                          descentRateVThreshold: data.descentRateVThreshold,
-                          landingDetectVThreshold: data.landingDetectVThreshold,
-                          landingDetectThresholdMs:
-                              data.landingDetectThresholdMs,
+                          enableEarlyDeployment: data.enableEarlyDeployment,
+                          zLaunchThresholdAcc: data.zLaunchThresholdAcc,
+                          boostPhaseThresholdV: data.boostPhaseThresholdV,
+                          apogeeDetectThresholdV: data.apogeeDetectThresholdV,
+                          earlyDeploymentThresholdV:
+                              data.earlyDeploymentThresholdV,
                           apogeeFailsafeMs: data.apogeeFailsafeMs,
                           mainDeployAltitudeThresholdM:
                               data.mainDeployAltitudeThresholdM,
-                          drogueFireAttemptMaxNb: data.drogueFireAttemptMaxNb,
-                          mainFireAttemptMaxNb: data.mainFireAttemptMaxNb,
+                          drogueFireAttemptNb: data.drogueFireAttemptNb,
+                          mainFireAttemptNb: data.mainFireAttemptNb,
                           enableBuzzer: data.enableBuzzer,
+                          buzzerLandingOutput: data.buzzerLandingOutput,
                           buzzerReportToneHz: data.buzzerReportToneHz,
                           idefixFrequencyHz: data.idefixFrequencyHz,
                         );
@@ -2154,36 +2194,31 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                       debugMode: _debugMode,
                       flightTestMode: _flightTestMode,
                       axisProfile: _axisProfileValue,
-                      hasPyrosPowerOn: _hasPyrosPowerOn,
+                      armedPyrosPowerUp: _armedPyrosPowerUp,
                       enableBuzzer: _enableBuzzer,
-                      minNeededPyroNb: _parseInt(
-                          _minPyrosController.text, data.minNeededPyroNb),
-                      drogueFireAttemptMaxNb: _parseInt(
-                          _maxDrogueController.text,
-                          data.drogueFireAttemptMaxNb),
-                      mainFireAttemptMaxNb: _parseInt(
-                          _maxMainController.text, data.mainFireAttemptMaxNb),
-                      accZLaunchThreshold: _parseDouble(
-                          _accLaunchController.text, data.accZLaunchThreshold),
-                      boostPhaseVThreshold: _parseDouble(
-                          _boostVController.text, data.boostPhaseVThreshold),
-                      apogeeDetectVThreshold: _parseDouble(
-                          _apogeeVController.text, data.apogeeDetectVThreshold),
-                      descentRateVThreshold: _parseDouble(
-                          _descentRateVController.text,
-                          data.descentRateVThreshold),
+                      buzzerLandingOutput: _buzzerLandingOutput,
+                      neededPyroNb: _parseInt(
+                          _neededPyroController.text, data.neededPyroNb),
+                      drogueFireAttemptNb: _parseInt(
+                          _drogueAttemptsController.text,
+                          data.drogueFireAttemptNb),
+                      mainFireAttemptNb: _parseInt(
+                          _mainAttemptsController.text, data.mainFireAttemptNb),
+                      zLaunchThresholdAcc: _parseDouble(
+                          _zLaunchAccController.text, data.zLaunchThresholdAcc),
+                      boostPhaseThresholdV: _parseDouble(
+                          _boostVController.text, data.boostPhaseThresholdV),
+                      apogeeDetectThresholdV: _parseDouble(
+                          _apogeeVController.text, data.apogeeDetectThresholdV),
+                      earlyDeploymentThresholdV: _parseDouble(
+                          _earlyDeploymentVController.text,
+                          data.earlyDeploymentThresholdV),
                       apogeeDetectionMode: _apogeeDetectionMode,
-                      hasDescentRate: _hasDescentRate,
+                      enableEarlyDeployment: _enableEarlyDeployment,
                       mainDeployAltitudeThresholdM: _parseDouble(
-                          _deployAltitudeController.text,
+                          _mainDeployAltitudeController.text,
                           data.mainDeployAltitudeThresholdM),
-                      landingDetectVThreshold: _parseDouble(
-                          _landingVController.text,
-                          data.landingDetectVThreshold),
                       buzzerReportToneHz: _buzzerToneHz.round(),
-                      landingDetectThresholdMs: _parseInt(
-                          _landingDelayController.text,
-                          data.landingDetectThresholdMs),
                       fireAttemptDelayMs: _parseInt(
                           _pyroDelayController.text, data.fireAttemptDelayMs),
                       pyrosArmingMinAltitudeM: _parseDouble(
@@ -2242,7 +2277,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
       _buildCategoryHeader(
         context,
         'Configuration générale',
-        'Identité, rôle et modes de fonctionnement de l’ordinateur de bord.',
+        'Identité, rôle et modes de fonctionnement de l\'ordinateur de bord.',
       ),
       _buildProfileSection(
         context,
@@ -2288,7 +2323,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
       _buildCategoryHeader(
         context,
         'Communication et interface',
-        'Modules externes et retour audio de l’ordinateur de bord.',
+        'Modules externes et retour audio de l\'ordinateur de bord.',
       ),
       _buildIdefixSection(
         context,

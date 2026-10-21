@@ -17,6 +17,7 @@
 #define GRAVITY_MS2 			9.80665f	// m/s2
 #define G_TO_MS2(g) 			((GRAVITY_MS2) * (g))
 #define PRESSURE_SEA_LEVEL_HPA	1013.25f    // hPa
+#define ACC_MAX_SWITCH_G		29.42f		// 3.0G
 
 #define DEBUG_PRINTF(...) do { \
     if(current_config.debug_mode == STATE_TRUE) { \
@@ -72,6 +73,8 @@ typedef struct {
 void RunTimer_Init(runTimer_t *dev);
 void RunTimer_Update(runTimer_t *dev);
 int printt(const char *format, ...);
+
+void Utils_MovingAverage(uint32_t *values, uint32_t size, uint8_t window_size, uint32_t *average);
 /* =========== */
 
 /* === DEBUG === */

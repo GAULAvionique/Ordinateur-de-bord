@@ -32,6 +32,7 @@ typedef enum {
     CONFIG_ERR_THRESHOLDS 				= -9,
 	CONFIG_ERR_ALTITUDE_LIMIT 			= -10,
 	CONFIG_ERR_APOGEE_DETECTION_MODE 	= -11,
+    CONFIG_ERR_BUZZER_CONFIG		   	= -12,
 } config_error_t;
 extern odb_config_t current_config;
 
@@ -39,7 +40,6 @@ int8_t Config_Init(void);
 int8_t Config_SaveToFlash(void);
 void Config_LoadDefaults(void);
 const odb_config_t* Config_Get(void);
-bool Config_CheckCrc(const odb_config_t *config);
 void Config_ResetTransaction(void);
 
 int Config_Erase(void);

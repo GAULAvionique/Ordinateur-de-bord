@@ -14,7 +14,7 @@
 
 /* === Protocol Versioning === */
 #define CONFIG_PROTOCOL_VERSION_MAJOR 2
-#define CONFIG_PROTOCOL_VERSION_MINOR 5
+#define CONFIG_PROTOCOL_VERSION_MINOR 8
 
 /* === CALIBRATION STATES === */
 #define FLAG_IMU_TEMP_OK  		(1 << 3)
@@ -70,10 +70,19 @@ typedef enum {
 /* === Apogee Detection Mode === */
 typedef enum {
 	APOGEE_DETECTION_AUTO 		= 0,
-    APOGEE_DETECTION_KALMAN 	= 1,
-    APOGEE_DETECTION_BAROMETRIC = 2,
+    APOGEE_DETECTION_KALMAN,
+    APOGEE_DETECTION_BAROMETRIC,
 	APOGEE_DETECTION_MAX
 } apogee_detection_mode_t;
+
+/* === Buzzer Landing Output === */
+typedef enum {
+	BUZZER_OUTPUT_DISABLED = 0,
+	BUZZER_OUTPUT_ALTITUDE,
+	BUZZER_OUTPUT_BIPS,
+	BUZZER_OUTPUT_MUSIC,
+	BUZZER_OUTPUT_MAX
+} buzzer_landing_output;
 
 /* === Configuration Structure === */
 typedef struct __attribute__((packed)) {
@@ -100,30 +109,29 @@ typedef struct __attribute__((packed)) {
     uint8_t				calib_states;	// Current calibration (6faces/temp) states
 
     // Pyros
-    uint8_t				has_pyros_power_up;
+    uint8_t				armed_pyros_power_up;
     uint32_t 			fire_attempt_delay_ms;
     float	 			pyros_arming_min_altitude_m;
-    uint8_t 			min_needed_pyro_nb;
+    uint8_t 			needed_pyro_nb;
     uint8_t 			pyro_roles[CONFIG_PYRO_COUNT];
 
     // Phase
     uint8_t 			apogee_detection_mode; // 0 = AUTO, 1 = KALMAN, 2 = BAROMETRIC
-    uint8_t				has_descent_rate;
-    float 				acc_z_launch_threshold;
-    float 				boost_phase_v_threshold;
-    float 				apogee_detect_v_threshold;
-    float				descent_v_threshold;
-    float 				landing_detect_v_threshold;
-    uint32_t 			landing_detect_threshold_ms;
+    uint8_t				enable_early_deployment;
+    float 				z_launch_threshold_acc;
+    float 				boost_phase_threshold_v;
+    float 				apogee_detect_threshold_v;
+    float				early_deployment_threshold_v;
     uint32_t 			apogee_failsafe_ms;
 
     // Parachute
     float 				main_deploy_altitude_threshold_m;
-    uint8_t 			drogue_fire_attempt_max_nb;
-    uint8_t 			main_fire_attempt_max_nb;
+    uint8_t 			drogue_fire_attempt_nb;
+    uint8_t 			main_fire_attempt_nb;
 
     // Buzzer
     uint8_t 			enable_buzzer;
+    uint8_t				buzzer_landing_output; // 0 = DISABLE, 1 = ALTITUDE, 2 = MUSIC
     uint16_t 			buzzer_report_tone_hz;
 
     // IdeFIX
@@ -132,7 +140,7 @@ typedef struct __attribute__((packed)) {
     // Integrity
     uint32_t			crc32;
 
-    // TOTAL 130
+    // TOTAL 123
     // Empty data to reach ... bytes
 	//uint8_t padding[0];
 } odb_config_t;

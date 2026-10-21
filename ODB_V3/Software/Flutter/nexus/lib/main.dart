@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import 'flutter_flow/flutter_flow_util.dart';
 import 'index.dart';
@@ -72,6 +73,12 @@ class MyAppState extends State<MyApp> {
     return ThemeData(
       brightness: brightness,
       colorScheme: colorScheme,
+      textTheme: GoogleFonts.interTextTheme(
+        ThemeData(brightness: brightness).textTheme,
+      ).apply(
+        bodyColor: colors.primaryText,
+        displayColor: colors.primaryText,
+      ),
       scaffoldBackgroundColor: colors.primaryBackground,
       dialogTheme: DialogThemeData(
         backgroundColor: colors.secondaryBackground,

@@ -21,6 +21,7 @@
 
 #define STATIC_ACC_Z_THRESHOLD 6.0f
 
+
 extern buzzer_t buzzer;
 extern odb_data_t flight_data;
 extern odb_stats_t flight_stats;
@@ -37,7 +38,6 @@ volatile bool is_force_flight = false;
 
 static uint32_t fire_timer = 0;
 static uint32_t flight_duration = 0;
-static uint32_t landing_timer = 0;
 static uint8_t fire_attempt_count = 0;
 
 static bool sustainer_ignited = false;
@@ -123,7 +123,7 @@ void FSM_Update(void) {
         	switch(current_preflight_substate) {
         		case SUB_STATIC_ORIENTED:
         			// Security : stability check, orientation
-					bool is_static = (fabs(flight_data.kalman_v) < current_config.landing_detect_v_threshold);
+					bool is_static = (flight_data.barometric_trend == ALTITUDE_TREND_STABLE);
 					bool is_oriented_up = flight_data.imu_acc_z > STATIC_ACC_Z_THRESHOLD;
 					if(is_static && is_oriented_up) {
 						if(current_config.flight_test_mode == STATE_TRUE) {
@@ -143,7 +143,7 @@ void FSM_Update(void) {
 
     			case SUB_PYROS_TEST:
     				// Security : pyros
-					bool pyros_ok = (ODB_GetPyroStates(&flight_data) >= current_config.min_needed_pyro_nb);
+					bool pyros_ok = (ODB_GetPyroStates(&flight_data) >= current_config.needed_pyro_nb);
 					bool arm_ok = (flight_data.system_states & FLAG_PYROS_ARMED_OK) != 0;
     				if(pyros_ok && arm_ok) {
     					current_preflight_substate = SUB_WAITING_FLIGHT;
@@ -168,7 +168,9 @@ void FSM_Update(void) {
 						}
 
 						Pyro_SetContinuity(false);
-						Pyro_Arming(&system_measurements, false, false);
+						if(current_config.armed_pyros_power_up == STATE_FALSE) {
+							Pyro_Arming(&system_measurements, false, false);
+						}
 
 						current_global_state = STATE_ARMED;
 						flight_stats.fsm_trans.armed = HAL_GetTick();
@@ -179,7 +181,7 @@ void FSM_Update(void) {
         	break;
 
         case STATE_ARMED:
-            if(flight_data.highg_acc_z > current_config.acc_z_launch_threshold || is_force_flight) {
+            if(flight_data.highg_acc_z > current_config.z_launch_threshold_acc || is_force_flight) {
 				if(current_config.flight_test_mode == STATE_FALSE) {
                 	Scheduler_SetActive("BTRx", false);
                 	Scheduler_SetActive("BTTx", false);
@@ -204,7 +206,7 @@ void FSM_Update(void) {
             switch(current_inflight_substate) {
                 case SUB_BOOST:
                     // Wait for boost phase detection
-                	if(flight_data.kalman_v >= current_config.boost_phase_v_threshold) {
+                	if(flight_data.kalman_v >= current_config.boost_phase_threshold_v) {
 						flight_stats.mach_lock.activated = STATE_TRUE;
                 	    if(flight_stats.mach_lock.start_time_ms == 0) {
                 	        flight_stats.mach_lock.start_time_ms = HAL_GetTick() - flight_stats.flight_start_time_ms;
@@ -218,7 +220,7 @@ void FSM_Update(void) {
                 case SUB_FAST:
                     // Wait for fast ascent detection
                 	// TODO: add pyros_arming_min_altitude_m
-	                if(flight_data.kalman_v < current_config.boost_phase_v_threshold) {
+	                if(flight_data.kalman_v < current_config.boost_phase_threshold_v) {
 						flight_stats.mach_lock.activated = STATE_FALSE;
 						flight_stats.mach_lock.end_time_ms = HAL_GetTick() - flight_stats.flight_start_time_ms;
 						current_inflight_substate = SUB_COAST;
@@ -231,7 +233,7 @@ void FSM_Update(void) {
                 case SUB_COAST:
                     // Wait for apogee detection
                 	// TODO: add pyros_arming_min_altitude_m
-                	if(current_config.stage_role == STAGE_ROLE_SUSTAINER && !sustainer_ignited && flight_data.highg_acc_z > current_config.acc_z_launch_threshold) {
+                	if(current_config.stage_role == STAGE_ROLE_SUSTAINER && !sustainer_ignited && flight_data.highg_acc_z > current_config.z_launch_threshold_acc) {
                 		// cyclic inflight substate for sustainer
                 		sustainer_ignited = true;
 						current_inflight_substate = SUB_BOOST;
@@ -248,14 +250,14 @@ void FSM_Update(void) {
 					switch(current_config.apogee_detection_mode) {
 						case APOGEE_DETECTION_AUTO:
 							if(current_config.stage_role == STAGE_ROLE_SUSTAINER) {
-								nominal_apogee = (flight_data.kalman_v < current_config.apogee_detect_v_threshold);
+								nominal_apogee = (flight_data.kalman_v < current_config.apogee_detect_threshold_v);
 							} else {
 								nominal_apogee = (flight_data.barometric_trend == ALTITUDE_TREND_DESCENDING);
 							}
 							break;
 
 						case APOGEE_DETECTION_KALMAN:
-							nominal_apogee = (flight_data.kalman_v < current_config.apogee_detect_v_threshold);
+							nominal_apogee = (flight_data.kalman_v < current_config.apogee_detect_threshold_v);
 							break;
 
 						case APOGEE_DETECTION_BAROMETRIC:
@@ -284,15 +286,17 @@ void FSM_Update(void) {
 						backup_active = false;
 
 						// Arming Drogue
-						if(!flight_stats.mach_lock.activated) {
-							pyro_t *drogue = Pyro_GetByRole(PYRO_ROLE_DROGUE);
-							if(drogue && !Pyro_IsArmed(&system_measurements) && current_config.flight_test_mode == STATE_FALSE) {
-								Pyro_Arming(&system_measurements, true, false);
-							}
+						if(current_config.armed_pyros_power_up == STATE_FALSE) {
+							if(!flight_stats.mach_lock.activated) {
+								pyro_t *drogue = Pyro_GetByRole(PYRO_ROLE_DROGUE);
+								if(drogue && !Pyro_IsArmed(&system_measurements) && current_config.flight_test_mode == STATE_FALSE) {
+									Pyro_Arming(&system_measurements, true, false);
+								}
 
-							pyro_t *drogue_backup = Pyro_GetByRole(PYRO_ROLE_DROGUE_BACKUP);
-							if(drogue_backup && !Pyro_IsArmed(&system_measurements) && current_config.flight_test_mode == STATE_FALSE) {
-								Pyro_Arming(&system_measurements, true, false);
+								pyro_t *drogue_backup = Pyro_GetByRole(PYRO_ROLE_DROGUE_BACKUP);
+								if(drogue_backup && !Pyro_IsArmed(&system_measurements) && current_config.flight_test_mode == STATE_FALSE) {
+									Pyro_Arming(&system_measurements, true, false);
+								}
 							}
 						}
 					}
@@ -300,7 +304,12 @@ void FSM_Update(void) {
 
 				case SUB_DROGUE:
 					// Wait for drogue deployment detection
-					FSM_HandleDeployment(PYRO_ROLE_DROGUE, PYRO_ROLE_DROGUE_BACKUP, &flight_stats.drogue_deploy, current_config.drogue_fire_attempt_max_nb);
+					FSM_HandleDeployment(PYRO_ROLE_DROGUE, PYRO_ROLE_DROGUE_BACKUP, &flight_stats.drogue_deploy, current_config.drogue_fire_attempt_nb);
+
+					// Early deployment if speed exceed normal descent rate
+					if(current_config.enable_early_deployment == STATE_TRUE && flight_data.kalman_v <= current_config.early_deployment_threshold_v) {
+						FSM_HandleDeployment(PYRO_ROLE_MAIN, PYRO_ROLE_MAIN_BACKUP, &flight_stats.main_deploy, current_config.main_fire_attempt_nb);
+					}
 
 					if(flight_data.kalman_z <= current_config.main_deploy_altitude_threshold_m) {
 						current_inflight_substate = SUB_MAIN;
@@ -311,15 +320,18 @@ void FSM_Update(void) {
 						fire_attempt_count = 0;
 						backup_active = false;
 
-						if(!flight_stats.mach_lock.activated) {
-							pyro_t *main = Pyro_GetByRole(PYRO_ROLE_MAIN);
-							if(main && !Pyro_IsArmed(&system_measurements) && current_config.flight_test_mode == STATE_FALSE) {
-								Pyro_Arming(&system_measurements, true, false);
-							}
+						// Arming Drogue
+						if(current_config.armed_pyros_power_up == STATE_FALSE) {
+							if(!flight_stats.mach_lock.activated) {
+								pyro_t *main = Pyro_GetByRole(PYRO_ROLE_MAIN);
+								if(main && !Pyro_IsArmed(&system_measurements) && current_config.flight_test_mode == STATE_FALSE) {
+									Pyro_Arming(&system_measurements, true, false);
+								}
 
-							pyro_t *main_backup = Pyro_GetByRole(PYRO_ROLE_MAIN_BACKUP);
-							if(main_backup && !Pyro_IsArmed(&system_measurements) && current_config.flight_test_mode == STATE_FALSE) {
-								Pyro_Arming(&system_measurements, true, false);
+								pyro_t *main_backup = Pyro_GetByRole(PYRO_ROLE_MAIN_BACKUP);
+								if(main_backup && !Pyro_IsArmed(&system_measurements) && current_config.flight_test_mode == STATE_FALSE) {
+									Pyro_Arming(&system_measurements, true, false);
+								}
 							}
 						}
 					}
@@ -327,19 +339,20 @@ void FSM_Update(void) {
 
 				case SUB_MAIN:
 					// Wait for main deployment detection
-					FSM_HandleDeployment(PYRO_ROLE_MAIN, PYRO_ROLE_MAIN_BACKUP, &flight_stats.main_deploy, current_config.main_fire_attempt_max_nb);
+					FSM_HandleDeployment(PYRO_ROLE_MAIN, PYRO_ROLE_MAIN_BACKUP, &flight_stats.main_deploy, current_config.main_fire_attempt_nb);
 
-					if(fabs(flight_data.kalman_v) < current_config.landing_detect_v_threshold) {
-						if(landing_timer == 0) landing_timer = HAL_GetTick() - flight_stats.flight_start_time_ms;
-						if(HAL_GetTick() - landing_timer > current_config.landing_detect_threshold_ms) {
-							Pyro_Arming(&system_measurements, false, false);
+					// Early deployment if speed exceed normal descent rate
+					if(current_config.enable_early_deployment == STATE_TRUE && flight_data.kalman_v <= current_config.early_deployment_threshold_v) {
+						FSM_HandleDeployment(PYRO_ROLE_MAIN, PYRO_ROLE_MAIN_BACKUP, &flight_stats.main_deploy, current_config.main_fire_attempt_nb);
+					}
 
-							current_inflight_substate = SUB_LANDED;
-							flight_stats.fsm_trans.inflight_landed = HAL_GetTick() - flight_stats.flight_start_time_ms;
-							ODB_SetMissionState(&flight_data, STATE_INFLIGHT, SUB_LANDED);
-						}
-					} else {
-						landing_timer = 0;
+					// Wait until barometer detect stability
+					if(flight_data.barometric_trend == ALTITUDE_TREND_STABLE) {
+						Pyro_Arming(&system_measurements, false, false);
+
+						current_inflight_substate = SUB_LANDED;
+						flight_stats.fsm_trans.inflight_landed = HAL_GetTick() - flight_stats.flight_start_time_ms;
+						ODB_SetMissionState(&flight_data, STATE_INFLIGHT, SUB_LANDED);
 					}
 					break;
 
@@ -369,7 +382,16 @@ void FSM_Update(void) {
 			break;
 
 		case STATE_POSTFLIGHT:
-			Buzzer_ProcessPeriodicBip(&buzzer);
+			// TODO: add periodic timer to start routine and give some rest for others tasks (blocking)
+			if(current_config.buzzer_landing_output == BUZZER_OUTPUT_DISABLED) {
+				break;
+			} else if(current_config.buzzer_landing_output == BUZZER_OUTPUT_ALTITUDE) {
+
+			} else if(current_config.buzzer_landing_output == BUZZER_OUTPUT_BIPS) {
+				Buzzer_ProcessPeriodicBip(&buzzer);
+			} else if(current_config.buzzer_landing_output == BUZZER_OUTPUT_MUSIC) {
+				//Buzzer_PlayMelody(&buzzer, ram_ranch_solo, RAM_RANCH_SOLO_NOTE_COUNT, 3);
+			}
 			break;
 	}
 }

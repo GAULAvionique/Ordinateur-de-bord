@@ -10,27 +10,18 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 
 extern w25q_t w25q;
 odb_config_t current_config;
 
-enum {
-	CONFIG_PYRO_NEEDED_MIN = 1U,
-	CONFIG_PYRO_ATTEMPTS_MIN = 1U
-};
+static const float min_config_z_launch_acc = 0.0f;
+static const float max_config_z_launch_acc = 39.24f;
+static const float min_config_main_deploy_alt_m = 50.0f;
+static const float max_config_apogee_detect_v = 0.0f;
+static const float max_config_early_deployment_v = -100.0f;
+static const uint8_t max_config_pyro_attempts_nb = 5;
 
-static const float config_acc_z_launch_min_ms2 = 0.0f;
-static const float config_acc_z_launch_max_ms2 = 39.24f;
-static const float config_main_deploy_alt_min_m = 50.0f;
-static const float config_apogee_detect_v_max_ms = 0.0f;
-
-static uint32_t Config_CalculateCrc(const odb_config_t *config) {
-	return Utils_Crc32Calculate(config, offsetof(odb_config_t, crc32));
-}
-
-bool Config_CheckCrc(const odb_config_t *config) {
-	return config != NULL && Utils_Crc32Validate(config, offsetof(odb_config_t, crc32), config->crc32);
-}
 
 // Default configuration
 const odb_config_t default_config = {
@@ -63,10 +54,10 @@ const odb_config_t default_config = {
 	.calib_states = FLAG_CALIB_RESET,
 
     // Pyros
-	.has_pyros_power_up = STATE_TRUE,
+	.armed_pyros_power_up = STATE_TRUE,
     .fire_attempt_delay_ms = 250,
     .pyros_arming_min_altitude_m = 450,
-    .min_needed_pyro_nb = 2,
+    .needed_pyro_nb = 2,
     .pyro_roles = {
         PYRO_ROLE_MAIN,          // Pyro 1
         PYRO_ROLE_DROGUE,        // Pyro 2
@@ -76,19 +67,17 @@ const odb_config_t default_config = {
 
     // Phase
 	.apogee_detection_mode = APOGEE_DETECTION_KALMAN,	// Kalman
-	.has_descent_rate = STATE_FALSE,
-    .acc_z_launch_threshold = 29.42f, 					// m/s2 (3.0G)
-    .boost_phase_v_threshold = 100.0f,					// m/s
-    .apogee_detect_v_threshold = -5.0f,					// m/s
-	.descent_v_threshold = -150.0f,						// m/s
-    .landing_detect_v_threshold = 5.0f,					// m/s
-    .landing_detect_threshold_ms = 10000,				// ms
+	.enable_early_deployment = STATE_TRUE,
+    .z_launch_threshold_acc = 29.42f, 					// m/s2 (3.0G)
+    .boost_phase_threshold_v = 100.0f,					// m/s
+    .apogee_detect_threshold_v = -5.0f,					// m/s
+	.early_deployment_threshold_v = -65.0f,				// m/s
     .apogee_failsafe_ms = 60000,						// ms
 
     // Parachute
     .main_deploy_altitude_threshold_m = 450.0f,
-    .drogue_fire_attempt_max_nb = 3,
-    .main_fire_attempt_max_nb = 3,
+    .drogue_fire_attempt_nb = 3,
+    .main_fire_attempt_nb = 3,
 
     // Buzzer
 	.enable_buzzer = STATE_FALSE,
@@ -118,6 +107,7 @@ static config_error_t Config_ValidateFields(const odb_config_t* new_config) {
     	if(new_config->odb_name[0] == ' ') {
     		return CONFIG_ERR_ODB_NAME;
     	}
+
     	/* Validate Stage Role */
 		if(new_config->stage_role != STAGE_ROLE_BOOSTER && new_config->stage_role != STAGE_ROLE_SUSTAINER) {
 			return CONFIG_ERR_STAGE_ROLE;
@@ -129,17 +119,17 @@ static config_error_t Config_ValidateFields(const odb_config_t* new_config) {
 		}
 
 		/* Validate Timings */
-		if(new_config->fire_attempt_delay_ms <= 0.0f) {
+		if(new_config->fire_attempt_delay_ms < 0.0f) {
 			return CONFIG_ERR_TIMING_CONFLICT;
 		}
 
-		/* Validate Fail-safes*/
+		/* Validate Fail-safes Pyros */
 		if(new_config->pyros_arming_min_altitude_m <= 0.0f) {
 			return CONFIG_ERR_ALTITUDE_LIMIT;
 		}
 
 		/* Validate Pyro Configuration */
-		if(new_config->min_needed_pyro_nb < CONFIG_PYRO_NEEDED_MIN || new_config->min_needed_pyro_nb > CONFIG_PYRO_COUNT) {
+		if(new_config->needed_pyro_nb < 1 || new_config->needed_pyro_nb > CONFIG_PYRO_COUNT) {
 			return CONFIG_ERR_PYRO_LIMITS;
 		}
 
@@ -154,27 +144,44 @@ static config_error_t Config_ValidateFields(const odb_config_t* new_config) {
 			return CONFIG_ERR_PYRO_ROLE;
 		}
 
-		if(new_config->main_fire_attempt_max_nb < CONFIG_PYRO_ATTEMPTS_MIN || new_config->drogue_fire_attempt_max_nb < CONFIG_PYRO_ATTEMPTS_MIN) {
+		/* Validate Apogee Detection Mode */
+		if(new_config->apogee_detection_mode >= APOGEE_DETECTION_MAX || new_config->apogee_detection_mode < APOGEE_DETECTION_AUTO) {
+			return CONFIG_ERR_APOGEE_DETECTION_MODE;
+		}
+
+		/* Validate Acceleration Launch Thresholds */
+		if(new_config->z_launch_threshold_acc <= min_config_z_launch_acc || new_config->z_launch_threshold_acc >= max_config_z_launch_acc) {
+			return CONFIG_ERR_THRESHOLDS;
+		}
+
+		/* Validate Boost Velocity Thresholds */
+		if(new_config->boost_phase_threshold_v <= 0.0f) {
+			return CONFIG_ERR_THRESHOLDS;
+		}
+
+		/* Validate Apogee Velocity Thresholds */
+		if(new_config->apogee_detect_threshold_v > max_config_apogee_detect_v) {
+			return CONFIG_ERR_THRESHOLDS;
+		}
+
+		/* Validate Early Deployment Velocity Thresholds */
+		if(new_config->early_deployment_threshold_v < max_config_early_deployment_v || new_config->early_deployment_threshold_v >= new_config->apogee_detect_threshold_v) {
+			return CONFIG_ERR_THRESHOLDS;
+		}
+
+		/* Validate Apogee Altitude Thresholds */
+		if(new_config->main_deploy_altitude_threshold_m < min_config_main_deploy_alt_m) {
+			return CONFIG_ERR_THRESHOLDS;
+		}
+
+		/* Validate Fire Attempt Limits */
+		if(new_config->main_fire_attempt_nb < 1 || new_config->drogue_fire_attempt_nb < 1 || new_config->main_fire_attempt_nb > max_config_pyro_attempts_nb || new_config->drogue_fire_attempt_nb > max_config_pyro_attempts_nb) {
 			return CONFIG_ERR_PYRO_LIMITS;
 		}
 
-		/* Validate Acceleration Thresholds */
-		if(new_config->acc_z_launch_threshold <= config_acc_z_launch_min_ms2 || new_config->acc_z_launch_threshold >= config_acc_z_launch_max_ms2) {
-			return CONFIG_ERR_THRESHOLDS;
-		}
-
-		/* Validate Altitude Thresholds */
-		if(new_config->main_deploy_altitude_threshold_m < config_main_deploy_alt_min_m) {
-			return CONFIG_ERR_THRESHOLDS;
-		}
-
-		/* Validate Velocity Thresholds */
-		if(new_config->apogee_detect_v_threshold > config_apogee_detect_v_max_ms) {
-			return CONFIG_ERR_THRESHOLDS;
-		}
-
-		if(new_config->apogee_detection_mode >= APOGEE_DETECTION_MAX || new_config->apogee_detection_mode < APOGEE_DETECTION_AUTO) {
-			return CONFIG_ERR_APOGEE_DETECTION_MODE;
+		/* Validate Buzzer Landing Output */
+		if(new_config->buzzer_landing_output >= BUZZER_OUTPUT_MAX || new_config->buzzer_landing_output < BUZZER_OUTPUT_DISABLED) {
+			return CONFIG_ERR_BUZZER_CONFIG;
 		}
     }
 
@@ -186,7 +193,7 @@ int8_t Config_Init(void) {
     int8_t error = CONFIG_VALID_OK;
     if(W25Q_Read(&w25q, (uint8_t*)&temp_config, FLASH_CONFIG_START_ADDRESS, CONFIG_DATA_SIZE) == 0) {
         if(temp_config.magic_number == CONFIG_MAGIC_NUMBER) {
-			if(temp_config.version_major == CONFIG_PROTOCOL_VERSION_MAJOR && temp_config.version_minor == CONFIG_PROTOCOL_VERSION_MINOR && temp_config.payload_size == CONFIG_DATA_SIZE && Config_CheckCrc(&temp_config) && Config_ValidateFields(&temp_config) == CONFIG_VALID_OK) {
+			if(temp_config.version_major == CONFIG_PROTOCOL_VERSION_MAJOR && temp_config.version_minor == CONFIG_PROTOCOL_VERSION_MINOR && temp_config.payload_size == CONFIG_DATA_SIZE && Utils_Crc32Validate(&temp_config, offsetof(odb_config_t, crc32), temp_config.crc32) && Config_ValidateFields(&temp_config) == CONFIG_VALID_OK) {
                 memcpy(&current_config, &temp_config, CONFIG_DATA_SIZE);
                 return CONFIG_VALID_OK;
             } else {
@@ -209,7 +216,7 @@ int8_t Config_SaveToFlash(void) {
 	if(validation_result != CONFIG_VALID_OK) {
 		return (int8_t)validation_result;
 	}
-	current_config.crc32 = Config_CalculateCrc(&current_config);
+	current_config.crc32 = Utils_Crc32Calculate(&current_config, offsetof(odb_config_t, crc32));
 
 	if(W25Q_EraseSector(&w25q, FLASH_CONFIG_START_ADDRESS) != 0) {
     	return -1; // failed
@@ -224,7 +231,7 @@ int8_t Config_SaveToFlash(void) {
 
 void Config_LoadDefaults(void) {
     memcpy(&current_config, &default_config, CONFIG_DATA_SIZE);
-	current_config.crc32 = Config_CalculateCrc(&current_config);
+	current_config.crc32 = Utils_Crc32Calculate(&current_config, offsetof(odb_config_t, crc32));
 }
 
 const odb_config_t* Config_Get(void) {

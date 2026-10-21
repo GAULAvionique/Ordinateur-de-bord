@@ -116,7 +116,7 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
                           ),
 
                           Text(
-                            'Données des vols récupérées de l’ODB.',
+                            'Données des vols récupérées de l\'ODB.',
                             style: FlutterFlowTheme.of(context).bodyMedium.override(
                                   font: GoogleFonts.inter(),
                                   color: FlutterFlowTheme.of(context).secondaryText,
@@ -161,7 +161,7 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
                             const CircularProgressIndicator(),
                             const SizedBox(height: 16.0),
                             Text(
-                              'Chargement des statistiques depuis la mémoire de l’ODB...',
+                              'Chargement des statistiques depuis la mémoire de l\'ODB...',
                               textAlign: TextAlign.center,
                               style: FlutterFlowTheme.of(context).bodyMedium.override(
                                     font: GoogleFonts.inter(),
@@ -371,7 +371,7 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
             ),
           ),
           content: Text(
-            'Cette action supprimera tous les vols enregistrés dans l’application.',
+            'Cette action supprimera tous les vols enregistrés dans l\'application.',
             style: theme.bodyMedium.override(
               color: theme.secondaryText,
             ),
@@ -697,13 +697,13 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
 
     return _buildSectionCard(context, 'Configuration du vol', Icons.tune, [
       _buildDataRow(context, 'Nom ODB', config.odbName, ''),
-      _buildDataRow(context, 'Rôle d’étage', stage, ''),
-      _buildDataRow(context, 'Profil d’axe', 'P${config.axisProfile}', ''),
+      _buildDataRow(context, 'Rôle d\'étage', stage, ''),
+      _buildDataRow(context, 'Profil d\'axe', 'P${config.axisProfile}', ''),
       _buildDataRow(context, 'Mode test', config.flightTestMode ? 'Oui' : 'Non', ''),
       _buildDataRow(context, 'Rôles des pyros', pyroRoles, ''),
       _buildDataRow(context, 'Armement minimum', '${config.pyrosArmingMinAltitudeM.toStringAsFixed(1)} m', ''),
-      _buildDataRow(context, 'Seuil lancement', '${config.accZLaunchThreshold.toStringAsFixed(2)} m/s²', ''),
-      _buildDataRow(context, 'Seuil apogée', '${config.apogeeDetectVThreshold.toStringAsFixed(2)} m/s', ''),
+      _buildDataRow(context, 'Seuil lancement', '${config.zLaunchThresholdAcc.toStringAsFixed(2)} m/s²', ''),
+      _buildDataRow(context, 'Seuil apogée', '${config.apogeeDetectThresholdV.toStringAsFixed(2)} m/s', ''),
       _buildDataRow(context, 'Altitude principal', '${config.mainDeployAltitudeThresholdM.toStringAsFixed(1)} m', ''),
       _buildDataRow(context, 'Délai tentative pyro', '${config.fireAttemptDelayMs} ms', ''),
       _buildDataRow(context, 'Buzzer', config.enableBuzzer ? '${config.buzzerReportToneHz} Hz' : 'Désactivé', ''),

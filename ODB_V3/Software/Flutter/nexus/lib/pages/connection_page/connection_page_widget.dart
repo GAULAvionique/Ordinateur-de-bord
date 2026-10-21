@@ -68,7 +68,7 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
           ),
           content: Text(
             'Le Bluetooth est requis pour rechercher des appareils.\n'
-            'Veuillez l’activer dans les paramètres.',
+            'Veuillez l\'activer dans les paramètres.',
             style: theme.bodyMedium.override(
               color: theme.secondaryText,
             ),
@@ -632,7 +632,7 @@ class _ConnectionPageWidgetState extends State<ConnectionPageWidget> {
                       ? null
                       : () => bt.clearConnectionHistory(),
                   icon: const Icon(Icons.delete_outline),
-                  tooltip: 'Effacer l’historique',
+                  tooltip: 'Effacer l\'historique',
                   color: FlutterFlowTheme.of(context).error,
                 ),
               ],

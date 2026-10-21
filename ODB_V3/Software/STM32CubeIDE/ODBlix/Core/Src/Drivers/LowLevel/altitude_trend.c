@@ -8,8 +8,8 @@
 #include <math.h>
 #include <stddef.h>
 
-#define ALTITUDE_TREND_STEP_THRESHOLD 10U // Minimal variation step
-#define ALTITUDE_TREND_MIN_COUNT      2U  // Minimal consecutive evaluation before confirmed trend
+#define ALTITUDE_TREND_STEP_THRESHOLD_M	5U	// Minimal variation step
+#define ALTITUDE_TREND_MIN_COUNT      	2U  // Minimal consecutive evaluation before confirmed trend
 
 
 // Abstraction
@@ -70,7 +70,7 @@ void AltitudeTrend_Update(altitude_trend_t *trend, float altitude) {
         }
     }
 
-    if(ascent_steps >= ALTITUDE_TREND_STEP_THRESHOLD) {
+    if(ascent_steps >= ALTITUDE_TREND_STEP_THRESHOLD_M) {
         if(trend->ascent_count < 2U * ALTITUDE_TREND_MIN_COUNT) {
             trend->ascent_count++;
         }
@@ -78,7 +78,7 @@ void AltitudeTrend_Update(altitude_trend_t *trend, float altitude) {
         trend->ascent_count = 0;
     }
 
-    if(descent_steps >= ALTITUDE_TREND_STEP_THRESHOLD) {
+    if(descent_steps >= ALTITUDE_TREND_STEP_THRESHOLD_M) {
         if(trend->descent_count < 2U * ALTITUDE_TREND_MIN_COUNT) {
             trend->descent_count++;
         }

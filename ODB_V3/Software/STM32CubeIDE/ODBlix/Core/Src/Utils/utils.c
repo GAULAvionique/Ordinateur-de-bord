@@ -244,6 +244,23 @@ bool Utils_Crc32Validate(const void *data, size_t size, uint32_t expected_crc) {
     return data != NULL && Utils_Crc32Calculate(data, size) == expected_crc;
 }
 
+void Utils_MovingAverage(uint32_t *values, uint32_t size, uint8_t window_size, uint32_t *average) {
+	if(values == NULL || average == NULL) return;
+	if(window_size > size || window_size == 0) return;
+
+	uint32_t sum = 0;
+	for(uint8_t i = 0; i < window_size; i++) {
+		sum += values[i];
+	}
+	average[0] = (uint32_t)sum / window_size;
+
+	for(uint8_t i = 1; i < size - window_size + 1; i++) {
+		sum -= values[i - 1];
+		sum += values[i + window_size - 1];
+		average[i] = (uint32_t)sum / window_size;
+	}
+}
+
 /*
 int _write(int le, char *ptr, int len) {
     int DataIdx;

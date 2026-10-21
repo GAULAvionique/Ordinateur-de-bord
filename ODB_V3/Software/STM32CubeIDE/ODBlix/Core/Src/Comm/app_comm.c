@@ -230,7 +230,7 @@ void AppComm_ProcessRx(hm11_t *hm11_dev) {
 					if(expected_len == CONFIG_DATA_SIZE) {
 						odb_config_t received_config;
 						memcpy(&received_config, payload, sizeof(received_config));
-						if(Config_CheckCrc(&received_config)) {
+						if(Utils_Crc32Validate(&received_config, offsetof(odb_config_t, crc32), received_config.crc32)) {
 							memcpy(&current_config, &received_config, sizeof(current_config));
 							AppComm_SendAck(hm11_dev, CMD_REQ_CFG, 1);
 						} else {
@@ -434,11 +434,11 @@ void AppComm_ProcessRx(hm11_t *hm11_dev) {
 						}
 
 						// Protection
-						if((pyros_connected >= current_config.min_needed_pyro_nb) && !check_failed) {
+						if((pyros_connected >= current_config.needed_pyro_nb) && !check_failed) {
 							AppComm_SendAck(hm11_dev, CMD_TEST_PYROS, 1);
 							Pyro_SetContinuity(false);
 						} else {
-							DEBUG_PRINTF("ERROR : Not enough connected pyros (%d/%d) or config mismatch\n", pyros_connected, current_config.min_needed_pyro_nb);
+							DEBUG_PRINTF("ERROR : Not enough connected pyros (%d/%d) or config mismatch\n", pyros_connected, current_config.needed_pyro_nb);
 							AppComm_SendAck(hm11_dev, CMD_TEST_PYROS, 0);
 						}
 					} else if(cmd == CMD_TEST_ARMED) {

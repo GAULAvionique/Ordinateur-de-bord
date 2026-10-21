@@ -1855,7 +1855,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
     DataServiceManager data,
   ) {
     final selectedHistoryEntry =
-        data.configHistory.contains(_selectedHistoryEntry)
+        data.hasConnection && data.configHistory.contains(_selectedHistoryEntry)
             ? _selectedHistoryEntry
             : null;
 
@@ -1893,7 +1893,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               _buildStyledDropdown<OdbConfigHistoryEntry?>(
                 context: context,
                 value: selectedHistoryEntry,
-                onChanged: data.configHistory.isEmpty
+                onChanged: !data.hasConnection || data.configHistory.isEmpty
                     ? null
                     : (value) {
                         safeSetState(() {
@@ -1921,7 +1921,8 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: selectedHistoryEntry == null
+                      onPressed: !data.hasConnection ||
+                              selectedHistoryEntry == null
                           ? null
                           : () {
                               data.loadConfigHistoryEntry(selectedHistoryEntry);

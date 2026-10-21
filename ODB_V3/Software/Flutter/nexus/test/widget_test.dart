@@ -73,6 +73,7 @@ void main() {
     );
   });
 
+  
   test('configuration round-trip preserves pyro roles', () {
     final config = OdbConfig(
       odbName: 'test',
@@ -80,7 +81,9 @@ void main() {
       debugMode: false,
       flightTestMode: false,
       axisProfile: DataServiceManager.axisProfileP0,
-      hasPyrosPowerOn = false,
+      hasPyrosPowerOn: false,
+      hasDescentRate: false,
+      descentRateVThreshold: 0,
       fireAttemptDelayMs: 100,
       pyrosArmingMinAltitudeM: 200,
       minNeededPyroNb: 1,

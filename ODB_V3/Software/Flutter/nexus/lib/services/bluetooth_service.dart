@@ -224,7 +224,7 @@ class BluetoothServiceManager with ChangeNotifier {
       await stopScan();
 
       await device.connect(
-        license: License.free,
+        license: License.nonprofit,
         timeout: const Duration(seconds: 10),
         autoConnect: false,
       );
@@ -282,6 +282,7 @@ class BluetoothServiceManager with ChangeNotifier {
     _dataService?.resetOdbConfig();
     connectedDevice = null;
     rssi = -999;
+    _rxBuffer.clear();
     _writeCharacteristic = null;
     _writeCandidates.clear();
 
@@ -298,7 +299,7 @@ class BluetoothServiceManager with ChangeNotifier {
   Future<void> discoverServices(DataServiceManager dataService) async {
     if (connectedDevice == null) return;
 
-    ConsoleService().log('Découverte des services');
+    //ConsoleService().log('Découverte des services');
 
     try {
       _writeCharacteristic = null;
@@ -307,16 +308,18 @@ class BluetoothServiceManager with ChangeNotifier {
         const Duration(seconds: 10),
         onTimeout: () => throw TimeoutException('Service discovery timeout'),
       );
-      ConsoleService().log('${services.length} service(s) trouvé(s)');
+      //ConsoleService().log('${services.length} service(s) trouvé(s)');
 
     for (final service in services) {
       final serviceUuid = service.uuid.toString().toLowerCase();
       final isStandardService = _isStandardBluetoothUuid(serviceUuid) || _standardServiceUuids.contains(serviceUuid);
 
+      /*
       ConsoleService().log(
         'Service découvert: ${service.uuid} '
         '${isStandardService ? '(standard)' : '(personnalisé)'}',
       );
+      */
 
       for (final c in service.characteristics) {
         if (c.properties.notify) {
@@ -332,10 +335,12 @@ class BluetoothServiceManager with ChangeNotifier {
             _writeCharacteristic = c;
           }
 
+          /*
           ConsoleService().log(
             'Caractéristique écriture détectée: ${c.uuid} '
             '(write=${c.properties.write}, writeNoResp=${c.properties.writeWithoutResponse})',
           );
+          */
         } else if (c.properties.write || c.properties.writeWithoutResponse) {
           ConsoleService().log(
             'Caractéristique écrivable ignorée car standard: ${c.uuid} '
@@ -365,7 +370,7 @@ class BluetoothServiceManager with ChangeNotifier {
 
       if (_writeCandidates.isNotEmpty) {
         _writeCharacteristic = _writeCandidates.first;
-        ConsoleService().log('Caractéristique écriture prioritaire: ${_writeCharacteristic!.uuid}');
+        //ConsoleService().log('Caractéristique écriture prioritaire: ${_writeCharacteristic!.uuid}');
       }
     } catch (e) {
       ConsoleService().log('Erreur découverte services: $e');
@@ -384,7 +389,7 @@ class BluetoothServiceManager with ChangeNotifier {
       if (notifySubscriptions.containsKey(c.uuid)) return;
       await c.setNotifyValue(true);
 
-      var sub = c.lastValueStream.listen((data) {
+      var sub = c.onValueReceived.listen((data) {
         if (data.isEmpty) return;
         _rxBuffer.addAll(data);
 
@@ -398,9 +403,7 @@ class BluetoothServiceManager with ChangeNotifier {
           int length = _rxBuffer[3];
 
           if (length > 200) {
-            ConsoleService().log(
-              'Longueur de trame binaire invalide: $length octets',
-            );
+            ConsoleService().log('Longueur de trame binaire invalide: $length octets',);
             _rxBuffer.removeAt(0);
             continue;
           }
@@ -481,8 +484,7 @@ class BluetoothServiceManager with ChangeNotifier {
           lastError = error;
         }
       }
-      ConsoleService().log(
-          'Erreur TX Binaire: aucune caractéristique n\'a accepté la trame${lastError == null ? '' : ': $lastError'}');
+      ConsoleService().log('Erreur TX Binaire: aucune caractéristique n\'a accepté la trame${lastError == null ? '' : ': $lastError'}');
     } catch (e) {
       ConsoleService().log('Erreur TX Binaire: $e');
     }

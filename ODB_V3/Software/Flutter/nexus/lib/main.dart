@@ -52,6 +52,51 @@ class MyAppState extends State<MyApp> {
 
   late AppStateNotifier _appStateNotifier;
   late GoRouter _router;
+
+  ThemeData _buildMaterialTheme(
+    FlutterFlowTheme colors,
+    Brightness brightness,
+  ) {
+    final colorScheme = ColorScheme(
+      brightness: brightness,
+      primary: colors.primary,
+      onPrimary: colors.primaryBackground,
+      secondary: colors.secondary,
+      onSecondary: colors.primaryText,
+      error: colors.error,
+      onError: colors.primaryBackground,
+      surface: colors.secondaryBackground,
+      onSurface: colors.primaryText,
+    );
+
+    return ThemeData(
+      brightness: brightness,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: colors.primaryBackground,
+      dialogTheme: DialogThemeData(
+        backgroundColor: colors.secondaryBackground,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.0),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: colors.primary,
+          foregroundColor: colors.primaryBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8.0),
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: colors.primary,
+        ),
+      ),
+    );
+  }
+
   String getRoute([RouteMatchBase? routeMatch]) {
     final RouteMatchBase lastMatch =
         routeMatch ?? _router.routerDelegate.currentConfiguration.last;
@@ -89,12 +134,8 @@ class MyAppState extends State<MyApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [Locale('fr', '')],
-      theme: ThemeData(
-        brightness: Brightness.light,
-      ),
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-      ),
+      theme: _buildMaterialTheme(LightModeTheme(), Brightness.light),
+      darkTheme: _buildMaterialTheme(DarkModeTheme(), Brightness.dark),
       themeMode: _themeMode,
       routerConfig: _router,
     );

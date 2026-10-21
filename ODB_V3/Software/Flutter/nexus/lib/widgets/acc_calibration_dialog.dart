@@ -293,19 +293,19 @@ class _AccCalibrationDialogState extends State<AccCalibrationDialog> {
                     margin: const EdgeInsets.only(bottom: 16),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: 0.12),
+                      color: theme.warning.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.orange),
+                      border: Border.all(color: theme.warning),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                        Icon(Icons.warning_amber_rounded, color: theme.warning),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             'Une calibration 6-faces est déjà active et sauvegardée sur l\'ODB.\nDémarrer une nouvelle session écrasera les données actuelles.',
                             style: theme.bodyMedium.override(
-                              color: Colors.orange,
+                              color: theme.warning,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -695,10 +695,10 @@ class _AccCalibrationDialogState extends State<AccCalibrationDialog> {
                   if (!mounted) return;
                   navigator.pop();
                 },
-          child: Text(
-            'Annuler',
-            style: theme.bodyMedium.override(color: theme.secondaryText),
+          style: TextButton.styleFrom(
+            foregroundColor: theme.primary,
           ),
+          child: const Text('Annuler'),
         ),
         if (_currentStep == 0)
           ElevatedButton(

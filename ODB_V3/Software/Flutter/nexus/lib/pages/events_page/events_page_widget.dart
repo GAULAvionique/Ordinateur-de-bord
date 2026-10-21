@@ -355,20 +355,49 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
   Future<void> _confirmClearSavedFlights(BuildContext context, DataServiceManager data) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Effacer les vols sauvegardés ?'),
-        content: const Text('Cette action supprimera tous les vols enregistrés dans l’application.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Annuler'),
+      builder: (dialogContext) {
+        final theme = FlutterFlowTheme.of(dialogContext);
+
+        return AlertDialog(
+          backgroundColor: theme.secondaryBackground,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Effacer'),
+          title: Text(
+            'Effacer les vols sauvegardés ?',
+            style: theme.titleLarge.override(
+              color: theme.primaryText,
+            ),
           ),
-        ],
-      ),
+          content: Text(
+            'Cette action supprimera tous les vols enregistrés dans l’application.',
+            style: theme.bodyMedium.override(
+              color: theme.secondaryText,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.primary,
+              ),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.primary,
+                foregroundColor: theme.primaryBackground,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Effacer'),
+            ),
+          ],
+        );
+      },
     );
     if (confirmed == true) await data.clearSavedFlightStats();
   }
@@ -486,20 +515,49 @@ class _EventsPageWidgetState extends State<EventsPageWidget> {
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('Supprimer le vol #${stats.flightId} ?'),
-        content: const Text('Ce vol sera retiré des vols sauvegardés.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Annuler'),
+      builder: (dialogContext) {
+        final theme = FlutterFlowTheme.of(dialogContext);
+
+        return AlertDialog(
+          backgroundColor: theme.secondaryBackground,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Supprimer'),
+          title: Text(
+            'Supprimer le vol #${stats.flightId} ?',
+            style: theme.titleLarge.override(
+              color: theme.primaryText,
+            ),
           ),
-        ],
-      ),
+          content: Text(
+            'Ce vol sera retiré des vols sauvegardés.',
+            style: theme.bodyMedium.override(
+              color: theme.secondaryText,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.primary,
+              ),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.primary,
+                foregroundColor: theme.primaryBackground,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Supprimer'),
+            ),
+          ],
+        );
+      },
     );
     if (confirmed == true) await data.deleteSavedFlightStats(stats);
   }

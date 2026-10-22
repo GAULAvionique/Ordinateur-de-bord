@@ -1,12 +1,12 @@
 /*
- * app_protocol.h
+ * odb_config_protocol.h
  *
  *  Created on: 6 juin 2026
  *      Author: SamLol12
  */
 
-#ifndef INC_PROTOCOLS_CONFIG_PROTOCOL_H_
-#define INC_PROTOCOLS_CONFIG_PROTOCOL_H_
+#ifndef INC_PROTOCOLS_ODB_CONFIG_PROTOCOL_H_
+#define INC_PROTOCOLS_ODB_CONFIG_PROTOCOL_H_
 
 #include <stdint.h>
 #include "Protocols/protocol_constants.h"
@@ -147,4 +147,4 @@ typedef struct __attribute__((packed)) {
 } odb_config_t;
 #define CONFIG_DATA_SIZE (sizeof(odb_config_t))
 
-#endif /* INC_PROTOCOLS_CONFIG_PROTOCOL_H_ */
+#endif /* INC_PROTOCOLS_ODB_CONFIG_PROTOCOL_H_ */

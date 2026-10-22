@@ -140,14 +140,16 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
           options: FFButtonOptions(
             height: 36.0,
             padding: const EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 0.0),
-            iconPadding: const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
+            iconPadding:
+                const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
             color: buttonColor,
             textStyle: FlutterFlowTheme.of(context).bodySmall.override(
                   font: GoogleFonts.inter(
                     fontWeight: FontWeight.w600,
                     fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
                   ),
-                  color: buttonTextColor ?? FlutterFlowTheme.of(context).primaryBackground,
+                  color: buttonTextColor ??
+                      FlutterFlowTheme.of(context).primaryBackground,
                   letterSpacing: 0.0,
                   fontWeight: FontWeight.w600,
                   fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
@@ -198,13 +200,15 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
               style: FlutterFlowTheme.of(context).bodyMedium.override(
                     font: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
-                      fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                      fontStyle:
+                          FlutterFlowTheme.of(context).bodyMedium.fontStyle,
                     ),
                     color: FlutterFlowTheme.of(context).primaryText,
                     fontSize: 14.0,
                     letterSpacing: 0.0,
                     fontWeight: FontWeight.w600,
-                    fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                    fontStyle:
+                        FlutterFlowTheme.of(context).bodyMedium.fontStyle,
                   ),
             ),
             Text(
@@ -212,31 +216,37 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
               textAlign: TextAlign.center,
               style: FlutterFlowTheme.of(context).bodySmall.override(
                     font: GoogleFonts.inter(
-                      fontWeight: FlutterFlowTheme.of(context).bodySmall.fontWeight,
-                      fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
+                      fontWeight:
+                          FlutterFlowTheme.of(context).bodySmall.fontWeight,
+                      fontStyle:
+                          FlutterFlowTheme.of(context).bodySmall.fontStyle,
                     ),
                     color: FlutterFlowTheme.of(context).secondaryText,
                     fontSize: 10.0,
                     letterSpacing: 0.0,
-                    fontWeight: FlutterFlowTheme.of(context).bodySmall.fontWeight,
+                    fontWeight:
+                        FlutterFlowTheme.of(context).bodySmall.fontWeight,
                     fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
                   ),
             ),
-              Text(
-                voltage,
-                textAlign: TextAlign.center,
-                style: FlutterFlowTheme.of(context).bodySmall.override(
-                      font: GoogleFonts.inter(
-                        fontWeight: FlutterFlowTheme.of(context).bodySmall.fontWeight,
-                        fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
-                      ),
-                      color: FlutterFlowTheme.of(context).secondaryText,
-                      fontSize: 10.0,
-                      letterSpacing: 0.0,
-                      fontWeight: FlutterFlowTheme.of(context).bodySmall.fontWeight,
-                      fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
+            Text(
+              voltage,
+              textAlign: TextAlign.center,
+              style: FlutterFlowTheme.of(context).bodySmall.override(
+                    font: GoogleFonts.inter(
+                      fontWeight:
+                          FlutterFlowTheme.of(context).bodySmall.fontWeight,
+                      fontStyle:
+                          FlutterFlowTheme.of(context).bodySmall.fontStyle,
                     ),
-              ),
+                    color: FlutterFlowTheme.of(context).secondaryText,
+                    fontSize: 10.0,
+                    letterSpacing: 0.0,
+                    fontWeight:
+                        FlutterFlowTheme.of(context).bodySmall.fontWeight,
+                    fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
+                  ),
+            ),
             Padding(
               padding: const EdgeInsetsDirectional.fromSTEB(0.0, 4.0, 0.0, 0.0),
               child: FFButtonWidget(
@@ -244,19 +254,25 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                 text: buttonLabel,
                 options: FFButtonOptions(
                   height: 28.0,
-                  padding: const EdgeInsetsDirectional.fromSTEB(12.0, 0.0, 12.0, 0.0),
-                  iconPadding: const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
-                  color: enabled ? FlutterFlowTheme.of(context).error : FlutterFlowTheme.of(context).secondaryText,
+                  padding: const EdgeInsetsDirectional.fromSTEB(
+                      12.0, 0.0, 12.0, 0.0),
+                  iconPadding:
+                      const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
+                  color: enabled
+                      ? FlutterFlowTheme.of(context).error
+                      : FlutterFlowTheme.of(context).secondaryText,
                   textStyle: FlutterFlowTheme.of(context).bodySmall.override(
                         font: GoogleFonts.inter(
                           fontWeight: FontWeight.w600,
-                          fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
+                          fontStyle:
+                              FlutterFlowTheme.of(context).bodySmall.fontStyle,
                         ),
                         color: FlutterFlowTheme.of(context).primaryBackground,
                         fontSize: 10.0,
                         letterSpacing: 0.0,
                         fontWeight: FontWeight.w600,
-                        fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
+                        fontStyle:
+                            FlutterFlowTheme.of(context).bodySmall.fontStyle,
                       ),
                   elevation: 0.0,
                   borderRadius: BorderRadius.circular(6.0),
@@ -295,28 +311,41 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                     children: [
                       Text(
                         'Commandes',
-                        style: FlutterFlowTheme.of(context).displaySmall.override(
-                              font: GoogleFonts.interTight(
-                                fontWeight: FontWeight.bold,
-                                fontStyle: FlutterFlowTheme.of(context).displaySmall.fontStyle,
-                              ),
-                              fontSize: 28.0,
-                              letterSpacing: 0.0,
-                              fontWeight: FontWeight.bold,
-                              fontStyle: FlutterFlowTheme.of(context).displaySmall.fontStyle,
-                            ),
+                        style:
+                            FlutterFlowTheme.of(context).displaySmall.override(
+                                  font: GoogleFonts.interTight(
+                                    fontWeight: FontWeight.bold,
+                                    fontStyle: FlutterFlowTheme.of(context)
+                                        .displaySmall
+                                        .fontStyle,
+                                  ),
+                                  fontSize: 28.0,
+                                  letterSpacing: 0.0,
+                                  fontWeight: FontWeight.bold,
+                                  fontStyle: FlutterFlowTheme.of(context)
+                                      .displaySmall
+                                      .fontStyle,
+                                ),
                       ),
                       Text(
                         'Commandes et tests des systèmes',
                         style: FlutterFlowTheme.of(context).bodyMedium.override(
                               font: GoogleFonts.inter(
-                                fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
-                                fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                                fontWeight: FlutterFlowTheme.of(context)
+                                    .bodyMedium
+                                    .fontWeight,
+                                fontStyle: FlutterFlowTheme.of(context)
+                                    .bodyMedium
+                                    .fontStyle,
                               ),
                               color: FlutterFlowTheme.of(context).secondaryText,
                               letterSpacing: 0.0,
-                              fontWeight: FlutterFlowTheme.of(context).bodyMedium.fontWeight,
-                              fontStyle: FlutterFlowTheme.of(context).bodyMedium.fontStyle,
+                              fontWeight: FlutterFlowTheme.of(context)
+                                  .bodyMedium
+                                  .fontWeight,
+                              fontStyle: FlutterFlowTheme.of(context)
+                                  .bodyMedium
+                                  .fontStyle,
                             ),
                       ),
                     ],
@@ -332,121 +361,185 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                           title: 'Ping',
                           description: 'Vérification de la connectivité',
                           buttonText: 'Exécuter',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).primary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            ConsoleService().log('Test Ping demandé');
-                            await data.commandPing();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).primary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  ConsoleService().log('Test Ping demandé');
+                                  await data.commandPing();
+                                }
+                              : null,
                         ),
                         _buildActionRow(
                           context,
                           title: 'Test Mélodie',
-                          description: 'Vérification de la fonctionnalité du buzzer',
+                          description:
+                              'Vérification de la fonctionnalité du buzzer',
                           buttonText: 'Exécuter',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).primary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            ConsoleService().log('Test Mélodie demandé');
-                            await data.commandPlayMelody();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).primary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  ConsoleService().log('Test Mélodie demandé');
+                                  await data.commandPlayMelody();
+                                }
+                              : null,
                         ),
                         _buildActionRow(
                           context,
                           title: 'Test Capteurs',
-                          description: 'Vérification accéléromètre, gyroscope, baromètre',
+                          description:
+                              'Vérification accéléromètre, gyroscope, baromètre',
                           buttonText: 'Exécuter',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).primary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () {
-                            ConsoleService().log('Test Capteurs demandé (Pas encore implémenté)');
-                            //bt.send('TEST1\r\n');
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).primary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () {
+                                  ConsoleService().log(
+                                      'Test Capteurs demandé (Pas encore implémenté)');
+                                  //bt.send('TEST1\r\n');
+                                }
+                              : null,
                         ),
                         _buildActionRow(
                           context,
                           title: 'Test Communication',
-                          description: 'Vérification liaison radio et télémétrie',
+                          description:
+                              'Vérification liaison radio et télémétrie',
                           buttonText: 'Exécuter',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).primary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () {
-                            ConsoleService().log('Test Communication demandé (Pas encore implémenté)');
-                            //bt.send('TEST2\r\n');
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).primary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () {
+                                  ConsoleService().log(
+                                      'Test Communication demandé (Pas encore implémenté)');
+                                  //bt.send('TEST2\r\n');
+                                }
+                              : null,
                         ),
                         _buildActionRow(
                           context,
                           title: 'Test Mémoire',
-                          description: 'Vérification stockage et lecture données',
+                          description:
+                              'Vérification stockage et lecture données',
                           buttonText: 'Exécuter',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).primary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () {
-                            ConsoleService().log('Test Mémoire demandé (Pas encore implémenté)');
-                            //bt.send('TEST3\r\n');
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).primary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () {
+                                  ConsoleService().log(
+                                      'Test Mémoire demandé (Pas encore implémenté)');
+                                  //bt.send('TEST3\r\n');
+                                }
+                              : null,
                         ),
                         _buildActionRow(
                           context,
                           title: 'Test du module d\'armement',
-                          description: 'Test du module d\'armement des pyros pour la FSM',
+                          description:
+                              'Test du module d\'armement des pyros pour la FSM',
                           buttonText: 'Exécuter',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).primary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            ConsoleService().log('Test d\'armement des pyros demandé');
-                            await data.testArmingModule();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).primary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  ConsoleService().log(
+                                      'Test d\'armement des pyros demandé');
+                                  await data.testArmingModule();
+                                }
+                              : null,
                         ),
-                         _buildActionRow(
+                        _buildActionRow(
                           context,
                           title: 'Test de la continuité des pyros',
-                          description: 'Test de la continuité des pyros et des rôles',
+                          description:
+                              'Test de la continuité des pyros et des rôles',
                           buttonText: 'Exécuter',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).primary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            ConsoleService().log('Test de continuité des pyros demandé');
-                            await data.testPyrosContinuity();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).primary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  ConsoleService().log(
+                                      'Test de continuité des pyros demandé');
+                                  await data.testPyrosContinuity();
+                                }
+                              : null,
                         ),
                         _buildActionRow(
                           context,
                           title: 'Test du mach lock',
-                          description: 'Test de le mach lock pour les accélérations dépassant mach 1',
+                          description:
+                              'Test de le mach lock pour les accélérations dépassant mach 1',
                           buttonText: 'Exécuter',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).primary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            ConsoleService().log('Test de mach lock demandé');
-                            await data.testMachLock();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).primary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  ConsoleService()
+                                      .log('Test de mach lock demandé');
+                                  await data.testMachLock();
+                                }
+                              : null,
                         ),
                         _buildActionRow(
                           context,
                           title: 'Test d\'acquisition de données de vol',
-                          description: 'Test de l\'acquisition de données de vol',
+                          description:
+                              'Test de l\'acquisition de données de vol',
                           buttonText: 'Exécuter',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).primary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            ConsoleService().log('Test d\'acquisition de données de vol demandé');
-                            await data.testFlightFlash();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).primary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  ConsoleService().log(
+                                      'Test d\'acquisition de données de vol demandé');
+                                  await data.testFlightFlash();
+                                }
+                              : null,
                         ),
                         _buildActionRow(
                           context,
-                          title: 'Lancement du log de données en CSV pour debug',
-                          description: 'Exécution du log de données en CSV pour debug sur la SD',
+                          title:
+                              'Lancement du log de données en CSV pour debug',
+                          description:
+                              'Exécution du log de données en CSV pour debug sur la SD',
                           buttonText: 'Lancer',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).primary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            ConsoleService().log('Lancement du log des données en CSV pour debug lancé');
-                            await data.commandStartLogDataCSV();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).primary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  ConsoleService().log(
+                                      'Lancement du log des données en CSV pour debug lancé');
+                                  await data.commandStartLogDataCSV();
+                                }
+                              : null,
                         ),
                         _buildActionRow(
                           context,
                           title: 'Arrêt du log de données en CSV pour debug',
-                          description: 'Arrêt du log de données en CSV pour debug sur la SD',
+                          description:
+                              'Arrêt du log de données en CSV pour debug sur la SD',
                           buttonText: 'Arrêt',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).primary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            ConsoleService().log('Arrêt du log des données en CSV pour debug lancé');
-                            await data.commandStopLogDataCSV();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).primary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  ConsoleService().log(
+                                      'Arrêt du log des données en CSV pour debug lancé');
+                                  await data.commandStopLogDataCSV();
+                                }
+                              : null,
                         ),
                       ].divide(const SizedBox(height: 12.0)),
                     ),
@@ -460,28 +553,40 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                         _buildActionRow(
                           context,
                           title: 'Calibration Accéléromètres',
-                          description: 'Calibrer automatiquement les axes X, Y, Z des accéléromètres en 6 positions',
+                          description:
+                              'Calibrer automatiquement les axes X, Y, Z des accéléromètres en 6 positions',
                           buttonText: 'Calibrer',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).error : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            ConsoleService().log('Ouverture de l\'assistant de calibration 6-faces');
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (context) => const AccCalibrationDialog(),
-                            );
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).error
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  ConsoleService().log(
+                                      'Ouverture de l\'assistant de calibration 6-faces');
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (context) =>
+                                        const AccCalibrationDialog(),
+                                  );
+                                }
+                              : null,
                         ),
                         _buildActionRow(
                           context,
                           title: 'Calibration Baromètre',
                           description: 'Réglage de l\'altitude de référence',
                           buttonText: 'Calibrer',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).error : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            ConsoleService().log('Calibration baromètre demandée (Pas encore implémenté)');
-                            await data.commandCalibBaro();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).error
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  ConsoleService().log(
+                                      'Calibration baromètre demandée (Pas encore implémenté)');
+                                  await data.commandCalibBaro();
+                                }
+                              : null,
                         ),
                       ].divide(const SizedBox(height: 12.0)),
                     ),
@@ -495,83 +600,123 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                         _buildActionRow(
                           context,
                           title: 'Mise en départ du vol',
-                          description: 'Activer la mise en départ du vol de la FSM',
+                          description:
+                              'Activer la mise en départ du vol de la FSM',
                           buttonText: 'Exécuter',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).tertiary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            await data.setReadyFlight();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).tertiary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  await data.setReadyFlight();
+                                }
+                              : null,
                         ),
                         const SizedBox(height: 4.0),
                         _buildActionRow(
                           context,
                           title: 'Mise en Sub Armed',
-                          description: 'Passer à l\'étape sub armed du vol de la FSM',
+                          description:
+                              'Passer à l\'étape sub armed du vol de la FSM',
                           buttonText: 'Aller',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).tertiary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            await data.setSubArmed();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).tertiary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  await data.setSubArmed();
+                                }
+                              : null,
                         ),
                         _buildActionRow(
                           context,
                           title: 'Mise en Sub Boost',
-                          description: 'Passer à l\'étape sub boost du vol de la FSM',
+                          description:
+                              'Passer à l\'étape sub boost du vol de la FSM',
                           buttonText: 'Aller',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).tertiary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            await data.setSubBoost();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).tertiary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  await data.setSubBoost();
+                                }
+                              : null,
                         ),
                         _buildActionRow(
                           context,
                           title: 'Mise en Sub Fast',
-                          description: 'Passer à l\'étape sub fast du vol de la FSM',
+                          description:
+                              'Passer à l\'étape sub fast du vol de la FSM',
                           buttonText: 'Aller',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).tertiary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            await data.setSubFast();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).tertiary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  await data.setSubFast();
+                                }
+                              : null,
                         ),
                         _buildActionRow(
                           context,
                           title: 'Mise en Sub Coast',
-                          description: 'Passer à l\'étape sub coast du vol de la FSM',
+                          description:
+                              'Passer à l\'étape sub coast du vol de la FSM',
                           buttonText: 'Aller',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).tertiary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            await data.setSubCoast();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).tertiary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  await data.setSubCoast();
+                                }
+                              : null,
                         ),
                         _buildActionRow(
                           context,
                           title: 'Mise en Sub Drogue',
-                          description: 'Passer à l\'étape sub drogue du vol de la FSM',
+                          description:
+                              'Passer à l\'étape sub drogue du vol de la FSM',
                           buttonText: 'Aller',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).tertiary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            await data.setSubDrogue();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).tertiary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  await data.setSubDrogue();
+                                }
+                              : null,
                         ),
                         _buildActionRow(
                           context,
                           title: 'Mise en Sub Main',
-                          description: 'Passer à l\'étape sub main du vol de la FSM',
+                          description:
+                              'Passer à l\'étape sub main du vol de la FSM',
                           buttonText: 'Aller',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).tertiary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            await data.setSubMain();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).tertiary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  await data.setSubMain();
+                                }
+                              : null,
                         ),
                         _buildActionRow(
                           context,
                           title: 'Mise en Sub Landed',
-                          description: 'Passer à l\'étape sub landed du vol de la FSM',
+                          description:
+                              'Passer à l\'étape sub landed du vol de la FSM',
                           buttonText: 'Aller',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).tertiary : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            await data.setSubLanded();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).tertiary
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  await data.setSubLanded();
+                                }
+                              : null,
                         ),
                       ].divide(const SizedBox(height: 12.0)),
                     ),
@@ -587,11 +732,16 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                           title: 'Redémarrage forcé',
                           description: 'Redémarrage forcé de l\'ODB',
                           buttonText: 'Exécuter',
-                          buttonColor: connected ? FlutterFlowTheme.of(context).error : FlutterFlowTheme.of(context).secondaryText,
-                          onPressed: connected ? () async {
-                            ConsoleService().log('Redémarrage forcé demandé');
-                            await data.commandForceReboot();
-                          } : null,
+                          buttonColor: connected
+                              ? FlutterFlowTheme.of(context).error
+                              : FlutterFlowTheme.of(context).secondaryText,
+                          onPressed: connected
+                              ? () async {
+                                  ConsoleService()
+                                      .log('Redémarrage forcé demandé');
+                                  await data.commandForceReboot();
+                                }
+                              : null,
                         ),
                       ].divide(const SizedBox(height: 12.0)),
                     ),
@@ -607,26 +757,46 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                           child: Padding(
                             padding: const EdgeInsets.all(12.0),
                             child: FFButtonWidget(
-                              onPressed: connected ? () async {
-                                ConsoleService().log(data.eventPyrosArmed ? 'Désarmement demandé' : 'Armement demandé');
-                                await data.commandArm(!data.eventPyrosArmed);
-                              } : null,
-                              text: (connected && data.eventPyrosArmed) ? 'Désarmer' : 'Armer',
+                              onPressed: connected
+                                  ? () async {
+                                      ConsoleService().log(data.eventPyrosArmed
+                                          ? 'Désarmement demandé'
+                                          : 'Armement demandé');
+                                      await data
+                                          .commandArm(!data.eventPyrosArmed);
+                                    }
+                                  : null,
+                              text: (connected && data.eventPyrosArmed)
+                                  ? 'Désarmer'
+                                  : 'Armer',
                               options: FFButtonOptions(
                                 width: 150.0,
                                 height: 48.0,
-                                padding: const EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 0.0),
-                                iconPadding: const EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
-                                color: connected ? FlutterFlowTheme.of(context).error : FlutterFlowTheme.of(context).secondaryText,
-                                textStyle: FlutterFlowTheme.of(context).bodySmall.override(
+                                padding: const EdgeInsetsDirectional.fromSTEB(
+                                    16.0, 0.0, 16.0, 0.0),
+                                iconPadding:
+                                    const EdgeInsetsDirectional.fromSTEB(
+                                        0.0, 0.0, 0.0, 0.0),
+                                color: connected
+                                    ? FlutterFlowTheme.of(context).error
+                                    : FlutterFlowTheme.of(context)
+                                        .secondaryText,
+                                textStyle: FlutterFlowTheme.of(context)
+                                    .bodySmall
+                                    .override(
                                       font: GoogleFonts.inter(
                                         fontWeight: FontWeight.w600,
-                                        fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
+                                        fontStyle: FlutterFlowTheme.of(context)
+                                            .bodySmall
+                                            .fontStyle,
                                       ),
-                                      color: FlutterFlowTheme.of(context).primaryBackground,
+                                      color: FlutterFlowTheme.of(context)
+                                          .primaryBackground,
                                       letterSpacing: 0.0,
                                       fontWeight: FontWeight.w600,
-                                      fontStyle: FlutterFlowTheme.of(context).bodySmall.fontStyle,
+                                      fontStyle: FlutterFlowTheme.of(context)
+                                          .bodySmall
+                                          .fontStyle,
                                     ),
                                 elevation: 0.0,
                                 borderRadius: BorderRadius.circular(8.0),
@@ -636,7 +806,8 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                         ),
                         GridView(
                           padding: EdgeInsets.zero,
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             crossAxisSpacing: 12.0,
                             mainAxisSpacing: 12.0,
@@ -648,50 +819,86 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                             _buildPyroTile(
                               context,
                               title: 'Pyro 1',
-                              subtitle: data.pyroRoleLabel(0, connected: connected),
-                              voltage: data.pyroVoltageDisplay(0, connected: connected),
-                              enabled: connected && data.eventPyrosArmed && data.pyros[0],
-                              buttonLabel: connected ? ((data.eventPyrosArmed && data.pyros[0]) ? 'Déclencher' : 'Désarmé / Déconnecté') : 'Inconnu',
-                              onPressed: (connected && data.eventPyrosArmed && data.pyros[0]) ? () async {
-                                ConsoleService().log('Déclenchement pyro 1 demandé');
-                                await data.commandFire(0);
-                              } : null,
+                              subtitle:
+                                  data.pyroRoleLabel(0, connected: connected),
+                              voltage: data.pyroVoltageDisplay(0,
+                                  connected: connected),
+                              enabled: connected && data.eventPyrosArmed,
+                              buttonLabel: connected
+                                  ? (data.eventPyrosArmed
+                                      ? 'Déclencher'
+                                      : 'Désarmé')
+                                  : 'Inconnu',
+                              onPressed: (connected && data.eventPyrosArmed)
+                                  ? () async {
+                                      ConsoleService()
+                                          .log('Déclenchement pyro 1 demandé');
+                                      await data.commandFire(0);
+                                    }
+                                  : null,
                             ),
                             _buildPyroTile(
                               context,
                               title: 'Pyro 2',
-                              subtitle: data.pyroRoleLabel(1, connected: connected),
-                              voltage: data.pyroVoltageDisplay(1, connected: connected),
-                              enabled: connected && data.eventPyrosArmed && data.pyros[1],
-                              buttonLabel: connected ? ((data.eventPyrosArmed && data.pyros[1]) ? 'Déclencher' : 'Désarmé / Déconnecté') : 'Inconnu',
-                              onPressed: (connected && data.eventPyrosArmed && data.pyros[1]) ? () async {
-                                ConsoleService().log('Déclenchement pyro 2 demandé');
-                                await data.commandFire(1);
-                              } : null,
+                              subtitle:
+                                  data.pyroRoleLabel(1, connected: connected),
+                              voltage: data.pyroVoltageDisplay(1,
+                                  connected: connected),
+                              enabled: connected && data.eventPyrosArmed,
+                              buttonLabel: connected
+                                  ? (data.eventPyrosArmed
+                                      ? 'Déclencher'
+                                      : 'Désarmé')
+                                  : 'Inconnu',
+                              onPressed: (connected && data.eventPyrosArmed)
+                                  ? () async {
+                                      ConsoleService()
+                                          .log('Déclenchement pyro 2 demandé');
+                                      await data.commandFire(1);
+                                    }
+                                  : null,
                             ),
                             _buildPyroTile(
                               context,
                               title: 'Pyro 3',
-                              subtitle: data.pyroRoleLabel(2, connected: connected),
-                              voltage: data.pyroVoltageDisplay(2, connected: connected),
-                              enabled: connected && data.eventPyrosArmed && data.pyros[2],
-                              buttonLabel: connected ? ((data.eventPyrosArmed && data.pyros[2]) ? 'Déclencher' : 'Désarmé / Déconnecté') : 'Inconnu',
-                              onPressed: (connected && data.eventPyrosArmed && data.pyros[2]) ? () async {
-                                ConsoleService().log('Déclenchement pyro 3 demandé');
-                                await data.commandFire(2);
-                              } : null,
+                              subtitle:
+                                  data.pyroRoleLabel(2, connected: connected),
+                              voltage: data.pyroVoltageDisplay(2,
+                                  connected: connected),
+                              enabled: connected && data.eventPyrosArmed,
+                              buttonLabel: connected
+                                  ? (data.eventPyrosArmed
+                                      ? 'Déclencher'
+                                      : 'Désarmé')
+                                  : 'Inconnu',
+                              onPressed: (connected && data.eventPyrosArmed)
+                                  ? () async {
+                                      ConsoleService()
+                                          .log('Déclenchement pyro 3 demandé');
+                                      await data.commandFire(2);
+                                    }
+                                  : null,
                             ),
                             _buildPyroTile(
                               context,
                               title: 'Pyro 4',
-                              subtitle: data.pyroRoleLabel(3, connected: connected),
-                              voltage: data.pyroVoltageDisplay(3, connected: connected),
-                              enabled: connected && data.eventPyrosArmed && data.pyros[3],
-                              buttonLabel: connected ? ((data.eventPyrosArmed && data.pyros[3]) ? 'Déclencher' : 'Désarmé / Déconnecté') : 'Inconnu',
-                              onPressed: (connected && data.eventPyrosArmed && data.pyros[3]) ? () async {
-                                ConsoleService().log('Déclenchement pyro 4 demandé');
-                                await data.commandFire(3);
-                              } : null,
+                              subtitle:
+                                  data.pyroRoleLabel(3, connected: connected),
+                              voltage: data.pyroVoltageDisplay(3,
+                                  connected: connected),
+                              enabled: connected && data.eventPyrosArmed,
+                              buttonLabel: connected
+                                  ? (data.eventPyrosArmed
+                                      ? 'Déclencher'
+                                      : 'Désarmé')
+                                  : 'Inconnu',
+                              onPressed: (connected && data.eventPyrosArmed)
+                                  ? () async {
+                                      ConsoleService()
+                                          .log('Déclenchement pyro 4 demandé');
+                                      await data.commandFire(3);
+                                    }
+                                  : null,
                             ),
                           ],
                         ),
@@ -712,13 +919,17 @@ class _CommandsPageWidgetState extends State<CommandsPageWidget> {
                               itemBuilder: (context, index) {
                                 final log = bt.logs[index];
                                 return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 2.0),
                                   child: Text(
                                     log,
-                                    style: FlutterFlowTheme.of(context).bodySmall.override(
+                                    style: FlutterFlowTheme.of(context)
+                                        .bodySmall
+                                        .override(
                                           fontFamily: 'monospace',
                                           fontSize: 12,
-                                          color: FlutterFlowTheme.of(context).secondaryText,
+                                          color: FlutterFlowTheme.of(context)
+                                              .secondaryText,
                                         ),
                                   ),
                                 );

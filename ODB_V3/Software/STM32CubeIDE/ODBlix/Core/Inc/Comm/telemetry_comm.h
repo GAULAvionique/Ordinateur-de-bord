@@ -8,7 +8,7 @@
 #ifndef INC_COMM_TELEMETRY_COMM_H_
 #define INC_COMM_TELEMETRY_COMM_H_
 
-#include "Protocols/odb_protocol.h"
+#include <Protocols/odb_data_protocol.h>
 #include "Drivers/rfd900x.h"
 #include "mavlink/odb_mavlink_v1/mavlink.h"
 

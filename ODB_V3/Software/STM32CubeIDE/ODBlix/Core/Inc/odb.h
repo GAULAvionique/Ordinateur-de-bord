@@ -25,7 +25,6 @@
 #include "Drivers/system_measurements.h"
 #include "Drivers/w25q512jveim.h"
 #include "Drivers/mem2067.h"
-#include "Protocols/odb_protocol.h"
 #include "stm32f4xx_hal.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -33,6 +32,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <Protocols/odb_data_protocol.h>
 
 
 typedef enum {

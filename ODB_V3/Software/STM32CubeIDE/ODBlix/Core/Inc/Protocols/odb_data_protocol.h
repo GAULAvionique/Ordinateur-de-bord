@@ -1,12 +1,12 @@
 /*
- * telemetry_protocol.h
+ * odb_data_protocol.h
  *
  *  Created on: 6 juin 2026
  *      Author: SamLol12
  */
 
-#ifndef INC_PROTOCOLS_ODB_PROTOCOL_H_
-#define INC_PROTOCOLS_ODB_PROTOCOL_H_
+#ifndef INC_PROTOCOLS_ODB_DATA_PROTOCOL_H_
+#define INC_PROTOCOLS_ODB_DATA_PROTOCOL_H_
 
 #include <stdint.h>
 #include "Protocols/protocol_constants.h"
@@ -49,7 +49,9 @@
 #define FLAG_PYRO2_CONN                 (1 << 2)
 #define FLAG_PYRO3_CONN                 (1 << 1)
 #define FLAG_PYRO4_CONN                 (1 << 0)
+///...
 #define FLAG_SYSTEM_STATE_RESET			0x000
+
 // Events states
 /*
  * [8]  : Mach lock enabled
@@ -62,17 +64,17 @@
  * [1]  : Pyro 1 fired
  * [0]	: Pyros armed
 */
-#define FLAG_EVENT_STATE_RESET			0x000
-#define FLAG_PYROS_ARMED				(1 << 0)
-#define FLAG_PYRO1_FIRED                (1 << 1)
-#define FLAG_PYRO2_FIRED                (1 << 2)
-#define FLAG_PYRO3_FIRED                (1 << 3)
-#define FLAG_PYRO4_FIRED                (1 << 4)
-#define FLAG_APOGEE_DETECTED            (1 << 5)
-#define FLAG_MAIN_DEPLOYED              (1 << 6)
-#define FLAG_DROGUE_DEPLOYED            (1 << 7)
 #define FLAG_MACH_LOCK_ENABLED          (1 << 8)
+#define FLAG_DROGUE_DEPLOYED            (1 << 7)
+#define FLAG_MAIN_DEPLOYED              (1 << 6)
+#define FLAG_APOGEE_DETECTED            (1 << 5)
+#define FLAG_PYRO4_FIRED                (1 << 4)
+#define FLAG_PYRO3_FIRED                (1 << 3)
+#define FLAG_PYRO2_FIRED                (1 << 2)
+#define FLAG_PYRO1_FIRED                (1 << 1)
+#define FLAG_PYROS_ARMED				(1 << 0)
 ///...
+#define FLAG_EVENT_STATE_RESET			0x000
 
 // pyro event stucture with time of event and pyro number
 typedef struct __attribute__((packed)) {
@@ -208,4 +210,4 @@ typedef struct __attribute__((packed)) {
 } odb_data_t;
 #define ODB_DATA_SIZE (sizeof(odb_data_t))
 
-#endif /* INC_PROTOCOLS_ODB_PROTOCOL_H_ */
+#endif /* INC_PROTOCOLS_ODB_DATA_PROTOCOL_H_ */

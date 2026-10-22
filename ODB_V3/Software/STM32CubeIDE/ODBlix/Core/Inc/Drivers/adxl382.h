@@ -8,7 +8,7 @@
 #ifndef INC_DRIVERS_ADXL382_H_
 #define INC_DRIVERS_ADXL382_H_
 
-#include "Protocols/config_protocol.h"
+#include <Protocols/odb_config_protocol.h>
 #include "Utils/utils.h"
 #include "stm32f4xx_hal.h"
 #include <stdint.h>

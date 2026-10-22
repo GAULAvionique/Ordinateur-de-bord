@@ -8,7 +8,7 @@
 #ifndef INC_DRIVERS_BNO055_H_
 #define INC_DRIVERS_BNO055_H_
 
-#include "Protocols/config_protocol.h"
+#include <Protocols/odb_config_protocol.h>
 #include "stm32f4xx_hal.h"
 #include <stdint.h>
 #include <stdbool.h>

@@ -8,8 +8,8 @@
 #ifndef INC_SYSTEMS_CONFIG_H_
 #define INC_SYSTEMS_CONFIG_H_
 
+#include <Protocols/odb_config_protocol.h>
 #include "Drivers/w25q512jveim.h"
-#include "Protocols/config_protocol.h"
 #include "Utils/utils.h"
 #include <stdbool.h>
 #include <stdint.h>

@@ -6,12 +6,12 @@
  */
 
 
+#include <Protocols/odb_data_protocol.h>
 #include "Systems/tasks.h"
 #include "Comm/app_comm.h"
 #include "Comm/telemetry_comm.h"
 #include "Comm/beacon_comm.h"
 #include "odb.h"
-#include "Protocols/odb_protocol.h"
 #include "Systems/config.h"
 #include "Systems/flight_fsm.h"
 #include "Systems/logger.h"

@@ -11,11 +11,11 @@
 #include "Systems/scheduler.h"
 #include "Systems/tasks.h"
 #include "Systems/logger.h"
-#include "Protocols/odb_protocol.h"
 #include "Drivers/smtb0927twr.h"
 #include "Drivers/mem2067.h"
 #include "stm32f4xx_hal.h"
 #include <math.h>
+#include <Protocols/odb_data_protocol.h>
 #include <stdint.h>
 
 

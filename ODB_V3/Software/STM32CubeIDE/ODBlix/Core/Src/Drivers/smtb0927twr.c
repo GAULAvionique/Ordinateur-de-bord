@@ -212,21 +212,58 @@ void Buzzer_RunRoutine(buzzer_t *dev, buzzer_routines_t routine) {
 }
 
 /*
- * Exemple of status report:
- * Battery: 12.0V (1200mV) -> bip / pause / bip bip / pause / bip bip bip bip bip bip bip bip bip bip x2 (10 bips = 0)
- * Pause 3s
- * Pyros [true, true, false, false] -> bip bip / pause / bip bip / pause / bip / pause / bip
- * Pause 3s
- * Max altitude (4502m): 4 short / pause / 5 short / pause / 1 long / pause / 2 short.
- * Pause 3s
- * Global state [OK]: bip
- * Pause 3s
- * Start Bip -> 5s biiiiip...
-*/
+ * Format:
+ * - Thousands: Long bips (800ms)
+ * - Pause 1s
+ * - Hundreds: Short bips (250ms)
+ * - If altitude < 100m: Tens are played as short bips.
+ * - If altitude is 0m: 1 extra-long bip (1000ms).
+ *
+ * Example (4502m) : 4 long / pause / 5 short. (Tens and units are ignored)
+ * Example (45m)   : 4 short.
+ */
+void Buzzer_ReportAltitude(buzzer_t *dev, uint16_t freq_hz, const float max_altitude, bool valid) {
+    if(!valid || freq_hz > BUZZER_MAX_FREQ) return;
+
+    uint32_t alt_m = max_altitude;
+    uint8_t thousands = alt_m / 1000;
+    uint8_t hundreds  = (alt_m % 1000) / 100;
+
+    if(thousands > 0) {
+        Buzzer_Bip(dev, thousands, 800, 300, freq_hz);
+        Buzzer_Pause(1000);
+    }
+
+    if(hundreds > 0) {
+        Buzzer_Bip(dev, hundreds, 250, 250, freq_hz);
+    }
+
+    if(thousands == 0 && hundreds == 0) {
+        uint8_t tens = (alt_m % 100) / 10;
+        if(tens > 0) {
+            Buzzer_Bip(dev, tens, 250, 250, freq_hz);
+        } else {
+            Buzzer_Bip(dev, 1, 1000, 250, freq_hz);
+        }
+    }
+}
+
+/*
+ * Sequence example:
+ * 1. Battery: 12.0V (1200mV) -> 1 bip / pause / 2 short / pause / 10 short / pause / 10 short (10 bips = 0)
+ *    Pause 3s
+ * 2. Pyros [true, true, false, false] -> 2 short / pause / 2 short / pause / 1 short / pause / 1 short
+ *    Pause 3s
+ * 3. Max altitude (4502m) -> 4 long / pause / 5 short. (If no previous flight or invalid: 3 very fast bips)
+ *    Pause 3s
+ * 4. Global state [OK = 0] -> 10 short
+ *    Pause 3s
+ * 5. Start Bip -> 5s continuous biiiiip...
+ */
 void Buzzer_ReportStatus(buzzer_t *dev, uint16_t freq_hz, uint16_t battery_dv, bool pyros_continuity[4], int8_t global_state, const uint32_t flight_time_ms, const float max_altitude, bool valid) {
 	if(freq_hz > BUZZER_MAX_FREQ) return;
 
-    // Battery voltage
+    // 1. Battery voltage
     uint16_t temp = battery_dv;
     uint8_t digits[5];
     uint8_t len = 0;
@@ -246,7 +283,7 @@ void Buzzer_ReportStatus(buzzer_t *dev, uint16_t freq_hz, uint16_t battery_dv, b
 
     Buzzer_Pause(3000);
 
-    // Pyros continuity
+    // 2. Pyros continuity (2 bips = OK, 1 bip = NC)
     for(int i = 0; i < 4; i++) {
         if(pyros_continuity[i]) {
             Buzzer_Bip(dev, 2, 250, 250, freq_hz);
@@ -258,41 +295,22 @@ void Buzzer_ReportStatus(buzzer_t *dev, uint16_t freq_hz, uint16_t battery_dv, b
 
     Buzzer_Pause(3000);
 
-    // Max altitude last flight
+    // 3. Max altitude last flight
     if(flight_time_ms > 0 && valid) {
-		uint32_t alt_m = max_altitude;
-		uint8_t thousands = alt_m / 1000;
-		uint8_t hundreds  = (alt_m % 1000) / 100;
-
-        if(thousands > 0) {
-            Buzzer_Bip(dev, thousands, 800, 300, freq_hz);
-            Buzzer_Pause(1000);
-        }
-
-        if(hundreds > 0) {
-            Buzzer_Bip(dev, hundreds, 250, 250, freq_hz);
-        }
-
-        if(thousands == 0 && hundreds == 0) {
-            uint8_t tens = (alt_m % 100) / 10;
-            if(tens > 0) {
-                Buzzer_Bip(dev, tens, 250, 250, freq_hz);
-            } else {
-                Buzzer_Bip(dev, 1, 1000, 250, freq_hz);
-            }
-        }
+        Buzzer_ReportAltitude(dev, freq_hz, max_altitude, valid);
     } else {
+        // No valid flight data : 3 very fast bips
         Buzzer_Bip(dev, 3, 100, 100, freq_hz);
     }
 
     Buzzer_Pause(3000);
 
-    // Global state
-    Buzzer_Bip(dev, abs(global_state), 250, 250, freq_hz);
+    // 4. Global state
+    Buzzer_Bip(dev, abs(global_state) == 0 ? 10 : abs(global_state), 250, 250, freq_hz);
 
     Buzzer_Pause(3000);
 
-    // Start Bip
+    // 5. Start Bip
     if(global_state > -2) {
         Buzzer_Bip(dev, 1, 5000, 250, freq_hz);
     }

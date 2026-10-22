@@ -94,6 +94,7 @@ extern note_t ram_ranch_solo[];
 
 
 void Buzzer_RunRoutine(buzzer_t *dev, buzzer_routines_t routine);
+void Buzzer_ReportAltitude(buzzer_t *dev, uint16_t freq_hz, const float max_altitude, bool valid);
 void Buzzer_ReportStatus(buzzer_t *dev, uint16_t freq_hz, uint16_t battery_dv, bool pyros_continuity[4], int8_t global_state, const uint32_t flight_time_ms, const float max_altitude, bool valid);
 void Buzzer_StartPeriodicBip(buzzer_t *dev, uint16_t freq_hz, uint32_t on_time_ms, uint32_t off_time_ms);
 void Buzzer_StopPeriodicBip(buzzer_t *dev);

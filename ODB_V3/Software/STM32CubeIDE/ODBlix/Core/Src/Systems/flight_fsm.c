@@ -19,7 +19,8 @@
 #include <stdint.h>
 
 
-#define STATIC_ACC_Z_THRESHOLD 6.0f
+#define STATIC_Z_THRESHOLD_ACC 6.0f
+#define POSTFLIGHT_ROUTINE_PERIOD_MS 20000
 
 
 extern buzzer_t buzzer;
@@ -27,8 +28,8 @@ extern odb_data_t flight_data;
 extern odb_stats_t flight_stats;
 extern system_measurements_t system_measurements;
 extern rfd900x_t rfd900x;
-extern TIM_HandleTypeDef htim5;
 extern pyro_t pyros[4];
+extern note_t ram_ranch_solo[];
 
 volatile global_state_t current_global_state = STATE_PREFLIGHT;
 volatile preflight_substate_t current_preflight_substate = SUB_STATIC_ORIENTED;
@@ -36,98 +37,105 @@ volatile inflight_substate_t current_inflight_substate = SUB_BOOST;
 volatile bool is_ready_by_app = false;
 volatile bool is_force_flight = false;
 
-static uint32_t fire_timer = 0;
 static uint32_t flight_duration = 0;
-static uint8_t fire_attempt_count = 0;
+static bool sustainer_ignited = false; // Handle staging cycle (SUB_FAST->SUB_BOOST->SUB_FAST)
 
-static bool sustainer_ignited = false;
-static bool backup_active = false;
+typedef struct {
+    uint32_t fire_timer;
+    uint8_t attempt_count;
+    bool backup_active;
+} pyro_seq_state_t;
 
-extern note_t ram_ranch_solo[];
+static pyro_seq_state_t drogue_seq = {0, 0, false};
+static pyro_seq_state_t main_seq = {0, 0, false};
 
-static void FSM_HandleDeployment(pyro_role_t primary_role, pyro_role_t backup_role, metric_t* deploy_stat, uint8_t max_attempts) {
-	if(flight_stats.mach_lock.activated) {
-		Pyro_SetContinuity(false);
-		return;
-	}
+
+static void FSM_HandleDeployment(pyro_seq_state_t* seq, pyro_role_t primary_role, pyro_role_t backup_role, metric_t* deploy_stat, uint8_t max_attempts) {
+    if(flight_stats.mach_lock.activated) {
+        Pyro_SetContinuity(false);
+        return;
+    }
 
     pyro_t *primary = Pyro_GetByRole(primary_role);
     pyro_t *backup = Pyro_GetByRole(backup_role);
 
     uint32_t current_time = HAL_GetTick();
-    uint32_t elapsed_time = current_time - fire_timer;
+    uint32_t elapsed_time = current_time - seq->fire_timer;
 
-	if(!Pyro_IsArmed(&system_measurements) && current_config.flight_test_mode == STATE_FALSE) {
+    if(!Pyro_IsArmed(&system_measurements) && current_config.flight_test_mode == STATE_FALSE) {
         Pyro_Arming(&system_measurements, true, false);
     }
 
     if(elapsed_time >= current_config.fire_attempt_delay_ms) {
-        if(!backup_active) {
-            // Primary
-            if(primary != NULL && fire_attempt_count < max_attempts) {
-				if(current_config.flight_test_mode == STATE_FALSE) {
-                	Pyro_StartFire(primary);
+        if(!seq->backup_active) {
+        	// Primary
+            if(primary != NULL && seq->attempt_count < max_attempts) {
+                if(current_config.flight_test_mode == STATE_FALSE) {
+                    Pyro_StartFire(primary);
                 }
 
                 if(!deploy_stat->valid) {
-					deploy_stat->valid = STATE_TRUE;
+                    deploy_stat->valid = STATE_TRUE;
                     deploy_stat->value = flight_data.kalman_z;
                     deploy_stat->time_ms = current_time - flight_stats.flight_start_time_ms;
                 }
 
-                fire_attempt_count++;
-                fire_timer = current_time;
-            }
+                seq->attempt_count++;
+                seq->fire_timer = current_time;
             // Backup switch
-            else if(backup != NULL && backup->is_connected) {
-                backup_active = true;
-                fire_attempt_count = 0;
-                fire_timer = current_time;
+            } else if(backup != NULL && backup->is_connected) {
+                seq->backup_active = true;
+                seq->attempt_count = 0;
+                seq->fire_timer = current_time;
             }
         } else {
             // Backup
-            if(backup != NULL && fire_attempt_count < max_attempts) {
-				if(current_config.flight_test_mode == STATE_FALSE) {
-                	Pyro_StartFire(backup);
+            if(backup != NULL && seq->attempt_count < max_attempts) {
+                if(current_config.flight_test_mode == STATE_FALSE) {
+                    Pyro_StartFire(backup);
                 }
 
                 if(!deploy_stat->valid) {
-					deploy_stat->valid = STATE_TRUE;
+                    deploy_stat->valid = STATE_TRUE;
                     deploy_stat->value = flight_data.kalman_z;
                     deploy_stat->time_ms = current_time - flight_stats.flight_start_time_ms;
                 }
 
-                fire_attempt_count++;
-                fire_timer = current_time;
+                seq->attempt_count++;
+                seq->fire_timer = current_time;
             }
         }
     } else if(elapsed_time >= PYRO_RISING_TIME_MS) {
-        if(!backup_active && primary != NULL) {
-			if(current_config.flight_test_mode == STATE_FALSE) {
-            	Pyro_StopFire(primary);
+        if(!seq->backup_active && primary != NULL) {
+            if(current_config.flight_test_mode == STATE_FALSE) {
+                Pyro_StopFire(primary);
             }
-        } else if(backup_active && backup != NULL) {
-			if(current_config.flight_test_mode == STATE_FALSE) {
-            	Pyro_StopFire(backup);
+        } else if(seq->backup_active && backup != NULL) {
+            if(current_config.flight_test_mode == STATE_FALSE) {
+                Pyro_StopFire(backup);
             }
         }
     }
 }
 
-// TODO: check pyro number to adapt target attempt
-// TODO: use dedicated timer to failsafe drogue fire
+
 void FSM_Update(void) {
-	flight_duration = __HAL_TIM_GET_COUNTER(&htim5) / 1000; // Failsafe apogee timeout (us)
+	if(current_global_state == STATE_INFLIGHT) {
+		flight_duration = HAL_GetTick() - flight_stats.flight_start_time_ms;
+	} else {
+		flight_duration = 0;
+	}
+
     switch(current_global_state) {
         case STATE_PREFLIGHT:
         	switch(current_preflight_substate) {
         		case SUB_STATIC_ORIENTED:
         			// Security : stability check, orientation
 					bool is_static = (flight_data.barometric_trend == ALTITUDE_TREND_STABLE);
-					bool is_oriented_up = flight_data.imu_acc_z > STATIC_ACC_Z_THRESHOLD;
+					bool is_oriented_up = flight_data.imu_acc_z > STATIC_Z_THRESHOLD_ACC;
 					if(is_static && is_oriented_up) {
 						if(current_config.flight_test_mode == STATE_TRUE) {
-							// Positive false
+							// False positive
 							flight_data.system_states |= FLAG_PYROS_ARMED_OK;
 							// Skip pyros/arm check
 							current_preflight_substate = SUB_WAITING_FLIGHT;
@@ -188,8 +196,6 @@ void FSM_Update(void) {
                 }
 
                 flight_stats.flight_start_time_ms = HAL_GetTick();
-                HAL_TIM_Base_Start(&htim5);      	// Start timer to measure time since launch
-                __HAL_TIM_SET_COUNTER(&htim5, 0);   // Reset timer counter
                 current_global_state = STATE_INFLIGHT;
                 current_inflight_substate = SUB_BOOST;
                 flight_stats.fsm_trans.inflight_boost = 0;
@@ -281,9 +287,9 @@ void FSM_Update(void) {
 						flight_stats.fsm_trans.inflight_drogue = HAL_GetTick() - flight_stats.flight_start_time_ms;
 						ODB_SetMissionState(&flight_data, STATE_INFLIGHT, SUB_DROGUE);
 
-						fire_timer = 0;
-						fire_attempt_count = 0;
-						backup_active = false;
+						drogue_seq.fire_timer = 0;
+						drogue_seq.attempt_count = 0;
+						drogue_seq.backup_active = false;
 
 						// Arming Drogue
 						if(current_config.armed_pyros_power_up == STATE_FALSE) {
@@ -304,11 +310,11 @@ void FSM_Update(void) {
 
 				case SUB_DROGUE:
 					// Wait for drogue deployment detection
-					FSM_HandleDeployment(PYRO_ROLE_DROGUE, PYRO_ROLE_DROGUE_BACKUP, &flight_stats.drogue_deploy, current_config.drogue_fire_attempt_nb);
+					FSM_HandleDeployment(&drogue_seq, PYRO_ROLE_DROGUE, PYRO_ROLE_DROGUE_BACKUP, &flight_stats.drogue_deploy, current_config.drogue_fire_attempt_nb);
 
 					// Early deployment if speed exceed normal descent rate
 					if(current_config.enable_early_deployment == STATE_TRUE && flight_data.kalman_v <= current_config.early_deployment_threshold_v) {
-						FSM_HandleDeployment(PYRO_ROLE_MAIN, PYRO_ROLE_MAIN_BACKUP, &flight_stats.main_deploy, current_config.main_fire_attempt_nb);
+					    FSM_HandleDeployment(&main_seq, PYRO_ROLE_MAIN, PYRO_ROLE_MAIN_BACKUP, &flight_stats.main_deploy, current_config.main_fire_attempt_nb);
 					}
 
 					if(flight_data.kalman_z <= current_config.main_deploy_altitude_threshold_m) {
@@ -316,9 +322,9 @@ void FSM_Update(void) {
 						flight_stats.fsm_trans.inflight_main = HAL_GetTick() - flight_stats.flight_start_time_ms;
 						ODB_SetMissionState(&flight_data, STATE_INFLIGHT, SUB_MAIN);
 
-						fire_timer = 0;
-						fire_attempt_count = 0;
-						backup_active = false;
+						main_seq.fire_timer = 0;
+						main_seq.attempt_count = 0;
+						main_seq.backup_active = false;
 
 						// Arming Drogue
 						if(current_config.armed_pyros_power_up == STATE_FALSE) {
@@ -339,12 +345,14 @@ void FSM_Update(void) {
 
 				case SUB_MAIN:
 					// Wait for main deployment detection
-					FSM_HandleDeployment(PYRO_ROLE_MAIN, PYRO_ROLE_MAIN_BACKUP, &flight_stats.main_deploy, current_config.main_fire_attempt_nb);
+					FSM_HandleDeployment(&main_seq, PYRO_ROLE_MAIN, PYRO_ROLE_MAIN_BACKUP, &flight_stats.main_deploy, current_config.main_fire_attempt_nb);
 
 					// Early deployment if speed exceed normal descent rate
+					/*
 					if(current_config.enable_early_deployment == STATE_TRUE && flight_data.kalman_v <= current_config.early_deployment_threshold_v) {
-						FSM_HandleDeployment(PYRO_ROLE_MAIN, PYRO_ROLE_MAIN_BACKUP, &flight_stats.main_deploy, current_config.main_fire_attempt_nb);
+					    FSM_HandleDeployment(&main_seq, PYRO_ROLE_MAIN, PYRO_ROLE_MAIN_BACKUP, &flight_stats.main_deploy, current_config.main_fire_attempt_nb);
 					}
+					*/
 
 					// Wait until barometer detect stability
 					if(flight_data.barometric_trend == ALTITUDE_TREND_STABLE) {
@@ -357,40 +365,52 @@ void FSM_Update(void) {
 					break;
 
 				case SUB_LANDED:
-				    flight_stats.flight_time_ms = flight_duration;
+					flight_stats.flight_time_ms = flight_duration;
 
-				    Logger_Enable(false);
-				    Logger_FlushRemaining();
+					Logger_Enable(false);
+					Logger_FlushRemaining();
+					Logger_SaveStats(&flight_stats);
 
-				    Logger_SaveStats(&flight_stats);
+					Scheduler_SetActive("Data_Update", false);
+					Scheduler_SetActive("Telemetry", false);
+					Scheduler_SetActive("Idefix", true);
+					// Scheduler_SetActive("BTRx", true);
+					// Scheduler_SetActive("BTTx", true);
 
-				    Scheduler_SetActive("Data_Update", false);
-				    Scheduler_SetActive("Telemetry", false);
-				    Scheduler_SetActive("Idefix", true);
+					RFD900x_Sleep(&rfd900x);
 
-				    RFD900x_Sleep(&rfd900x);
+					Logger_ExportToSD(&flight_stats);
 
-				    Logger_ExportToSD(&flight_stats);
+					// Buzzer Landing Output Bips
+					if(current_config.enable_buzzer == STATE_TRUE && current_config.buzzer_landing_output == BUZZER_OUTPUT_BIPS) {
+						Buzzer_StartPeriodicBip(&buzzer, current_config.buzzer_report_tone_hz, 500, 500);
+					}
 
-				    Buzzer_StartPeriodicBip(&buzzer, current_config.buzzer_report_tone_hz, 500, 500);
-
-				    current_global_state = STATE_POSTFLIGHT;
-				    flight_stats.fsm_trans.postflight = HAL_GetTick() - flight_stats.flight_start_time_ms;
-				    ODB_SetMissionState(&flight_data, STATE_POSTFLIGHT, 0);
-				    break;
+					current_global_state = STATE_POSTFLIGHT;
+					flight_stats.fsm_trans.postflight = HAL_GetTick() - flight_stats.flight_start_time_ms;
+					ODB_SetMissionState(&flight_data, STATE_POSTFLIGHT, 0);
+					break;
 			}
 			break;
 
 		case STATE_POSTFLIGHT:
-			// TODO: add periodic timer to start routine and give some rest for others tasks (blocking)
-			if(current_config.buzzer_landing_output == BUZZER_OUTPUT_DISABLED) {
-				break;
-			} else if(current_config.buzzer_landing_output == BUZZER_OUTPUT_ALTITUDE) {
+			if(current_config.enable_buzzer == STATE_TRUE && current_config.buzzer_landing_output != BUZZER_OUTPUT_DISABLED) {
+				if(current_config.buzzer_landing_output == BUZZER_OUTPUT_BIPS) {
+					Buzzer_ProcessPeriodicBip(&buzzer);
+				} else if(current_config.buzzer_landing_output == BUZZER_OUTPUT_ALTITUDE || current_config.buzzer_landing_output == BUZZER_OUTPUT_MUSIC) {
+					static uint32_t last_routine_tick = 0;
+					uint32_t current_tick = HAL_GetTick();
 
-			} else if(current_config.buzzer_landing_output == BUZZER_OUTPUT_BIPS) {
-				Buzzer_ProcessPeriodicBip(&buzzer);
-			} else if(current_config.buzzer_landing_output == BUZZER_OUTPUT_MUSIC) {
-				//Buzzer_PlayMelody(&buzzer, ram_ranch_solo, RAM_RANCH_SOLO_NOTE_COUNT, 3);
+					if(last_routine_tick == 0 || (current_tick - last_routine_tick) >= POSTFLIGHT_ROUTINE_PERIOD_MS) {
+						last_routine_tick = current_tick;
+
+						if(current_config.buzzer_landing_output == BUZZER_OUTPUT_ALTITUDE) {
+							Buzzer_ReportAltitude(&buzzer, current_config.buzzer_report_tone_hz, flight_stats.max_altitude_kalman.value, flight_stats.max_altitude_kalman.valid);
+						} else {
+							Buzzer_PlayMelody(&buzzer, ram_ranch_solo, RAM_RANCH_SOLO_NOTE_COUNT, 1);
+						}
+					}
+				}
 			}
 			break;
 	}

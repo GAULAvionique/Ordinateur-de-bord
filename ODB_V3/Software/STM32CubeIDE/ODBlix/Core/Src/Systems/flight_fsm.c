@@ -15,8 +15,10 @@
 #include "Drivers/mem2067.h"
 #include "stm32f4xx_hal.h"
 #include <math.h>
-#include <Protocols/odb_data_protocol.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include <Protocols/odb_data_protocol.h>
+
 
 
 #define STATIC_Z_THRESHOLD_ACC 6.0f
@@ -36,6 +38,7 @@ volatile preflight_substate_t current_preflight_substate = SUB_STATIC_ORIENTED;
 volatile inflight_substate_t current_inflight_substate = SUB_BOOST;
 volatile bool is_ready_by_app = false;
 volatile bool is_force_flight = false;
+volatile bool is_pyros_manual_override = false;
 
 static uint32_t flight_duration = 0;
 static bool sustainer_ignited = false; // Handle staging cycle (SUB_FAST->SUB_BOOST->SUB_FAST)
@@ -62,7 +65,7 @@ static void FSM_HandleDeployment(pyro_seq_state_t* seq, pyro_role_t primary_role
     uint32_t current_time = HAL_GetTick();
     uint32_t elapsed_time = current_time - seq->fire_timer;
 
-    if(!Pyro_IsArmed(&system_measurements) && current_config.flight_test_mode == STATE_FALSE) {
+    if(!is_pyros_manual_override && current_config.armed_pyros_power_up == STATE_FALSE && !Pyro_IsArmed(&system_measurements) && current_config.flight_test_mode == STATE_FALSE) {
         Pyro_Arming(&system_measurements, true, false);
     }
 
@@ -175,9 +178,10 @@ void FSM_Update(void) {
 							Buzzer_PlayMelody(&buzzer, ram_ranch_solo, RAM_RANCH_SOLO_NOTE_COUNT, 3);
 						}
 
-						Pyro_SetContinuity(false);
-						if(current_config.armed_pyros_power_up == STATE_FALSE) {
+						if(!is_pyros_manual_override && current_config.armed_pyros_power_up == STATE_FALSE) {
 							Pyro_Arming(&system_measurements, false, false);
+						} else if(!is_pyros_manual_override && current_config.flight_test_mode == STATE_FALSE) {
+							Pyro_Arming(&system_measurements, true, false);
 						}
 
 						current_global_state = STATE_ARMED;
@@ -189,6 +193,11 @@ void FSM_Update(void) {
         	break;
 
         case STATE_ARMED:
+			if(!is_pyros_manual_override && current_config.armed_pyros_power_up == STATE_TRUE && current_config.flight_test_mode == STATE_FALSE && !Pyro_IsArmed(&system_measurements)) {
+				Pyro_Arming(&system_measurements, true, false);
+			} else if(!is_pyros_manual_override && current_config.armed_pyros_power_up == STATE_FALSE && Pyro_IsArmed(&system_measurements)) {
+				Pyro_Arming(&system_measurements, false, false);
+			}
             if(flight_data.highg_acc_z > current_config.z_launch_threshold_acc || is_force_flight) {
 				if(current_config.flight_test_mode == STATE_FALSE) {
                 	Scheduler_SetActive("BTRx", false);
@@ -208,6 +217,9 @@ void FSM_Update(void) {
             break;
 
         case STATE_INFLIGHT:
+			if(!is_pyros_manual_override && current_config.armed_pyros_power_up == STATE_TRUE && current_config.flight_test_mode == STATE_FALSE && !Pyro_IsArmed(&system_measurements)) {
+				Pyro_Arming(&system_measurements, true, false);
+			}
             // Handle substate transitions based on events
             switch(current_inflight_substate) {
                 case SUB_BOOST:
@@ -292,7 +304,7 @@ void FSM_Update(void) {
 						drogue_seq.backup_active = false;
 
 						// Arming Drogue
-						if(current_config.armed_pyros_power_up == STATE_FALSE) {
+						if(!is_pyros_manual_override && current_config.armed_pyros_power_up == STATE_FALSE) {
 							if(!flight_stats.mach_lock.activated) {
 								pyro_t *drogue = Pyro_GetByRole(PYRO_ROLE_DROGUE);
 								if(drogue && !Pyro_IsArmed(&system_measurements) && current_config.flight_test_mode == STATE_FALSE) {
@@ -327,7 +339,7 @@ void FSM_Update(void) {
 						main_seq.backup_active = false;
 
 						// Arming Drogue
-						if(current_config.armed_pyros_power_up == STATE_FALSE) {
+						if(!is_pyros_manual_override && current_config.armed_pyros_power_up == STATE_FALSE) {
 							if(!flight_stats.mach_lock.activated) {
 								pyro_t *main = Pyro_GetByRole(PYRO_ROLE_MAIN);
 								if(main && !Pyro_IsArmed(&system_measurements) && current_config.flight_test_mode == STATE_FALSE) {
@@ -365,6 +377,8 @@ void FSM_Update(void) {
 					break;
 
 				case SUB_LANDED:
+					Pyro_Arming(&system_measurements, false, false);
+					Pyro_SetContinuity(false);
 					flight_stats.flight_time_ms = flight_duration;
 
 					Logger_Enable(false);

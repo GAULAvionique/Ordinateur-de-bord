@@ -22,7 +22,9 @@ pyros_state_t Pyro_Init(pyro_t *dev) {
 
 	dev->is_connected = false;
 	dev->is_fire = false;
+	dev->fire_attempts = 0;
 
+	HAL_GPIO_WritePin(Pyros_Arm_GPIO_Port, Pyros_Arm_Pin, GPIO_PIN_RESET);
 	Pyro_SetContinuity(false);
 
 
@@ -67,6 +69,7 @@ pyros_state_t Pyro_Arming(system_measurements_t *measures, bool arming, bool is_
 		HAL_GPIO_WritePin(Pyros_Arm_GPIO_Port, Pyros_Arm_Pin, GPIO_PIN_SET);
 	} else {
 		HAL_GPIO_WritePin(Pyros_Arm_GPIO_Port, Pyros_Arm_Pin, GPIO_PIN_RESET);
+		Pyro_SetContinuity(true);
 	}
 
 	if(is_test) HAL_Delay(PYRO_RISING_TIME_MS * 5);
@@ -80,6 +83,7 @@ pyros_state_t Pyro_StartFire(pyro_t *dev) {
 
     HAL_GPIO_WritePin(dev->fire_port, dev->fire_pin, GPIO_PIN_SET);
     dev->is_fire = true;
+    dev->fire_attempts++;
 
     return PYRO_OK;
 }

@@ -13,7 +13,7 @@
 
 /* === Protocol Versioning === */
 #define ODB_PROTOCOL_VERSION_MAJOR 1
-#define ODB_PROTOCOL_VERSION_MINOR 4
+#define ODB_PROTOCOL_VERSION_MINOR 5
 
 /* === ODB === */
 // Init system_states
@@ -79,6 +79,7 @@
 // pyro event stucture with time of event and pyro number
 typedef struct __attribute__((packed)) {
     uint8_t fired;
+    uint8_t attempts;
     uint32_t time_ms;
 } pyro_event_t;
 

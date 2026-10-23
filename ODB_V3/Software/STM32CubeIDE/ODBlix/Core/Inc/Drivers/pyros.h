@@ -45,6 +45,7 @@ typedef struct {
 	pyro_channel_t  channel;
 	bool			is_connected;
 	bool			is_fire;
+	uint8_t			fire_attempts;
 } pyro_t;
 
 

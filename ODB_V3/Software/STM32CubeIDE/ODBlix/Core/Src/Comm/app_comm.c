@@ -26,8 +26,9 @@ extern odb_data_t flight_data;
 extern global_state_t current_global_state;
 extern preflight_substate_t current_preflight_substate;
 extern inflight_substate_t current_inflight_substate;
-extern bool is_ready_by_app;
-extern bool is_force_flight;
+extern volatile bool is_ready_by_app;
+extern volatile bool is_force_flight;
+extern volatile bool is_pyros_manual_override;
 
 extern note_t ram_ranch_solo[];
 
@@ -244,8 +245,11 @@ void AppComm_ProcessRx(hm11_t *hm11_dev) {
                         HAL_Delay(1000); // Esthetic
                     } else if(cmd == CMD_ARM_DISARM) {
                         bool arm = payload[1] == 1;
-                        bool is_pyros_armed = Pyro_Arming(&system_measurements, arm, true) == PYRO_OK;
-                        AppComm_SendAck(hm11_dev, CMD_ARM_DISARM, is_pyros_armed == arm ? 1 : 0);
+                        bool command_succeeded = Pyro_Arming(&system_measurements, arm, true) == PYRO_OK;
+                        if(command_succeeded) {
+                            is_pyros_manual_override = true;
+                        }
+                        AppComm_SendAck(hm11_dev, CMD_ARM_DISARM, command_succeeded ? 1 : 0);
                     } else if(cmd == CMD_FIRE_PYRO) {
                         uint8_t pyro_idx = payload[1];
                         if(Pyro_IsArmed(&system_measurements) && pyro_idx < PYRO_MAX) {
@@ -436,7 +440,7 @@ void AppComm_ProcessRx(hm11_t *hm11_dev) {
 						// Protection
 						if((pyros_connected >= current_config.needed_pyro_nb) && !check_failed) {
 							AppComm_SendAck(hm11_dev, CMD_TEST_PYROS, 1);
-							Pyro_SetContinuity(false);
+							Pyro_SetContinuity(true);
 						} else {
 							DEBUG_PRINTF("ERROR : Not enough connected pyros (%d/%d) or config mismatch\n", pyros_connected, current_config.needed_pyro_nb);
 							AppComm_SendAck(hm11_dev, CMD_TEST_PYROS, 0);

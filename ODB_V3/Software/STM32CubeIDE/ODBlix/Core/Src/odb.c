@@ -126,12 +126,16 @@ void ODB_Reset(odb_data_t *data, odb_stats_t *stats) {
     stats->pyros_arm.start_time_ms = 0;
     stats->pyros_arm.end_time_ms = 0;
     stats->pyro1.fired = STATE_FALSE;
+    stats->pyro1.attempts = 0;
     stats->pyro1.time_ms = 0;
     stats->pyro2.fired = STATE_FALSE;
+    stats->pyro2.attempts = 0;
     stats->pyro2.time_ms = 0;
     stats->pyro3.fired = STATE_FALSE;
+    stats->pyro3.attempts = 0;
     stats->pyro3.time_ms = 0;
     stats->pyro4.fired = STATE_FALSE;
+    stats->pyro4.attempts = 0;
     stats->pyro4.time_ms = 0;
     stats->mach_lock.activated = STATE_FALSE;
     stats->mach_lock.start_time_ms = 0;
@@ -226,6 +230,7 @@ odb_state_t ODB_Init(odb_data_t *data, odb_stats_t *stats) {
 				DEBUG_PRINTF("Pyro %i configuration failed\n", i);
 			}
 		}
+		Pyro_SetContinuity(true);
 
         SystemMeasurements_ComputeTemperature(&system_measurements);
         if(system_measurements.temperature < MAX6612MXK_MIN_TEMP_C || system_measurements.temperature > MAX6612MXK_MAX_TEMP_C) {
@@ -396,12 +401,12 @@ void ODB_Update(odb_data_t *data, odb_stats_t *stats) {
 
     data->temp_celsius = system_measurements.temperature;
     const bool pyros_arming_enabled = Pyro_IsArmed(&system_measurements);
-    bool is_ctn_active = Pyro_IsContinuityActive(&system_measurements);
-    if(is_ctn_active) {
-    	for(int i = 0; i < PYRO_MAX; i++) {
-    		data->pyros_mv[i] = system_measurements.pyro_status[i];
-			pyros[i].is_connected = (system_measurements.pyro_status[i] >= PYRO_THRESHOLD_CONN);
-		}
+    const bool is_ctn_active = Pyro_IsContinuityActive(&system_measurements);
+    for(int i = 0; i < PYRO_MAX; i++) {
+        data->pyros_mv[i] = system_measurements.pyro_status[i];
+        if(pyros_arming_enabled || is_ctn_active) {
+            pyros[i].is_connected = (system_measurements.pyro_status[i] >= PYRO_THRESHOLD_CONN);
+        }
     }
     uint16_t new_pyros_states = data->system_states;
     if(pyros[0].is_connected) {
@@ -550,9 +555,13 @@ void ODB_Update(odb_data_t *data, odb_stats_t *stats) {
     if(stats) {
     	uint32_t current_flight_time_ms = now_ms - stats->flight_start_time_ms;
 		stats->pyro1.fired = pyros[0].is_fire;
+		stats->pyro1.attempts = pyros[0].fire_attempts;
 		stats->pyro2.fired = pyros[1].is_fire;
+		stats->pyro2.attempts = pyros[1].fire_attempts;
 		stats->pyro3.fired = pyros[2].is_fire;
+		stats->pyro3.attempts = pyros[2].fire_attempts;
 		stats->pyro4.fired = pyros[3].is_fire;
+		stats->pyro4.attempts = pyros[3].fire_attempts;
 
 		ODB_UpdateWindowEvent(&stats->pyros_arm, pyros_arming_enabled, current_flight_time_ms);
 

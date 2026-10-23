@@ -496,13 +496,13 @@ void Logger_ExportToSD(const odb_stats_t *stats) {
     f_puts(header_buf, &active_file);
 
     f_puts("# -- Pyros Evenements --\n", &active_file);
-    sprintf(header_buf, "# Pyro 1 : Fired=%d, Time=%lu ms\n", stats->pyro1.fired, stats->pyro1.time_ms);
+    sprintf(header_buf, "# Pyro 1 : Fired=%d, Attempts=%d, Time=%lu ms\n", stats->pyro1.fired, stats->pyro1.attempts, stats->pyro1.time_ms);
     f_puts(header_buf, &active_file);
-    sprintf(header_buf, "# Pyro 2 : Fired=%d, Time=%lu ms\n", stats->pyro2.fired, stats->pyro2.time_ms);
+    sprintf(header_buf, "# Pyro 2 : Fired=%d, Attempts=%d, Time=%lu ms\n", stats->pyro2.fired, stats->pyro2.attempts, stats->pyro2.time_ms);
     f_puts(header_buf, &active_file);
-    sprintf(header_buf, "# Pyro 3 : Fired=%d, Time=%lu ms\n", stats->pyro3.fired, stats->pyro3.time_ms);
+    sprintf(header_buf, "# Pyro 3 : Fired=%d, Attempts=%d, Time=%lu ms\n", stats->pyro3.fired, stats->pyro3.attempts, stats->pyro3.time_ms);
     f_puts(header_buf, &active_file);
-    sprintf(header_buf, "# Pyro 4 : Fired=%d, Time=%lu ms\n", stats->pyro4.fired, stats->pyro4.time_ms);
+    sprintf(header_buf, "# Pyro 4 : Fired=%d, Attempts=%d, Time=%lu ms\n", stats->pyro4.fired, stats->pyro4.attempts, stats->pyro4.time_ms);
     f_puts(header_buf, &active_file);
 
     f_puts("# -- Windowed Events --\n", &active_file);

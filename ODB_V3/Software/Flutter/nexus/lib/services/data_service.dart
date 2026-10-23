@@ -165,8 +165,9 @@ class FacesCalibration {
 
 class PyroEvent {
   final bool fired;
+  final int attempts;
   final int timeMs;
-  PyroEvent(this.fired, this.timeMs);
+  PyroEvent(this.fired, this.attempts, this.timeMs);
 }
 
 class WindowEvent {
@@ -240,10 +241,11 @@ class OdbStats {
     final reader = ByteCursor(bytes);
 
     final flightId = reader.readUint32();
+    final attempts = reader.readUint8();
     final date = reader.readUint32();
 
     final pyros = List.generate(
-        4, (_) => PyroEvent(reader.readUint8() != 0, reader.readUint32()));
+        4, (_) => PyroEvent(reader.readUint8() != 0, reader.readUint8(), reader.readUint32()));
 
     final pyrosArm = WindowEvent(
         reader.readUint8() != 0, reader.readUint32(), reader.readUint32());
@@ -287,6 +289,7 @@ class OdbStats {
     builder.writeUint32(date);
     for (final pyro in pyroEvents) {
       builder.writeUint8(pyro.fired ? 1 : 0);
+      builder.writeUint8(pyro.attempts);
       builder.writeUint32(pyro.timeMs);
     }
     void writeWindow(WindowEvent window) {
@@ -777,7 +780,7 @@ class DataServiceManager with ChangeNotifier {
   static const int expectedConfigMajor = 2;
   static const int expectedConfigMinor = 9;
   static const int expectedTelemetryMajor = 1;
-  static const int expectedTelemetryMinor = 4;
+  static const int expectedTelemetryMinor = 5;
 
   final BluetoothServiceManager btService;
   DataServiceManager(this.btService) {
